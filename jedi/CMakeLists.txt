@@ -2,6 +2,8 @@ set(HDRS
 buffer.h
 clipboard.h
 colors.h
+draw.h
+grid.h
 engine.h
 keyboard.h
 mouse.h
@@ -10,12 +12,15 @@ pref_file.h
 settings.h
 syntax_highlight.h
 utils.h
+window.h
 )
 	
 set(SRCS
 buffer.cpp
 clipboard.cpp
 colors.cpp
+draw.cpp
+grid.cpp
 engine.cpp
 keyboard.cpp
 main.cpp
@@ -25,6 +30,7 @@ pref_file.cpp
 settings.cpp
 syntax_highlight.cpp
 utils.cpp
+window.cpp
 )
 
 set(JSON

@@ -47,25 +47,24 @@ int main(int argc, char** argv)
   start_color();
   scrollok(stdscr, TRUE);
 
-  PDC_set_title("jed");
+  PDC_set_title("jedi");
 
   settings s;
-  s = read_settings(get_file_in_executable_path("jed_settings.json").c_str());
-  update_settings(s, get_file_in_executable_path("jed_user_settings.json").c_str());
+  s = read_settings(get_file_in_executable_path("jedi_settings.json").c_str());
+  update_settings(s, get_file_in_executable_path("jedi_user_settings.json").c_str());
 
 
 
   engine e(argc, argv, s);
   e.run();
 
-  settings s_latest = read_settings(get_file_in_executable_path("jed_settings.json").c_str());
-  update_settings(s_latest, get_file_in_executable_path("jed_user_settings.json").c_str());
+  settings s_latest = read_settings(get_file_in_executable_path("jedi_settings.json").c_str());
+  update_settings(s_latest, get_file_in_executable_path("jedi_user_settings.json").c_str());
 
   update_settings_if_different(s_latest, e.s, s);
-  write_settings(s_latest, get_file_in_executable_path("jed_settings.json").c_str());
+  write_settings(s_latest, get_file_in_executable_path("jedi_settings.json").c_str());
 
   endwin();
 
   return 0;
-
   }

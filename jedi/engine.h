@@ -2,14 +2,16 @@
 
 #include "buffer.h"
 #include "settings.h"
+#include "grid.h"
+#include "window.h"
 #include <array>
 #include <string>
 #include <vector>
 
 enum e_operation
   {
+  op_none,
   op_editing,
-  op_command_editing,
   op_exit,
   op_find,
   op_goto,
@@ -24,32 +26,41 @@ enum e_operation
   op_new
   };
 
-enum e_window_type
+enum e_buffer_type
   {
-  wt_normal,
-  wt_piped
+  bt_normal,
+  bt_piped
   };
-
-struct app_state
-  {
+  
+struct buffer_data {
+  uint32_t buffer_id;
   file_buffer buffer;
-  file_buffer operation_buffer;
-  file_buffer command_buffer;
-  text snarf_buffer;
-  line message;
-  int64_t scroll_row, operation_scroll_row, command_scroll_row;    
-  e_operation operation;  
+  int64_t scroll_row;
+  e_operation operation;
   std::vector<e_operation> operation_stack;
-  std::wstring piped_prompt;
 #ifdef _WIN32
   void* process;
 #else
   std::array<int, 3> process;
-#endif  
+#endif
+  e_buffer_type bt;
+  std::wstring piped_prompt;
+};
+
+struct app_state
+  {
+  std::vector<buffer_data> buffers;
+  std::vector<uint32_t> buffer_id_to_window_id;
+  std::vector<window_pair> window_pairs;
+  std::vector<window> windows;
+  grid g;
+  text snarf_buffer;
+  line message;
   int w, h;
-  e_window_type wt;
+  uint32_t active_buffer;
   };
 
+env_settings convert(const settings& s);
 
 struct engine
   {
