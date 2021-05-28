@@ -10,7 +10,6 @@
 
 enum e_operation
   {
-  op_none,
   op_editing,
   op_exit,
   op_find,
@@ -36,8 +35,6 @@ struct buffer_data {
   uint32_t buffer_id;
   file_buffer buffer;
   int64_t scroll_row;
-  e_operation operation;
-  std::vector<e_operation> operation_stack;
 #ifdef _WIN32
   void* process;
 #else
@@ -58,6 +55,10 @@ struct app_state
   line message;
   int w, h;
   uint32_t active_buffer;
+  e_operation operation;
+  std::vector<e_operation> operation_stack;
+  file_buffer operation_buffer;
+  int64_t operation_scroll_row;
   };
 
 env_settings convert(const settings& s);

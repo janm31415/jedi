@@ -458,15 +458,25 @@ void draw_scroll_bars(const window& w, const buffer_data& bd, const settings& s,
     }
 
 }
+
+void get_window_edit_range(int& offset_x, int& offset_y, int& maxcol, int& maxrow, int64_t scroll_row, const window& w, const settings& s) {
+  int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(scroll_row, s) : 0;
+  offset_x = reserved + 2;
+  offset_y = 0;
+  maxcol = w.cols - offset_x;
+  maxrow = w.rows;
+}
   
 void draw_window(const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, bool active) {
-  int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(bd.scroll_row, s) : 0;
-  int offset_x = reserved + 2;
-  int offset_y = 0;
-  int maxcol = w.cols - offset_x;
+  //int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(bd.scroll_row, s) : 0;
+  //int offset_x = reserved + 2;
+  //int offset_y = 0;
+  //int maxcol = w.cols - offset_x;get_window_edit_range(offset_x, offset_y, maxcol, maxrow, bd.scroll_row, w, s);
   //if (is_command_window(w.wt))
   //  --maxcol; // one free spot at the end for the plus sign for dragging
-  int maxrow = w.rows;
+  //int maxrow = w.rows;
+  int offset_x, offset_y, maxcol, maxrow;
+  get_window_edit_range(offset_x, offset_y, maxcol, maxrow, bd.scroll_row, w, s);
   position current;
   current.row = bd.scroll_row;
 

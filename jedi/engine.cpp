@@ -47,7 +47,6 @@ buffer_data make_empty_buffer_data() {
   buffer_data bd;
   bd.buffer = make_empty_buffer();
   bd.scroll_row = 0;
-  bd.operation = e_operation::op_none;
 #ifdef _WIN32
   bd.process = nullptr;
 #else
@@ -126,6 +125,18 @@ uint32_t get_column_id(const app_state& state, int64_t buffer_id)
     }
   return (uint32_t)state.g.columns.size() - (uint32_t)1;
   }
+  
+const file_buffer& get_active_buffer(const app_state& state) {
+  return state.buffers[state.active_buffer].buffer;
+  }
+  
+file_buffer& get_active_buffer(app_state& state) {
+  return state.buffers[state.active_buffer].buffer;
+  }
+  
+int64_t& get_active_scroll_row(app_state& state) {
+  return state.buffers[state.active_buffer].scroll_row;
+}
   
 std::optional<app_state> command_exit(app_state state, uint32_t, settings& s)
   {
@@ -270,6 +281,103 @@ std::optional<app_state> new_window(app_state state, uint32_t buffer_id, const s
     
   return resize_windows(state, s);
 }
+
+void get_active_window_size_for_editing(int& rows, int& cols, const app_state& state, const settings& s)
+  {
+  auto window_id = state.buffer_id_to_window_id[state.buffers[state.active_buffer].buffer_id];
+  int offset_x, offset_y;
+  get_window_edit_range(offset_x, offset_y, cols, rows, state.buffers[state.active_buffer].scroll_row, state.windows[window_id], s);
+  }
+
+app_state check_scroll_position(app_state state, const settings& s)
+  {
+  int rows, cols;
+  get_active_window_size_for_editing(rows, cols, state, s);
+  if (get_active_scroll_row(state) > get_active_buffer(state).pos.row)
+    get_active_scroll_row(state) = get_active_buffer(state).pos.row;
+  else
+    {
+    if (s.wrap)
+      {
+      auto senv = convert(s);
+      int64_t actual_rows = 0;
+      int r = 0;
+      for (; r < rows; ++r)
+        {
+        if (get_active_scroll_row(state) + r >= get_active_buffer(state).content.size())
+          break;
+        actual_rows += wrapped_line_rows(get_active_buffer(state).content[get_active_scroll_row(state) + r], cols, rows, senv);
+        if (actual_rows >= rows)
+          break;
+        }
+      int64_t my_row = 0;
+      if (get_active_buffer(state).pos.row < get_active_buffer(state).content.size())
+        my_row = wrapped_line_rows(get_active_buffer(state).content[get_active_buffer(state).pos.row], cols, rows, senv);
+      if (get_active_scroll_row(state) + r < get_active_buffer(state).pos.row + my_row - 1)
+        {
+        get_active_scroll_row(state) = get_active_buffer(state).pos.row;
+        r = 0;
+        actual_rows = my_row;
+        for (; r < rows; ++r)
+          {
+          if (get_active_scroll_row(state) == 0)
+            break;
+          actual_rows += wrapped_line_rows(get_active_buffer(state).content[get_active_scroll_row(state)- 1], cols, rows, senv);
+          if (actual_rows <= rows)
+            --get_active_scroll_row(state);
+          else
+            break;
+          }
+        }
+      }
+    else if (get_active_scroll_row(state) + rows <= get_active_buffer(state).pos.row)
+      {
+      get_active_scroll_row(state) = get_active_buffer(state).pos.row - rows + 1;
+      }
+    }
+  return state;
+  }
+  
+app_state check_operation_buffer(app_state state)
+  {
+  if (state.operation_buffer.content.size() > 1)
+    state.operation_buffer.content = state.operation_buffer.content.take(1);
+  state.operation_buffer.pos.row = 0;
+  return state;
+  }
+
+app_state text_input_standard(app_state state, const char* txt, const settings& s)
+  {
+  std::string t(txt);
+  get_active_buffer(state) = insert(get_active_buffer(state), t, convert(s));
+  return check_scroll_position(state, s);
+  }
+
+app_state text_input_operation(app_state state, const char* txt, settings& s)
+  {
+  std::string t(txt);
+  state.operation_buffer = insert(state.operation_buffer, t, convert(s));
+  if (state.operation == op_incremental_search)
+    {
+    if (get_active_buffer(state).start_selection != std::nullopt && *get_active_buffer(state).start_selection < get_active_buffer(state).pos)
+      {
+      get_active_buffer(state).pos = *get_active_buffer(state).start_selection;
+      }
+    get_active_buffer(state).start_selection = std::nullopt;
+    get_active_buffer(state) = find_text(get_active_buffer(state), state.operation_buffer.content);
+    s.last_find = to_string(state.operation_buffer.content);
+    state = check_scroll_position(state, s);
+    }
+  return check_operation_buffer(state);
+  }
+
+app_state text_input(app_state state, const char* txt, settings& s)
+  {
+  if (state.operation == op_editing)
+    return text_input_standard(state, txt, s);
+  else
+    return text_input_operation(state, txt, s);
+  }
   
 std::optional<app_state> process_input(app_state state, uint32_t buffer_id, settings& s) {
   SDL_Event event;
@@ -312,7 +420,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
         }
         case SDL_TEXTINPUT:
         {
-        //return text_input(state, event.text.text, s);
+        return text_input(state, event.text.text, s);
         }
         case SDL_KEYDOWN:
         {
@@ -387,6 +495,7 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   resize_term_ex(state.h / font_height, state.w / font_width);
 
   state.active_buffer = 0;
+  state.operation = e_operation::op_editing;
   state = make_topline(state, s);
   state = *new_column_command(state, 0, s);
   state = *new_column_command(state, 0, s);
