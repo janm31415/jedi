@@ -2,6 +2,7 @@
 #include "pdcex.h"
 #include "colors.h"
 #include "syntax_highlight.h"
+#include "utils.h"
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include <curses.h>
@@ -406,6 +407,58 @@ int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, p
   return xoffset;
   }
   
+void draw_scroll_bars(const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, bool active) {
+  const unsigned char scrollbar_ascii_sign = 219;
+  int maxrow = w.rows;
+  int maxcol = w.cols;
+  int scroll1 = 0;
+  int scroll2 = maxrow - 1;
+
+  if (!bd.buffer.content.empty())
+    {
+    scroll1 = (int)((double)bd.scroll_row / (double)bd.buffer.content.size()*maxrow);
+    scroll2 = (int)((double)(bd.scroll_row + maxrow) / (double)bd.buffer.content.size()*maxrow);
+    }
+  if (scroll1 >= maxrow)
+    scroll1 = maxrow - 1;
+  if (scroll2 >= maxrow)
+    scroll2 = maxrow - 1;
+
+
+  attron(COLOR_PAIR(scroll_bar_b_editor));
+
+  for (int r = 0; r < maxrow; ++r)
+    {
+    move(r + w.y, w.x);
+
+    if (r == scroll1)
+      {
+      attron(COLOR_PAIR(scroll_bar_f_editor));
+      }
+
+    int rowpos = 0;
+    if (!bd.buffer.content.empty())
+      {
+      rowpos = (int)((double)r*(double)bd.buffer.content.size() / (double)maxrow);
+      if (rowpos >= bd.buffer.content.size())
+        rowpos = bd.buffer.content.size() - 1;
+      }
+
+    add_ex(position(rowpos, 0), bd.buffer_id, SET_SCROLLBAR_EDITOR);
+    addch(ascii_to_utf16(scrollbar_ascii_sign));
+
+    move(r + w.y, 1+w.x);
+    add_ex(position(rowpos, 0), bd.buffer_id, SET_SCROLLBAR_EDITOR);
+      
+
+    if (r == scroll2)
+      {
+      attron(COLOR_PAIR(scroll_bar_b_editor));
+      }
+    }
+
+}
+  
 void draw_window(const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, bool active) {
   int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(bd.scroll_row, s) : 0;
   int offset_x = reserved + 2;
@@ -555,6 +608,8 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
     move((int)(maxrow-1) + offset_y+w.y, offset_x+maxcol-1+w.x);
     add_ex(last_pos, bd.buffer_id, SET_PLUS);
     addch('+');
+  } else {
+    draw_scroll_bars(w, bd, s, senv, active);
   }
   
 }

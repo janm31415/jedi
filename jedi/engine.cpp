@@ -107,7 +107,27 @@ app_state resize_font(app_state state, int font_size, settings& s)
   return state;
   }
   
-std::optional<app_state> command_exit(app_state state, settings& s)
+uint32_t get_column_id(const app_state& state, int64_t buffer_id)
+  {
+  for (uint32_t i = 0; i < state.g.columns.size(); ++i)
+    {
+    auto& c = state.g.columns[i];
+    if (state.windows[c.column_command_window_id].buffer_id == buffer_id)
+      return i;
+    for (uint32_t j = 0; j < c.items.size(); ++j)
+      {
+      auto ci = c.items[j];
+      const auto& wp = state.window_pairs[ci.window_pair_id];
+      if (state.windows[wp.command_window_id].buffer_id == buffer_id || state.windows[wp.window_id].buffer_id == buffer_id)
+        {
+        return i;
+        }
+      }
+    }
+  return (uint32_t)state.g.columns.size() - (uint32_t)1;
+  }
+  
+std::optional<app_state> command_exit(app_state state, uint32_t, settings& s)
   {
   return std::nullopt;
   }
@@ -152,7 +172,7 @@ app_state resize_windows(app_state state, const settings& s) {
   return state;
 }
   
-app_state new_column_command(app_state state, const settings& s) {
+std::optional<app_state> new_column_command(app_state state, uint32_t, const settings& s) {
   int rows, cols;
   getmaxyx(stdscr, rows, cols);
 
@@ -180,8 +200,78 @@ app_state new_column_command(app_state state, const settings& s) {
   state.g.columns.push_back(c);
   return resize_windows(state, s);
 }
+
+std::optional<app_state> new_window(app_state state, uint32_t buffer_id, const settings& s) {
+  if (state.g.columns.empty())
+    state = *new_column_command(state, buffer_id, s);
   
-std::optional<app_state> process_input(app_state state, settings& s) {
+  uint32_t column_id = get_column_id(state, buffer_id);
+  
+  if (column_id == get_column_id(state, state.active_buffer)) // if the active file is in the column where we clicked on "New", then make new window below active window
+    {
+    buffer_id = state.active_buffer;
+    }
+  assert(column_id != 0xffffffff);
+  assert(!state.g.columns.empty());
+  
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+  
+  uint32_t command_id = (uint32_t)state.buffers.size();
+  buffer_data bd = make_empty_buffer_data();
+  bd.buffer_id = command_id;
+  bd.buffer = insert(bd.buffer, "Del", convert(s), false);
+  state.buffers.push_back(bd);
+  window cw = make_window(command_id, 0, 1, cols, 1, e_window_type::wt_command);
+  uint32_t command_window_id = (uint32_t)state.windows.size();
+  state.windows.push_back(cw);
+  state.buffer_id_to_window_id.push_back(command_window_id);
+  
+  uint32_t editor_id = (uint32_t)state.buffers.size();
+  buffer_data bd2 = make_empty_buffer_data();
+  bd2.buffer_id = editor_id;
+  bd2.buffer = insert(bd2.buffer, "Type here", convert(s), false);
+  state.buffers.push_back(bd2);
+  window w = make_window(editor_id, 0, 1, cols, 1, e_window_type::wt_normal);
+  uint32_t window_id = (uint32_t)state.windows.size();
+  state.windows.push_back(w);
+  state.buffer_id_to_window_id.push_back(window_id);
+  
+  window_pair wp;
+  wp.command_window_id = command_window_id;
+  wp.window_id = window_id;
+  state.window_pairs.push_back(wp);
+  
+  column_item ci;
+  ci.column_id = column_id;
+  ci.top_layer = 0.0;
+  ci.bottom_layer = 1.0;
+  ci.window_pair_id = (uint32_t)(state.window_pairs.size() - 1);
+  if (!state.g.columns[column_id].items.empty())
+    {
+    auto pos = state.g.columns[column_id].items.size();
+    for (size_t k = 0; k < state.g.columns[column_id].items.size(); ++k) // look for window with file_id == id == active_file
+      {
+      if (state.windows[state.window_pairs[state.g.columns[column_id].items[k].window_pair_id].window_id].buffer_id == buffer_id)
+        {
+        state.g.columns[column_id].items[k].bottom_layer = (state.g.columns[column_id].items[k].bottom_layer + state.g.columns[column_id].items[k].top_layer)*0.5;
+        ci.top_layer = state.g.columns[column_id].items[k].bottom_layer;
+        pos = k + 1;
+        break;
+        }
+      }
+
+    state.g.columns[column_id].items.insert(state.g.columns[column_id].items.begin() + pos, ci);
+    }
+  else
+    state.g.columns[column_id].items.push_back(ci);
+    
+  state.active_buffer = editor_id;
+    
+  return resize_windows(state, s);
+}
+  
+std::optional<app_state> process_input(app_state state, uint32_t buffer_id, settings& s) {
   SDL_Event event;
   auto tic = std::chrono::steady_clock::now();
   for (;;)
@@ -231,7 +321,7 @@ std::optional<app_state> process_input(app_state state, settings& s) {
         } // case SDLK_KEYUP:
         case SDL_QUIT:
         {
-        return command_exit(state, s);
+        return command_exit(state, buffer_id, s);
         }
         } // switch (event.type)
       }
@@ -296,10 +386,12 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   resize_term(state.h / font_height, state.w / font_width);
   resize_term_ex(state.h / font_height, state.w / font_width);
 
-  state = make_topline(state, s);
-  state = new_column_command(state, s);
-  state = new_column_command(state, s);
   state.active_buffer = 0;
+  state = make_topline(state, s);
+  state = *new_column_command(state, 0, s);
+  state = *new_column_command(state, 0, s);
+  state = *new_window(state, 1, s);
+
   }
 
 engine::~engine()
@@ -312,7 +404,7 @@ void engine::run()
   state = draw(state, s);
   SDL_UpdateWindowSurface(pdc_window);
 
-  while (auto new_state = process_input(state, s))
+  while (auto new_state = process_input(state, 0, s))
     {
     state = *new_state;
     state = draw(state, s);
