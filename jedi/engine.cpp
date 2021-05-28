@@ -43,6 +43,20 @@ env_settings convert(const settings& s)
   return out;
   }
   
+buffer_data make_empty_buffer_data() {
+  buffer_data bd;
+  bd.buffer = make_empty_buffer();
+  bd.scroll_row = 0;
+  bd.operation = e_operation::op_none;
+#ifdef _WIN32
+  bd.process = nullptr;
+#else
+  bd.process = {{-1,-1,-1}};
+#endif
+  bd.bt = bt_normal;
+  return bd;
+}
+
 bool ctrl_pressed()
   {
 #if defined(__APPLE__)
@@ -98,6 +112,75 @@ std::optional<app_state> command_exit(app_state state, settings& s)
   return std::nullopt;
   }
   
+app_state resize_windows(app_state state, const settings& s) {
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+  state.windows[state.g.topline_window_id].x = 0;
+  state.windows[state.g.topline_window_id].y = 0;
+  state.windows[state.g.topline_window_id].cols = cols;
+  if (state.windows[state.g.topline_window_id].rows > rows)
+    state.windows[state.g.topline_window_id].rows = rows;
+  int start_row = state.windows[state.g.topline_window_id].rows;
+  
+  for (auto& c : state.g.columns) {
+    int left = (int)(c.left*cols);
+    int right = (int)(c.right*cols);
+    state.windows[c.column_command_window_id].x = left;
+    state.windows[c.column_command_window_id].y = start_row;
+    state.windows[c.column_command_window_id].cols = right-left;
+    int available_rows = rows - state.windows[state.g.topline_window_id].rows;
+    if (state.windows[c.column_command_window_id].rows > available_rows)
+      state.windows[c.column_command_window_id].rows = available_rows;
+    available_rows = rows - state.windows[state.g.topline_window_id].rows - state.windows[c.column_command_window_id].rows;
+    for (auto& ci : c.items) {
+      int row_offset = start_row + state.windows[c.column_command_window_id].rows;
+      int top = row_offset + (int)(available_rows*ci.top_layer);
+      int bottom = row_offset + (int)(available_rows*ci.bottom_layer);
+      auto wp = state.window_pairs[ci.window_pair_id];
+      int available_rows_for_command = bottom-top;
+      if (state.windows[wp.command_window_id].rows > available_rows_for_command)
+        state.windows[wp.command_window_id].rows = available_rows_for_command;
+      state.windows[wp.command_window_id].cols = right-left;
+      state.windows[wp.command_window_id].x = left;
+      state.windows[wp.command_window_id].y = top;
+      state.windows[wp.window_id].cols = right-left;
+      state.windows[wp.window_id].x = left;
+      state.windows[wp.window_id].y = top+state.windows[wp.command_window_id].rows;
+      state.windows[wp.window_id].rows = available_rows_for_command - state.windows[wp.command_window_id].rows;
+    }
+  }
+  return state;
+}
+  
+app_state new_column_command(app_state state, const settings& s) {
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+
+  uint32_t id = (uint32_t)state.buffers.size();
+  buffer_data bd = make_empty_buffer_data();
+  bd.buffer_id = id;
+  bd.buffer = insert(bd.buffer, "New Delcol", convert(s), false);
+  state.buffers.push_back(bd);
+
+  column c;
+  c.left = 0.0;
+  if (!state.g.columns.empty())
+    {
+    if (state.g.columns.back().right == 1.0)
+      state.g.columns.back().right = (state.g.columns.back().right - state.g.columns.back().left) / 2.0 + state.g.columns.back().left;
+    c.left = state.g.columns.back().right;
+    }
+  c.right = 1.0;
+  window w = make_window(id, 0, 1, cols, 1, e_window_type::wt_column_command);
+  uint32_t window_id = (uint32_t)state.windows.size();
+  state.windows.push_back(w);
+  state.buffer_id_to_window_id.push_back(window_id);
+
+  c.column_command_window_id = window_id;
+  state.g.columns.push_back(c);
+  return resize_windows(state, s);
+}
+  
 std::optional<app_state> process_input(app_state state, settings& s) {
   SDL_Event event;
   auto tic = std::chrono::steady_clock::now();
@@ -133,7 +216,7 @@ std::optional<app_state> process_input(app_state state, settings& s) {
             }
           resize_term(state.h / font_height, state.w / font_width);
           resize_term_ex(state.h / font_height, state.w / font_width);
-          return state;
+          return resize_windows(state, s);
           }
         break;
         }
@@ -157,20 +240,6 @@ std::optional<app_state> process_input(app_state state, settings& s) {
     auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic).count();
     }
   }
-  
-buffer_data make_empty_buffer_data() {
-  buffer_data bd;
-  bd.buffer = make_empty_buffer();
-  bd.scroll_row = 0;
-  bd.operation = e_operation::op_none;
-#ifdef _WIN32
-  bd.process = nullptr;
-#else
-  bd.process = {{-1,-1,-1}};
-#endif
-  bd.bt = bt_normal;
-  return bd;
-}
 
 app_state make_topline(app_state state, const settings& s) {
   uint32_t id = (uint32_t)state.buffers.size();
@@ -178,10 +247,13 @@ app_state make_topline(app_state state, const settings& s) {
   bd.buffer_id = id;
   bd.buffer = insert(bd.buffer, "Newcol Exit", convert(s), false);
   state.buffers.push_back(bd);
-  window w = make_window(id, 0, 0, state.w, 1, e_window_type::wt_topline);
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+  window w = make_window(id, 0, 0, cols, 1, e_window_type::wt_topline);
   uint32_t window_id = (uint32_t)state.windows.size();
   state.windows.push_back(w);
   state.buffer_id_to_window_id.push_back(window_id);
+  state.g.topline_window_id = window_id;
   return state;
 }
   
@@ -220,13 +292,14 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   SDL_ShowCursor(1);
   SDL_SetWindowSize(pdc_window, state.w, state.h);
   SDL_SetWindowPosition(pdc_window, s.x, s.y);
- 
-  state = make_topline(state, s);
-  state.active_buffer = 0;
   
   resize_term(state.h / font_height, state.w / font_width);
   resize_term_ex(state.h / font_height, state.w / font_width);
 
+  state = make_topline(state, s);
+  state = new_column_command(state, s);
+  state = new_column_command(state, s);
+  state.active_buffer = 0;
   }
 
 engine::~engine()

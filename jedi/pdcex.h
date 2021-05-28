@@ -10,7 +10,8 @@ enum screen_ex_type
   SET_TEXT_EDITOR,
   SET_TEXT_COMMAND,
   SET_TEXT_OPERATION,
-  SET_LINENUMBER
+  SET_LINENUMBER,
+  SET_PLUS
   };
 
 struct screen_ex_pixel
@@ -18,6 +19,7 @@ struct screen_ex_pixel
   screen_ex_pixel() : type(SET_NONE), pos() {}
   position pos;
   screen_ex_type type;
+  uint32_t buffer_id;
   };
 
 struct screen_ex
@@ -32,7 +34,7 @@ struct screen_ex
 extern screen_ex pdc_ex;
 
 void resize_term_ex(int ilines, int icols);
-void add_ex(position pos, screen_ex_type type);
+void add_ex(position pos, uint32_t buffer_id, screen_ex_type type);
 screen_ex_pixel get_ex(int row, int col);
 void invalidate_range(int x, int y, int cols, int rows);
 void invalidate_ex();

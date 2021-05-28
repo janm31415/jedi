@@ -19,6 +19,10 @@ extern "C"
 
 #define COMMAND_COLOR (A_NORMAL | COLOR_PAIR(command_color))
 
+#define TOPLINE_COMMAND_COLOR (A_NORMAL | COLOR_PAIR(topline_command_color))
+
+#define COLUMN_COMMAND_COLOR (A_NORMAL | COLOR_PAIR(column_command_color))
+
 
 const syntax_highlighter& get_syntax_highlighter()
   {
@@ -144,8 +148,9 @@ int columns_reserved_for_line_numbers(int64_t scroll_row, const settings& s)
   return 0;
   }
   
-
-#define MULTILINEOFFSET 10
+bool is_command_window(e_window_type wt) {
+  return wt != e_window_type::wt_normal;
+}
 
 bool line_can_be_wrapped(line ln, int maxcol, int maxrow, const env_settings& senv)
   {
@@ -171,9 +176,10 @@ Returns an x offset (let's call it multiline_offset_x) such that
   int x = (int)current.col + multiline_offset_x + wide_characters_offset;
 equals the x position in the screen of where the next character should come.
 This makes it possible to further fill the line with spaces after calling "draw_line".
-*/
-int draw_line(int& wide_characters_offset, file_buffer fb, position& current, position cursor, position buffer_pos, position underline, chtype base_color, int& r, int yoffset, int xoffset, int maxcol, int maxrow, std::optional<position> start_selection, bool rectangular, bool active, screen_ex_type set_type, const keyword_data& kd, bool wrap, const settings& s, const env_settings& senv)
+ */
+int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, position& current, position cursor, position buffer_pos, position underline, chtype base_color, int& r, int yoffset, int xoffset, int maxcol, int maxrow, std::optional<position> start_selection, bool rectangular, bool active, screen_ex_type set_type, const keyword_data& kd, bool wrap, const settings& s, const env_settings& senv, int wx, int wy)
   {
+  int MULTILINEOFFSET = 10;
   auto tt = get_text_type(fb, current.row);
 
   line ln = fb.content[current.row];
@@ -245,6 +251,10 @@ int draw_line(int& wide_characters_offset, file_buffer fb, position& current, po
   if (multiline)
     {
     int pagewidth = maxcol - 2 - MULTILINEOFFSET;
+    if (pagewidth <= 0) {
+      MULTILINEOFFSET = (maxcol - 2)/2;
+      pagewidth = maxcol - 2 - MULTILINEOFFSET;
+    }
     int64_t len_to_cursor = line_length_up_to_column(ln, multiline_ref_col - 1, senv);
     page = len_to_cursor / pagewidth;
     if (page != 0)
@@ -265,9 +275,9 @@ int draw_line(int& wide_characters_offset, file_buffer fb, position& current, po
         wide_characters_offset = length_done - (current.col - 1);
         xoffset -= current.col + wide_characters_offset;
         }
-      move((int)r + yoffset, (int)current.col + xoffset + wide_characters_offset);
+      move((int)r + yoffset+wy, (int)current.col + xoffset + wide_characters_offset+wx);
       attron(COLOR_PAIR(multiline_tag));
-      add_ex(position(), SET_NONE);
+      add_ex(position(), buffer_id, SET_NONE);
       addch('$');
       attron(base_color);
       ++xoffset;
@@ -347,12 +357,12 @@ int draw_line(int& wide_characters_offset, file_buffer fb, position& current, po
     if (current == underline)
       attron(A_UNDERLINE | A_ITALIC);
 
-    move((int)r + yoffset, (int)current.col + xoffset + wide_characters_offset);
+    move((int)r + yoffset+wy, (int)current.col + xoffset + wide_characters_offset+wx);
     auto character = *it;
     uint32_t cwidth = character_width(character, current.col + wide_characters_offset, senv);
     for (int32_t cnt = 0; cnt < cwidth; ++cnt)
       {
-      add_ex(current, set_type);
+      add_ex(current, buffer_id, set_type);
       addch(character_to_pdc_char(character, cnt, s));
       ++drawn;
       if (drawn == maxcol)
@@ -366,7 +376,7 @@ int draw_line(int& wide_characters_offset, file_buffer fb, position& current, po
           if (r >= maxrow)
             break; // test this
           wide_characters_offset = -(int)current.col - 1;
-          move((int)r + yoffset, (int)current.col + xoffset + wide_characters_offset);
+          move((int)r + yoffset+wy, (int)current.col + xoffset + wide_characters_offset+wx);
           wide_characters_offset -= cnt;
           }
         else
@@ -387,7 +397,7 @@ int draw_line(int& wide_characters_offset, file_buffer fb, position& current, po
     {
     attroff(A_REVERSE);
     attron(COLOR_PAIR(multiline_tag));
-    add_ex(position(), SET_NONE);
+    add_ex(position(), buffer_id, SET_NONE);
     addch('$');
     attron(base_color);
     ++xoffset;
@@ -401,6 +411,8 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
   int offset_x = reserved + 2;
   int offset_y = 0;
   int maxcol = w.cols - offset_x;
+  //if (is_command_window(w.wt))
+  //  --maxcol; // one free spot at the end for the plus sign for dragging
   int maxrow = w.rows;
   position current;
   current.row = bd.scroll_row;
@@ -421,26 +433,37 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
 
   const keyword_data& kd = get_keywords(bd.buffer.name);
   
-  screen_ex_type set_type = SET_NONE;
-  if (w.wt == e_window_type::wt_topline)
+  screen_ex_type set_type = SET_TEXT_EDITOR;
+  if (is_command_window(w.wt))
     set_type = SET_TEXT_COMMAND;
-  if (w.wt == e_window_type::wt_column_command)
-    set_type = SET_TEXT_COMMAND;
-  if (w.wt == e_window_type::wt_command)
-    set_type = SET_TEXT_COMMAND;
-  if (w.wt == e_window_type::wt_normal)
-    set_type = SET_TEXT_EDITOR;
 
-  attrset(DEFAULT_COLOR);
+  auto main_color = DEFAULT_COLOR;
+
+  if (w.wt == e_window_type::wt_command)
+    main_color = COMMAND_COLOR;
+  else if (w.wt == e_window_type::wt_topline)
+    main_color = TOPLINE_COMMAND_COLOR;
+  else if (w.wt == e_window_type::wt_column_command)
+    main_color = COLUMN_COMMAND_COLOR;
+  
+  attrset(main_color);
 
   int r = 0;
   for (; r < maxrow; ++r)
     {
-    if (s.show_line_numbers)
+    if (is_command_window(w.wt)) {
+      for (int x = 0; x < offset_x; ++x)
+        {
+        move((int)r + offset_y + w.y, (int)x + w.x);
+        add_ex(current, bd.buffer_id, set_type);
+        addch(' ');
+        }
+      }
+    else if (s.show_line_numbers)
       {
       attrset(A_NORMAL | COLOR_PAIR(linenumbers_color));
       const int64_t line_nr = current.row + 1;
-      move((int)r + offset_y, offset_x - number_of_digits(line_nr) - 1);
+      move((int)r + offset_y + w.y, offset_x - number_of_digits(line_nr) - 1 + w.x);
       std::stringstream str;
       str << line_nr;
       std::string line_nr_str;
@@ -451,45 +474,62 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
         }
       for (int p = 2; p < offset_x; ++p)
         {
-        move((int)r + offset_y, p);
-        add_ex(position(line_nr - 1, 0), SET_LINENUMBER);
+        move((int)r + offset_y + w.y, p + w.x);
+        add_ex(position(line_nr - 1, 0), bd.buffer_id, SET_LINENUMBER);
         }
       attrset(DEFAULT_COLOR);
       }
+      
+    //if (is_command_window(w.wt))
+    //  attrset(COMMAND_COLOR);
+      
     current.col = 0;
     if (current.row >= bd.buffer.content.size())
       {
+      int x = 0;
       if (bd.buffer.content.empty() && active) // file is empty, draw cursor
         {
-        move((int)r + offset_y, (int)current.col + offset_x);
+        move((int)r + offset_y + w.y, (int)current.col + offset_x + w.x);
         attron(A_REVERSE);
-        add_ex(position(0, 0), set_type);
+        add_ex(position(0, 0), bd.buffer_id, set_type);
         addch(' ');
         attroff(A_REVERSE);
+        ++x;
         }
-      break;
+      auto last_pos = get_last_position(bd.buffer);
+      for (; x < maxcol; ++x)
+        {
+        move((int)r + offset_y + w.y, (int)x + offset_x + w.x);
+        add_ex(last_pos, bd.buffer_id, set_type);
+        addch(' ');
+        }
+      ++current.row;
+      continue;
+      //break;
       }
 
     int wide_characters_offset = 0;
-    int multiline_offset_x = draw_line(wide_characters_offset, bd.buffer, current, cursor, bd.buffer.pos, underline, DEFAULT_COLOR, r, offset_y, offset_x, maxcol, maxrow, bd.buffer.start_selection, bd.buffer.rectangular_selection, active, set_type, kd, s.wrap, s, senv);
+    int multiline_offset_x = draw_line(wide_characters_offset, bd.buffer, bd.buffer_id, current, cursor, bd.buffer.pos, underline,
+    main_color, r, offset_y, offset_x, maxcol, maxrow, bd.buffer.start_selection,
+    bd.buffer.rectangular_selection, active, set_type, kd, s.wrap, s, senv, w.x, w.y);
 
     int x = (int)current.col + multiline_offset_x + wide_characters_offset;
     if (!has_nontrivial_selection && (current == cursor))
       {
-      move((int)r + offset_y, x);
+      move((int)r + offset_y+w.y, x+w.x);
       assert(current.row == bd.buffer.content.size() - 1);
       assert(current.col == bd.buffer.content.back().size());
       attron(A_REVERSE);
-      add_ex(current, set_type);
+      add_ex(current, bd.buffer_id, set_type);
       addch(' ');
       ++x;
       ++current.col;
       }
     attroff(A_REVERSE);
-    while (x < maxcol)
+    while (x < offset_x+maxcol)
       {
-      move((int)r + offset_y, (int)x);
-      add_ex(current, set_type);
+      move((int)r + offset_y+w.y, (int)x+w.x);
+      add_ex(current, bd.buffer_id, set_type);
       addch(' ');
       ++current.col;
       ++x;
@@ -501,9 +541,22 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
   auto last_pos = get_last_position(bd.buffer);
   for (; r < maxrow; ++r)
     {
-    move((int)r + offset_y, offset_x);
-    add_ex(last_pos, set_type);
+    move((int)r + offset_y+w.y, offset_x+w.x);
+    add_ex(last_pos, bd.buffer_id, set_type);
     }
+    
+  if (is_command_window(w.wt)) {
+    if (w.wt == e_window_type::wt_command)
+      attron(COLOR_PAIR(command_plus));
+    else if (w.wt == e_window_type::wt_topline)
+      attron(COLOR_PAIR(topline_command_plus));
+    else if (w.wt == e_window_type::wt_column_command)
+      attron(COLOR_PAIR(column_command_plus));
+    move((int)(maxrow-1) + offset_y+w.y, offset_x+maxcol-1+w.x);
+    add_ex(last_pos, bd.buffer_id, SET_PLUS);
+    addch('+');
+  }
+  
 }
 
 app_state draw(app_state state, const settings& s) {

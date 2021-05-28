@@ -84,11 +84,16 @@ void init_colors(const settings& s)
 
   init_pair(default_color, jed_editor_text, jed_editor_bg);
   init_pair(command_color, jed_command_text, jed_command_bg);
+  init_pair(column_command_color, jed_command_text, jed_editor_bg);
+  init_pair(topline_command_color, jed_command_text, jed_command_bg);
   init_pair(multiline_tag_editor, jed_editor_tag, jed_editor_bg);
   init_pair(multiline_tag_command, jed_command_tag, jed_command_bg);
 
   init_pair(scroll_bar_b_editor, jed_command_bg, jed_editor_bg);
   init_pair(scroll_bar_f_editor, jed_editor_tag, jed_editor_bg);
+  init_pair(command_plus, jed_editor_tag, jed_command_bg);
+  init_pair(column_command_plus, jed_editor_tag, jed_editor_bg);
+  init_pair(topline_command_plus, jed_editor_tag, jed_command_bg);
 
   init_pair(title_bar, jed_title_text, jed_title_bg);
 

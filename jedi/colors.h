@@ -6,6 +6,8 @@ enum e_color
   {
   default_color = 1,
   command_color,
+  column_command_color,
+  topline_command_color,
   linenumbers_color,
   multiline_tag_editor,
   multiline_tag_command,
@@ -15,7 +17,10 @@ enum e_color
   comment_color,
   string_color,
   keyword_color,
-  keyword_2_color
+  keyword_2_color,
+  command_plus,
+  column_command_plus,
+  topline_command_plus
   };
 
 void init_colors(const settings& s);

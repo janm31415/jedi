@@ -17,11 +17,12 @@ void resize_term_ex(int ilines, int icols)
   pdc_ex.data.resize(ilines*icols);
   }
 
-void add_ex(position pos, screen_ex_type type)
+void add_ex(position pos, uint32_t buffer_id, screen_ex_type type)
   {
   screen_ex_pixel sp;
   sp.pos = pos;
   sp.type = type;
+  sp.buffer_id = buffer_id;
   int index = stdscr->_curx + pdc_ex.cols*stdscr->_cury;
   pdc_ex.data[index] = sp;
   }
