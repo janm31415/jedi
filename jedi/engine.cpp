@@ -150,6 +150,8 @@ app_state resize_windows(app_state state, const settings& s) {
   state.windows[state.g.topline_window_id].x = 0;
   state.windows[state.g.topline_window_id].y = 0;
   state.windows[state.g.topline_window_id].cols = cols;
+  if (state.windows[state.g.topline_window_id].rows <= 0)
+    state.windows[state.g.topline_window_id].rows = 1;
   if (state.windows[state.g.topline_window_id].rows > rows)
     state.windows[state.g.topline_window_id].rows = rows;
   int start_row = state.windows[state.g.topline_window_id].rows;
@@ -161,6 +163,8 @@ app_state resize_windows(app_state state, const settings& s) {
     state.windows[c.column_command_window_id].y = start_row;
     state.windows[c.column_command_window_id].cols = right-left;
     int available_rows = rows - state.windows[state.g.topline_window_id].rows;
+    if (state.windows[c.column_command_window_id].rows <= 0)
+      state.windows[c.column_command_window_id].rows = 1;
     if (state.windows[c.column_command_window_id].rows > available_rows)
       state.windows[c.column_command_window_id].rows = available_rows;
     available_rows = rows - state.windows[state.g.topline_window_id].rows - state.windows[c.column_command_window_id].rows;
@@ -170,6 +174,8 @@ app_state resize_windows(app_state state, const settings& s) {
       int bottom = row_offset + (int)(available_rows*ci.bottom_layer);
       auto wp = state.window_pairs[ci.window_pair_id];
       int available_rows_for_command = bottom-top;
+      if (state.windows[wp.command_window_id].rows <= 0)
+        state.windows[wp.command_window_id].rows = 1;
       if (state.windows[wp.command_window_id].rows > available_rows_for_command)
         state.windows[wp.command_window_id].rows = available_rows_for_command;
       state.windows[wp.command_window_id].cols = right-left;

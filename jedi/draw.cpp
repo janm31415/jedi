@@ -256,6 +256,8 @@ int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, p
       MULTILINEOFFSET = (maxcol - 2)/2;
       pagewidth = maxcol - 2 - MULTILINEOFFSET;
     }
+    if (pagewidth <= 0)
+      return xoffset;
     int64_t len_to_cursor = line_length_up_to_column(ln, multiline_ref_col - 1, senv);
     page = len_to_cursor / pagewidth;
     if (page != 0)
