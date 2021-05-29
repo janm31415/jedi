@@ -1027,8 +1027,10 @@ std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, b
   screen_ex_pixel p = get_ex(y, x);
   mouse.left_button_down = true;
   
-  if (p.buffer_id != 0xffffffff)
-    state.active_buffer = p.buffer_id;
+  if (p.buffer_id == 0xffffffff)
+    return state;
+
+  state.active_buffer = p.buffer_id;
 
   if (p.type == SET_SCROLLBAR_EDITOR)
     {
@@ -1403,6 +1405,8 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   state.w = s.w * font_width;
   state.h = s.h * font_height;
 
+
+  s.show_line_numbers = false;
 
   nodelay(stdscr, TRUE);
   noecho();

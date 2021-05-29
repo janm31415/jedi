@@ -464,6 +464,8 @@ void draw_scroll_bars(const window& w, const buffer_data& bd, const settings& s,
 void get_window_edit_range(int& offset_x, int& offset_y, int& maxcol, int& maxrow, int64_t scroll_row, const window& w, const settings& s) {
   int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(scroll_row, s) : 0;
   offset_x = reserved + 2;
+  if (w.wt == e_window_type::wt_command)
+    ++offset_x; // extra space for drag icon
   offset_y = 0;
   maxcol = w.cols - offset_x;
   maxrow = w.rows;
@@ -517,13 +519,25 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
   for (; r < maxrow; ++r)
     {
     if (is_command_window(w.wt)) {
-      for (int x = 0; x < offset_x; ++x)
-        {
-        move((int)r + offset_y + w.y, (int)x + w.x);
-        add_ex(current, bd.buffer_id, set_type);
-        addch(' ');
+      if (r == 0 && w.wt == e_window_type::wt_command) {
+        // draw icon
+        move(offset_y+w.y, w.x);
+        add_ex(current, bd.buffer_id, SET_COMMAND_ICON);
+        addch('[');
+        move(offset_y+w.y, w.x+1);
+        add_ex(current, bd.buffer_id, SET_COMMAND_ICON);
+        addch('X');
+        move(offset_y+w.y, w.x+2);
+        add_ex(current, bd.buffer_id, SET_COMMAND_ICON);
+        addch(']');
+      } else {
+        for (int x = 0; x < offset_x; ++x) {
+          move((int)r + offset_y + w.y, (int)x + w.x);
+          add_ex(current, bd.buffer_id, SET_COMMAND_OFFSET_SPACE);
+          addch(' ');
         }
       }
+    }
     else if (s.show_line_numbers)
       {
       attrset(A_NORMAL | COLOR_PAIR(linenumbers_color));

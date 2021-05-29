@@ -11,7 +11,9 @@ enum screen_ex_type
   SET_TEXT_COMMAND,
   SET_TEXT_OPERATION,
   SET_LINENUMBER,
-  SET_PLUS
+  SET_PLUS,
+  SET_COMMAND_ICON,
+  SET_COMMAND_OFFSET_SPACE
   };
 
 struct screen_ex_pixel

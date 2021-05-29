@@ -54,5 +54,6 @@ void invalidate_ex()
   for (auto& p : pdc_ex.data)
     {
     p.type = SET_NONE;
+    p.buffer_id = 0xffffffff;
     }
   }
