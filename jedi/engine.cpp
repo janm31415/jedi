@@ -1536,6 +1536,9 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
   mouse.middle_button_down = false;
 
   screen_ex_pixel p = get_ex(y, x);
+  
+  if (p.buffer_id == 0xffffffff)
+    return state;
 
   if (p.type == SET_SCROLLBAR_EDITOR)
     {
@@ -1556,7 +1559,7 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
   if (p.type == SET_TEXT_EDITOR || p.type == SET_TEXT_COMMAND)
     {
     // to add when implementing commands
-    std::wstring command = find_command(get_active_buffer(state), p.pos, s);
+    std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
     return execute(state, p.buffer_id, command, s);
     }
 
