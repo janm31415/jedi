@@ -198,6 +198,105 @@ app_state resize_windows(app_state state, const settings& s) {
   }
   return state;
 }
+
+/*
+app_state add_error_window(app_state state)
+  {
+  
+  }
+  
+app_state add_error_text(app_state state, const std::string& errortext)
+  {
+  std::string error_filename("+Errors");
+  int64_t buffer_id = -1;
+  for (const auto& w : state.windows)
+    {
+    if (w.wt == wt_normal)
+      {
+      const auto& f = state.buffers[w.buffer_id].buffer;
+      if (f.name == error_filename)
+        buffer_id = w.buffer_id;
+      }
+    }
+
+  if (buffer_id < 0)
+    {
+    state = add_error_window(state);
+    buffer_id = state.buffers.size() - 1;
+    }
+  auto active = state.active_buffer;
+  state.active_buffer = buffer_id;
+  
+  
+  get_active_buffer(state).pos = get_last_position(get_active_buffer(state));
+  bool added_newline = false;
+  std::stringstream ss;
+  ss << "a/";
+  if (!get_active_buffer(state).content.empty())
+    {
+    ss << resolve_jamlib_escape_characters("\n");
+    added_newline = true;
+    }
+  ss << resolve_jamlib_escape_characters(errortext) << "/";
+  state.file_state = *jamlib::handle_command(state.file_state, ss.str());
+  if (added_newline)
+    ++state.file_state.files[file_id].dot.r.p1;
+  state = check_boundaries(state, state.windows[state.file_id_to_window_id[file_id]].word_wrap);
+  state.file_state.active_file = active;
+  return state;
+
+  }
+*/
+
+std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_id, const settings& s) {
+  return state;
+}
+
+
+std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_id, const settings& s) {
+  for (uint32_t i = 0; i < state.g.columns.size(); ++i)
+    {
+    auto& c = state.g.columns[i];
+    if (state.windows[c.column_command_window_id].buffer_id == buffer_id)
+      {
+      std::stringstream str;
+      bool show_error_window = false;
+      for (const auto& ci : c.items)
+        {
+        auto& wp = state.window_pairs[ci.window_pair_id];
+        auto& f = state.buffers[state.windows[wp.window_id].buffer_id].buffer;
+        if (f.modification_mask==1)
+          {
+          show_error_window = true;
+          str << f.name << " modified\n";
+          f.modification_mask = 2;
+          }
+        }
+      if (show_error_window)
+        {
+        //return add_error_text(state, str.str());
+        }
+      else
+        {
+        int sz = c.items.size();
+        for (int j = sz - 1; j >= 0; --j)
+          {
+          auto ci = state.g.columns[i].items[j];
+          int64_t id = state.windows[state.window_pairs[ci.window_pair_id].window_id].buffer_id;
+          state = *command_delete_window(state, id, s);
+          }
+        double right = state.g.columns[i].right;
+        if (i)
+          state.g.columns[i - 1].right = right;
+        else if (state.g.columns.size() > 1)
+          state.g.columns[1].left = 0.0;
+        state.g.columns.erase(state.g.columns.begin() + i);
+        return resize_windows(state, s);
+        }
+      }
+    }
+  return state;
+}
   
 std::optional<app_state> command_new_column(app_state state, uint32_t, const settings& s) {
   int rows, cols;
@@ -1038,6 +1137,8 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
   {L"Exit", command_exit},
   {L"New", command_new_window},
   {L"Newcol", command_new_column},
+  {L"Delcol", command_delete_column},
+  {L"Del", command_delete_window}
   };
 
 const auto executable_commands_with_parameters = std::map<std::wstring, std::function<std::optional<app_state>(app_state, std::wstring&, settings&)>>
@@ -1578,6 +1679,9 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
   mouse.right_button_down = false;
 
   screen_ex_pixel p = get_ex(y, x);
+  
+  if (p.buffer_id == 0xffffffff)
+    return state;
 
   if (p.type == SET_SCROLLBAR_EDITOR)
     {
@@ -1592,7 +1696,7 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
 
   if (p.type == SET_TEXT_EDITOR || p.type == SET_TEXT_COMMAND)
     {
-    //std::wstring command = find_command(state.buffer, p.pos, s);
+    //std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
     //return load(state, command, s);
     }
 
