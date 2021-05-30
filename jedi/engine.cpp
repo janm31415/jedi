@@ -199,13 +199,15 @@ app_state resize_windows(app_state state, const settings& s) {
   return state;
 }
 
-/*
-app_state add_error_window(app_state state)
+
+app_state add_error_window(app_state state, const settings& s)
   {
-  
+  state = *command_new_window(state, 0, s);
+  state.buffers.back().buffer.name = "+Errors";
+  return state;
   }
   
-app_state add_error_text(app_state state, const std::string& errortext)
+app_state add_error_text(app_state state, const std::string& errortext, const settings& s)
   {
   std::string error_filename("+Errors");
   int64_t buffer_id = -1;
@@ -221,34 +223,144 @@ app_state add_error_text(app_state state, const std::string& errortext)
 
   if (buffer_id < 0)
     {
-    state = add_error_window(state);
+    state = add_error_window(state, s);
     buffer_id = state.buffers.size() - 1;
     }
   auto active = state.active_buffer;
   state.active_buffer = buffer_id;
-  
-  
   get_active_buffer(state).pos = get_last_position(get_active_buffer(state));
-  bool added_newline = false;
-  std::stringstream ss;
-  ss << "a/";
-  if (!get_active_buffer(state).content.empty())
-    {
-    ss << resolve_jamlib_escape_characters("\n");
-    added_newline = true;
-    }
-  ss << resolve_jamlib_escape_characters(errortext) << "/";
-  state.file_state = *jamlib::handle_command(state.file_state, ss.str());
-  if (added_newline)
-    ++state.file_state.files[file_id].dot.r.p1;
-  state = check_boundaries(state, state.windows[state.file_id_to_window_id[file_id]].word_wrap);
-  state.file_state.active_file = active;
+
+  get_active_buffer(state) = insert(get_active_buffer(state), errortext, convert(s));
+
+  state.active_buffer = active;
   return state;
 
   }
-*/
+
 
 std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_id, const settings& s) {
+  for (uint32_t i = 0; i < state.g.columns.size(); ++i)
+    {
+    auto& c = state.g.columns[i];
+    for (uint32_t j = 0; j < c.items.size(); ++j)
+      {
+      auto ci = c.items[j];
+      auto& wp = state.window_pairs[ci.window_pair_id];
+      if (state.windows[wp.command_window_id].buffer_id == buffer_id || state.windows[wp.window_id].buffer_id == buffer_id)
+        {
+        auto& w = state.windows[wp.window_id];
+        auto& f = state.buffers[w.buffer_id];
+        if (f.buffer.modification_mask == 1)
+          {
+          f.buffer.modification_mask = 2;
+          std::stringstream str;
+          str << f.buffer.name << " modified";
+          return add_error_text(state, str.str(), s);
+          }
+        else
+          {
+          //invalidate_column_item(state, i, j);
+          c.items.erase(c.items.begin() + j);
+
+          int64_t f1 = w.buffer_id;
+          int64_t f2 = state.windows[wp.command_window_id].buffer_id;
+          if (f1 > f2)
+            std::swap(f1, f2);
+            
+          state = *command_kill(state, f1, s);
+          state = *command_kill(state, f2, s);
+
+          state.buffers.erase(state.buffers.begin() + f2);
+          state.buffers.erase(state.buffers.begin() + f1);
+
+          int64_t w1 = state.buffer_id_to_window_id[f1];
+          int64_t w2 = state.buffer_id_to_window_id[f2];
+          if (w1 > w2)
+            std::swap(w1, w2);
+
+          state.buffer_id_to_window_id.erase(state.buffer_id_to_window_id.begin() + f2);
+          state.buffer_id_to_window_id.erase(state.buffer_id_to_window_id.begin() + f1);
+
+          auto wp_id = ci.window_pair_id;
+          state.window_pairs.erase(state.window_pairs.begin() + ci.window_pair_id);
+
+          state.windows.erase(state.windows.begin() + w2);
+          state.windows.erase(state.windows.begin() + w1);
+          for (auto& buff : state.buffers)
+            {
+            if (buff.buffer_id > f2)
+              --buff.buffer_id;
+            if (buff.buffer_id > f1)
+              --buff.buffer_id;
+            }
+            
+          for (auto& win : state.windows)
+            {
+            if (win.buffer_id > f2)
+              --win.buffer_id;
+            if (win.buffer_id > f1)
+              --win.buffer_id;
+            }
+          for (auto& fid2winid : state.buffer_id_to_window_id)
+            {
+            if (fid2winid > w2)
+              --fid2winid;
+            if (fid2winid > w1)
+              --fid2winid;
+            }
+          for (auto& winp : state.window_pairs)
+            {
+            if (winp.command_window_id > w2)
+              --winp.command_window_id;
+            if (winp.command_window_id > w1)
+              --winp.command_window_id;
+            if (winp.window_id > w2)
+              --winp.window_id;
+            if (winp.window_id > w1)
+              --winp.window_id;
+            }
+          if (state.g.topline_window_id > w2)
+            --state.g.topline_window_id;
+          if (state.g.topline_window_id > w1)
+            --state.g.topline_window_id;
+          for (auto& col : state.g.columns)
+            {
+            if (col.column_command_window_id > w2)
+              --col.column_command_window_id;
+            if (col.column_command_window_id > w1)
+              --col.column_command_window_id;
+            for (auto& colitem : col.items)
+              {
+              if (colitem.window_pair_id > wp_id)
+                --colitem.window_pair_id;
+              }
+            }
+          if (state.active_buffer == f1 || state.active_buffer == f2)
+            {
+            if (c.items.empty())
+              state.active_buffer = 0;
+            else
+              {
+              if (j >= c.items.size())
+                j = c.items.size() - 1;
+              state.active_buffer = state.windows[state.window_pairs[c.items[j].window_pair_id].window_id].buffer_id;
+              }
+            }
+          else
+            {
+            if (state.active_buffer > f2)
+              --state.active_buffer;
+            if (state.active_buffer > f1)
+              --state.active_buffer;
+            }
+          if (state.g.columns[i].items.empty())
+            return state;
+          //return optimize_column(state, state.windows[state.window_pairs[state.g.columns[i].items.back().window_pair_id].window_id].buffer_id);
+          return resize_windows(state, s);
+          }
+        }
+      }
+    }
   return state;
 }
 
@@ -274,7 +386,7 @@ std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_
         }
       if (show_error_window)
         {
-        //return add_error_text(state, str.str());
+        return add_error_text(state, str.str(), s);
         }
       else
         {
@@ -1397,7 +1509,7 @@ app_state execute_external_input_output(app_state state, const std::string& file
   }
   
 
-std::optional<app_state> command_kill(app_state state, int64_t buffer_id, settings& s)
+std::optional<app_state> command_kill(app_state state, int64_t buffer_id, const settings& s)
   {
 #ifdef _WIN32
   if (state.buffers[buffer_id].bt == bt_piped)
