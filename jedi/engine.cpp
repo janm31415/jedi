@@ -1403,7 +1403,7 @@ std::optional<app_state> command_kill(app_state state, int64_t buffer_id, settin
   if (state.buffers[buffer_id].bt == bt_piped)
     {
     jtk::destroy_pipe(state.buffers[buffer_id].process, 9);
-    state.state.buffers[buffer_id].process = nullptr;
+    state.buffers[buffer_id].process = nullptr;
     state.buffers[buffer_id].bt = bt_normal;
     }
 #else
