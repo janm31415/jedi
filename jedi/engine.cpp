@@ -468,7 +468,7 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
   uint32_t editor_id = (uint32_t)state.buffers.size();
   buffer_data bd2 = make_empty_buffer_data();
   bd2.buffer_id = editor_id;
-  bd2.buffer = insert(bd2.buffer, "Type here", convert(s), false);
+  //bd2.buffer = insert(bd2.buffer, "Type here", convert(s), false);
   state.buffers.push_back(bd2);
   window w = make_window(editor_id, 0, 1, cols, 1, e_window_type::wt_normal);
   uint32_t window_id = (uint32_t)state.windows.size();
@@ -2041,7 +2041,7 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   state.h = s.h * font_height;
 
 
-  s.show_line_numbers = false;
+  s.show_line_numbers = true;
 
   nodelay(stdscr, TRUE);
   noecho();

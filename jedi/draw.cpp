@@ -569,7 +569,7 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
     if (current.row >= bd.buffer.content.size())
       {
       int x = 0;
-      if (bd.buffer.content.empty() && active) // file is empty, draw cursor
+      if (bd.buffer.content.empty() && active && r == 0) // file is empty, draw cursor
         {
         move((int)r + offset_y + w.y, (int)current.col + offset_x + w.x);
         attron(A_REVERSE);
