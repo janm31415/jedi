@@ -242,31 +242,6 @@ std::string get_command_text(const app_state& state, uint32_t buffer_id, const s
   str << " ";
   return str.str();
   }
-
-void get_first_word_positions(position& start, position& stop, const app_state& state, uint32_t buffer_id, const settings& s) {
-  const auto& fb = state.buffers[buffer_id].buffer;
-  position pos(0, 0);
-  position lastpos = get_last_position(fb.content);
-  start = position(-1, -1);
-  stop = lastpos;
-  bool inside_string = false;
-  while (pos != lastpos) {
-    wchar_t current_char = fb.content[pos.row][pos.col];
-    if (current_char == L' ') {
-      if (start.col >= 0 && !inside_string) {
-        stop = pos;
-        return;
-      }
-    } else {
-      if (start.col < 0) {
-        start = pos;
-      }
-      if (current_char == L'"')
-        inside_string = !inside_string;
-    }
-    pos = get_next_position(fb, pos);
-  }
-}
   
 bool should_update_command_text(const app_state& state, uint32_t buffer_id, const settings& s) {
   assert(this_is_a_command_window(state, buffer_id));
@@ -281,6 +256,8 @@ bool should_update_command_text(const app_state& state, uint32_t buffer_id, cons
   pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
   auto current_text = to_string(fb.content, pos_del, pos_bar);
   auto text = get_command_text(state, buffer_id, s);
+  remove_whitespace(current_text);
+  remove_whitespace(text);
   return text != current_text;
 }
 
@@ -288,6 +265,7 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
   assert(this_is_a_command_window(state, buffer_id));
   auto text = get_command_text(state, buffer_id, s);
   auto& fb = state.buffers[buffer_id].buffer;
+  auto original_position = fb.pos;
   auto pos_del = find_next_occurence(fb.content, position(0, 0), L" Del ");
   if (pos_del.col < 0) {
     auto pos_bar = find_next_occurence(fb.content, position(0, 0), L'|');
@@ -295,10 +273,14 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
       fb.pos = get_last_position(fb);
       text.push_back(L'|');
       fb = insert(fb, text, convert(s), false);
+      if (original_position < get_last_position(fb))
+        fb.pos = original_position;
       return state;
     }
     fb.pos = pos_bar;
     fb = insert(fb, text, convert(s), false);
+    if (original_position < get_last_position(fb))
+      fb.pos = original_position;
     return state;
   }
   auto pos_bar = find_next_occurence(fb.content, pos_del, L'|');
@@ -306,6 +288,8 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
     fb.pos = get_last_position(fb);
     text.push_back(L'|');
     fb = insert(fb, text, convert(s), false);
+    if (original_position < get_last_position(fb))
+      fb.pos = original_position;
     return state;
   }
   pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
@@ -313,8 +297,26 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
   fb.start_selection = pos_del;
   fb.pos = pos_bar;
   fb = erase(fb, convert(s), false);
+  text.push_back(L'|');
   fb = insert(fb, text, convert(s), false);
+  if (original_position < get_last_position(fb))
+    fb.pos = original_position;
+  return state;
+}
 
+app_state update_filename(app_state state, uint32_t buffer_id, const settings& s) {
+  assert(this_is_a_command_window(state, buffer_id));
+  assert(!should_update_command_text(state, buffer_id, s));
+  auto& fb = state.buffers[buffer_id].buffer;
+  auto pos_del = find_next_occurence(fb.content, position(0, 0), L" Del ");
+  auto pos_bar = find_next_occurence(fb.content, pos_del, L'|');
+  pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
+  
+  auto name = to_string(fb.content, position(0, 0), pos_del);
+  remove_whitespace(name);
+  
+  fb.name = name;
+  state.buffers[buffer_id+1].buffer.name = name;
   return state;
 }
 
@@ -2150,6 +2152,9 @@ app_state check_update_active_command_text(app_state state, const settings& s) {
     auto command_id = w.wt == e_window_type::wt_command ? buffer_id : buffer_id-1;
     if (should_update_command_text(state, command_id, s))
       state = update_command_text(state, command_id, s);
+    if (buffer_id == command_id) {
+      state = update_filename(state, buffer_id, s);
+    }
   }
   return state;
 }
