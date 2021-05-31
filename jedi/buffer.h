@@ -176,13 +176,25 @@ text to_text(std::wstring wtxt);
 
 std::string to_string(text txt);
 
+std::string to_string(text txt, position from, position to);
+
 std::wstring to_wstring(text txt);
+
+std::wstring to_wstring(text txt, position from, position to);
+
+position find_next_occurence_reverse(text txt, position starting_pos, const std::wstring& wtxt_to_find);
+
+position find_next_occurence(text txt, position starting_pos, const std::wstring& wtxt_to_find);
 
 file_buffer find_text(file_buffer fb, text txt);
 
 file_buffer find_text(file_buffer fb, const std::wstring& wtxt);
 
 file_buffer find_text(file_buffer fb, const std::string& txt);
+
+position find_next_occurence(text txt, position starting_pos, wchar_t ch);
+
+position find_next_occurence(file_buffer fb, position starting_pos, wchar_t ch);
 
 position get_next_position(text txt, position pos);
 

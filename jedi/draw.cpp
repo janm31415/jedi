@@ -137,13 +137,11 @@ inline int number_of_digits(int64_t v)
     + (int)(v >= 10000000000000000000ull);
   }
   
-int columns_reserved_for_line_numbers(int64_t scroll_row, const settings& s)
+int columns_reserved_for_line_numbers(int64_t scroll_row, int rows, const settings& s)
   {
   if (s.show_line_numbers)
     {
-    int rows, cols;
-    getmaxyx(stdscr, rows, cols);
-    scroll_row += rows - (4 + s.command_buffer_rows);
+    scroll_row += rows;
     return number_of_digits(scroll_row)+1;
     }
   return 0;
@@ -462,7 +460,7 @@ void draw_scroll_bars(const window& w, const buffer_data& bd, const settings& s,
 }
 
 void get_window_edit_range(int& offset_x, int& offset_y, int& maxcol, int& maxrow, int64_t scroll_row, const window& w, const settings& s) {
-  int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(scroll_row, s) : 0;
+  int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(scroll_row, w.rows, s) : 0;
   offset_x = reserved + 2;
   //if (w.wt == e_window_type::wt_command)
   //  offset_x+=2; // extra space for drag icon
@@ -471,7 +469,7 @@ void get_window_edit_range(int& offset_x, int& offset_y, int& maxcol, int& maxro
   maxrow = w.rows;
 }
   
-void draw_window(const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, bool active) {
+void draw_window(const app_state& state, const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, bool active) {
   //int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(bd.scroll_row, s) : 0;
   //int offset_x = reserved + 2;
   //int offset_y = 0;
@@ -521,7 +519,10 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
     if (is_command_window(w.wt)) {
       if (r == 0 && w.wt == e_window_type::wt_command) {
         // draw icon
-        attron(COLOR_PAIR(command_plus));
+        if (state.buffers[bd.buffer_id+1].buffer.modification_mask) // check whether the corresponding edit window is modified
+          attron(COLOR_PAIR(command_plus_modified));
+        else
+          attron(COLOR_PAIR(command_plus));
         move(offset_y+w.y, w.x);
         add_ex(current, bd.buffer_id, SET_COMMAND_ICON);
         //addch(ascii_to_utf16(167));
@@ -532,7 +533,10 @@ void draw_window(const window& w, const buffer_data& bd, const settings& s, cons
         //move(offset_y+w.y, w.x+2);
         //add_ex(current, bd.buffer_id, SET_COMMAND_ICON);
         //addch(']');
-        attroff(COLOR_PAIR(command_plus));
+        if (state.buffers[bd.buffer_id+1].buffer.modification_mask)
+          attroff(COLOR_PAIR(command_plus_modified));
+        else
+          attroff(COLOR_PAIR(command_plus));
       } else {
         for (int x = 0; x < offset_x; ++x) {
           move((int)r + offset_y + w.y, (int)x + w.x);
@@ -652,7 +656,7 @@ app_state draw(app_state state, const settings& s) {
   
   for (const auto& w : state.windows) {
     bool active = w.buffer_id == state.active_buffer;
-    draw_window(w, state.buffers[w.buffer_id], s, senv, active);
+    draw_window(state, w, state.buffers[w.buffer_id], s, senv, active);
   }
   
   

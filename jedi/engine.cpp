@@ -53,6 +53,7 @@ buffer_data make_empty_buffer_data() {
   bd.process = {{-1,-1,-1}};
 #endif
   bd.bt = bt_normal;
+  bd.buffer.name = "";
   return bd;
 }
 
@@ -200,10 +201,131 @@ app_state resize_windows(app_state state, const settings& s) {
 }
 
 
+std::wstring make_command_text(const app_state& state, uint32_t buffer_id, const settings& s)
+  {
+  const auto& f = state.buffers[buffer_id].buffer;
+  std::stringstream out;
+  out << f.name << " Del | " << s.command_text;
+  return jtk::convert_string_to_wstring(out.str());
+  }
+  
+bool this_is_a_command_window(const app_state& state, uint32_t command_id)
+  {
+  const auto& w = state.windows[state.buffer_id_to_window_id[command_id]];
+  if (w.wt == e_window_type::wt_command)
+    return true;
+  return false;
+  }
+  
+std::string get_command_text(const app_state& state, uint32_t buffer_id, const settings& s)
+  {
+  assert(this_is_a_command_window(state, buffer_id));
+  auto& w = state.windows[state.buffer_id_to_window_id[buffer_id]];
+  auto& f = state.buffers[buffer_id].buffer;
+  auto& textf = state.buffers[buffer_id+1].buffer;
+
+  bool put = textf.modification_mask != 0;
+  bool undo = !textf.history.empty() && textf.undo_redo_index > 0;
+  bool redo = !textf.history.empty() && textf.undo_redo_index < textf.history.size();
+
+  bool get = jtk::is_directory(f.name);
+  std::stringstream str;
+  str << " Del";
+  if (get)
+    str << " Get";
+  if (undo)
+    str << " Undo";
+  if (redo)
+    str << " Redo";
+  if (put)
+    str << " Put";
+  str << " ";
+  return str.str();
+  }
+
+void get_first_word_positions(position& start, position& stop, const app_state& state, uint32_t buffer_id, const settings& s) {
+  const auto& fb = state.buffers[buffer_id].buffer;
+  position pos(0, 0);
+  position lastpos = get_last_position(fb.content);
+  start = position(-1, -1);
+  stop = lastpos;
+  bool inside_string = false;
+  while (pos != lastpos) {
+    wchar_t current_char = fb.content[pos.row][pos.col];
+    if (current_char == L' ') {
+      if (start.col >= 0 && !inside_string) {
+        stop = pos;
+        return;
+      }
+    } else {
+      if (start.col < 0) {
+        start = pos;
+      }
+      if (current_char == L'"')
+        inside_string = !inside_string;
+    }
+    pos = get_next_position(fb, pos);
+  }
+}
+  
+bool should_update_command_text(const app_state& state, uint32_t buffer_id, const settings& s) {
+  assert(this_is_a_command_window(state, buffer_id));
+  const auto& fb = state.buffers[buffer_id].buffer;
+  
+  auto pos_del = find_next_occurence(fb.content, position(0, 0), L" Del ");
+  if (pos_del.col < 0)
+    return true;
+  auto pos_bar = find_next_occurence(fb.content, pos_del, L'|');
+  if (pos_bar.col < 0)
+    return true;
+  pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
+  auto current_text = to_string(fb.content, pos_del, pos_bar);
+  auto text = get_command_text(state, buffer_id, s);
+  return text != current_text;
+}
+
+app_state update_command_text(app_state state, uint32_t buffer_id, const settings& s) {
+  assert(this_is_a_command_window(state, buffer_id));
+  auto text = get_command_text(state, buffer_id, s);
+  auto& fb = state.buffers[buffer_id].buffer;
+  auto pos_del = find_next_occurence(fb.content, position(0, 0), L" Del ");
+  if (pos_del.col < 0) {
+    auto pos_bar = find_next_occurence(fb.content, position(0, 0), L'|');
+    if (pos_bar.col < 0) {
+      fb.pos = get_last_position(fb);
+      text.push_back(L'|');
+      fb = insert(fb, text, convert(s), false);
+      return state;
+    }
+    fb.pos = pos_bar;
+    fb = insert(fb, text, convert(s), false);
+    return state;
+  }
+  auto pos_bar = find_next_occurence(fb.content, pos_del, L'|');
+  if (pos_bar.col < 0) {
+    fb.pos = get_last_position(fb);
+    text.push_back(L'|');
+    fb = insert(fb, text, convert(s), false);
+    return state;
+  }
+  pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
+  
+  fb.start_selection = pos_del;
+  fb.pos = pos_bar;
+  fb = erase(fb, convert(s), false);
+  fb = insert(fb, text, convert(s), false);
+
+  return state;
+}
+
 app_state add_error_window(app_state state, const settings& s)
   {
   state = *command_new_window(state, 0, s);
-  state.buffers.back().buffer.name = "+Errors";
+  int64_t buffer_id = state.buffers.size()-1;
+  int64_t command_id = state.buffers.size()-2;
+  state.buffers[buffer_id].buffer.name = "+Errors";
+  state.buffers[command_id].buffer.name = "+Errors";
+  state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
   return state;
   }
   
@@ -458,7 +580,6 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
   uint32_t command_id = (uint32_t)state.buffers.size();
   buffer_data bd = make_empty_buffer_data();
   bd.buffer_id = command_id;
-  bd.buffer = insert(bd.buffer, "Del", convert(s), false);
   state.buffers.push_back(bd);
   window cw = make_window(command_id, 0, 1, cols, 1, e_window_type::wt_command);
   uint32_t command_window_id = (uint32_t)state.windows.size();
@@ -479,6 +600,8 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
   wp.command_window_id = command_window_id;
   wp.window_id = window_id;
   state.window_pairs.push_back(wp);
+  
+  state.buffers[command_id].buffer = insert(state.buffers[command_id].buffer, make_command_text(state, command_id, s), convert(s), false);
   
   column_item ci;
   ci.column_id = column_id;
@@ -2017,6 +2140,19 @@ app_state make_topline(app_state state, const settings& s) {
   state.g.topline_window_id = window_id;
   return state;
 }
+
+app_state check_update_active_command_text(app_state state, const settings& s) {
+  auto buffer_id = state.active_buffer;
+  if (buffer_id == 0xffffffff)
+    return state;
+  const auto& w = state.windows[state.buffer_id_to_window_id[buffer_id]];
+  if (w.wt == e_window_type::wt_command || w.wt == e_window_type::wt_normal) {
+    auto command_id = w.wt == e_window_type::wt_command ? buffer_id : buffer_id-1;
+    if (should_update_command_text(state, command_id, s))
+      state = update_command_text(state, command_id, s);
+  }
+  return state;
+}
   
 engine::engine(int argc, char** argv, const settings& input_settings) : s(input_settings)
   {
@@ -2080,7 +2216,7 @@ void engine::run()
 
   while (auto new_state = process_input(state, 0, s))
     {
-    state = *new_state;
+    state = check_update_active_command_text(*new_state, s);
     state = draw(state, s);
 
     SDL_UpdateWindowSurface(pdc_window);

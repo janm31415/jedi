@@ -1033,6 +1033,10 @@ std::string to_string(text txt)
     }
   return out;
   }
+  
+std::string to_string(text txt, position from, position to) {
+  return jtk::convert_wstring_to_string(to_wstring(txt, from, to));
+}
 
 std::wstring to_wstring(text txt)
   {
@@ -1049,6 +1053,16 @@ std::wstring to_wstring(text txt)
     }
   return out;
   }
+
+std::wstring to_wstring(text txt, position from, position to) {
+  std::wstring out;
+  while (from != to) {
+    wchar_t current_char = txt[from.row][from.col];
+    out.push_back(current_char);
+    from = get_next_position(txt, from);
+  }
+  return out;
+}
 
 std::string buffer_to_string(file_buffer fb)
   {
@@ -1146,6 +1160,74 @@ position get_previous_position(file_buffer fb, position pos)
   {
   return get_previous_position(fb.content, pos);
   }
+  
+position find_next_occurence_reverse(text txt, position starting_pos, const std::wstring& wtxt_to_find) {
+  position lastpos = get_last_position(txt);
+  position firstpos = position(0, 0);
+  position pos = starting_pos;
+  while (pos != firstpos) {
+    pos = get_previous_position(txt, pos);
+    bool found = true;
+    position tmp = pos;
+    for (int j = 0; j < wtxt_to_find.size(); ++j) {
+      if (tmp == lastpos) {
+        found = false;
+        break;
+      }
+      const wchar_t current_char = txt[tmp.row][tmp.col];
+      if (current_char != wtxt_to_find[j]) {
+        found = false;
+        break;
+      }
+      tmp = get_next_position(txt, tmp);
+    }
+    if (found)
+      return pos;
+  }
+  return position(-1, -1);
+}
+
+position find_next_occurence(text txt, position starting_pos, const std::wstring& wtxt_to_find) {
+  position lastpos = get_last_position(txt);
+  position pos = starting_pos;
+  while (pos != lastpos) {
+    bool found = true;
+    position tmp = pos;
+    for (int j = 0; j < wtxt_to_find.size(); ++j) {
+      if (tmp == lastpos) {
+          found = false;
+          break;
+        }
+      const wchar_t current_char = txt[tmp.row][tmp.col];
+      if (current_char != wtxt_to_find[j]) {
+        found = false;
+        break;
+      }
+      tmp = get_next_position(txt, tmp);
+    }
+    if (found)
+      return pos;
+    pos = get_next_position(txt, pos);
+    }
+  return position(-1, -1);
+}
+  
+position find_next_occurence(text txt, position starting_pos, wchar_t ch) {
+  position lastpos = get_last_position(txt);
+  position pos = starting_pos;
+  while (pos != lastpos) {
+    wchar_t current_char = txt[pos.row][pos.col];
+    if (current_char == ch) {
+      return pos;
+      }
+    pos = get_next_position(txt, pos);
+    }
+  return position(-1, -1);
+}
+
+position find_next_occurence(file_buffer fb, position starting_pos, wchar_t ch) {
+  return find_next_occurence(fb.content, starting_pos, ch);
+}
 
 file_buffer find_text(file_buffer fb, text txt)
   {

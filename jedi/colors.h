@@ -19,6 +19,7 @@ enum e_color
   keyword_color,
   keyword_2_color,
   command_plus,
+  command_plus_modified,
   column_command_plus,
   topline_command_plus
   };
