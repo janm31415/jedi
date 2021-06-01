@@ -116,7 +116,7 @@ app_state resize_font(app_state state, int font_size, settings& s)
   return state;
   }
   
-uint32_t get_column_id(const app_state& state, int64_t buffer_id)
+uint32_t get_column_id(const app_state& state, uint32_t buffer_id)
   {
   for (uint32_t i = 0; i < state.g.columns.size(); ++i)
     {
@@ -320,11 +320,24 @@ app_state update_filename(app_state state, uint32_t buffer_id, const settings& s
   return state;
 }
 
+std::string get_user_command_text(const app_state& state, uint32_t buffer_id, const settings& s) {
+  assert(this_is_a_command_window(state, buffer_id));
+  auto& fb = state.buffers[buffer_id].buffer;
+  auto pos_del = find_next_occurence(fb.content, position(0, 0), L" Del ");
+  if (pos_del.col < 0)
+    return std::string();
+  auto pos_bar = find_next_occurence(fb.content, pos_del, L'|');
+  if (pos_bar.col < 0)
+    return std::string();
+  pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
+  return to_string(fb.content, pos_bar, get_last_position(fb));
+}
+
 app_state add_error_window(app_state state, const settings& s)
   {
   state = *command_new_window(state, 0, s);
-  int64_t buffer_id = state.buffers.size()-1;
-  int64_t command_id = state.buffers.size()-2;
+  uint32_t buffer_id = state.buffers.size()-1;
+  uint32_t command_id = state.buffers.size()-2;
   state.buffers[buffer_id].buffer.name = "+Errors";
   state.buffers[command_id].buffer.name = "+Errors";
   state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
@@ -334,7 +347,7 @@ app_state add_error_window(app_state state, const settings& s)
 app_state add_error_text(app_state state, const std::string& errortext, const settings& s)
   {
   std::string error_filename("+Errors");
-  int64_t buffer_id = -1;
+  uint32_t buffer_id = 0xffffffff;
   for (const auto& w : state.windows)
     {
     if (w.wt == wt_normal)
@@ -631,7 +644,7 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
     
   state.active_buffer = editor_id;
     
-  return resize_windows(state, s);
+  return optimize_column(state, editor_id, s);
 }
 
 void get_active_window_rect_for_editing(int& offset_x, int& offset_y, int& rows, int& cols, const app_state& state, const settings& s)
@@ -1170,9 +1183,141 @@ std::optional<app_state> move_editor_window_up_down(app_state state, int steps, 
   return state;
   }
   
-std::optional<app_state> load_file(app_state state, int64_t buffer_id, const std::string& filename, settings& s)
+int compute_rows_necessary(const app_state& state, int number_of_column_cols, int number_of_rows_available, uint32_t window_pair_id)
   {
-  if (jtk::file_exists(filename))
+  uint32_t command_window_id = state.window_pairs[window_pair_id].command_window_id;
+  uint32_t window_id = state.window_pairs[window_pair_id].window_id;
+  uint32_t command_rows = state.windows[command_window_id].rows;
+  const auto& w = state.windows[window_id];
+  const auto& f = state.buffers[w.buffer_id].buffer.content;
+  int row = 0;
+  int col = 0;
+  /*
+  auto it = f.begin();
+  auto it_end = f.end();
+  for (; it != it_end; ++it)
+    {
+    if (*it == '\n')
+      {
+      col = 0;
+      ++row;
+      }
+    else if (w.word_wrap)
+      {
+      ++col;
+      if (col >= w.cols - 1)
+        {
+        col = 0;
+        ++row;
+        }
+      }
+    else
+      ++col;
+    if (row >= number_of_rows_available - command_rows)
+      break;
+    }
+  if (col != 0)
+    ++row;
+  ++row;
+  if (row < 4)
+    row = 4;
+  return row + command_rows;
+  */
+  return command_rows+4;
+  }
+  
+  
+app_state optimize_column(app_state state, uint32_t buffer_id, const settings& s)
+  {
+  int rows, cols;
+  int offsety = 0;
+  getmaxyx(stdscr, rows, cols);
+  rows -= 3; // make room for bottom operation stuff
+  rows -= state.windows[state.g.topline_window_id].rows; // subtract rows for topline window
+  offsety += state.windows[state.g.topline_window_id].rows;
+  for (uint32_t i = 0; i < state.g.columns.size(); ++i)
+    {
+    auto& c = state.g.columns[i];
+    for (const auto& ci : c.items)
+      {
+      auto& wp = state.window_pairs[ci.window_pair_id];
+      if (state.windows[wp.window_id].buffer_id == buffer_id)
+        {
+        int left = (int)std::round(c.left*cols);
+        int right = (int)std::round(c.right*cols);
+        
+        rows -= state.windows[c.column_command_window_id].rows; // subtract rows for column command window
+        offsety += state.windows[c.column_command_window_id].rows;
+        std::vector<int> nr_of_rows_necessary;
+        int total_rows = 0;
+        for (int j = 0; j < c.items.size(); ++j)
+          {
+          int top = (int)std::round(c.items[j].top_layer*rows);
+          int bottom = (int)std::round(c.items[j].bottom_layer*rows);
+          int current_rows = bottom - top;
+          if (current_rows == 0)
+            current_rows = 1;
+          nr_of_rows_necessary.push_back(compute_rows_necessary(state, right - left, rows, c.items[j].window_pair_id));
+          if (nr_of_rows_necessary.back() > current_rows)
+            nr_of_rows_necessary.back() = current_rows;
+          total_rows += nr_of_rows_necessary.back();
+          }
+        if (total_rows > rows)
+          {
+          for (auto& r : nr_of_rows_necessary)
+            {
+            double d = (double)r / (double)total_rows * (double)rows;
+            r = (int)std::floor(d);
+            if (r <= 0)
+              ++r;
+            }
+          }
+        else // all windows can be visualized
+          {
+          int extra_per_item = (rows - total_rows) / c.items.size();
+          int remainder = (rows - total_rows) % c.items.size();
+          for (int j = 0; j < nr_of_rows_necessary.size(); ++j)
+            {
+            nr_of_rows_necessary[j] += extra_per_item;
+            if (j < remainder)
+              nr_of_rows_necessary[nr_of_rows_necessary.size() - j - 1] += 1;
+            }
+          for (int j = 0; j < c.items.size(); ++j)
+            {
+            auto wp = c.items[j].window_pair_id;
+            auto& w = state.windows[state.window_pairs[wp].window_id];
+            //w.file_pos = 0;
+            //w.wordwrap_row = 0;
+            }
+          }
+        c.items.front().top_layer = 0.0;
+        for (int j = 0; j < c.items.size(); ++j)
+          {
+          c.items[j].bottom_layer = ((double)nr_of_rows_necessary[j] + c.items[j].top_layer*rows) / (double)rows;
+          if (j + 1 < c.items.size())
+            c.items[j + 1].top_layer = c.items[j].bottom_layer;
+          }
+        c.items.back().bottom_layer = 1.0;
+        return resize_windows(state, s);
+        }
+      }
+    }
+  return resize_windows(state, s);
+  }
+  
+std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const std::string& filename, settings& s)
+  {
+  if (jtk::is_directory(filename)) {
+    state = *command_new_window(state, buffer_id, s);
+    get_active_buffer(state) = read_from_file(filename);
+    int64_t command_id = state.active_buffer-1;
+    state.buffers[command_id].buffer.name = get_active_buffer(state).name;
+    get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
+    get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
+    state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
+    return check_scroll_position(state, s);
+  }
+  else if (jtk::file_exists(filename))
     {
     state = *command_new_window(state, buffer_id, s);
     get_active_buffer(state) = read_from_file(filename);
@@ -1256,7 +1401,7 @@ std::string simplify_folder(const std::string& folder)
   return simplified_folder_name;
   }
 
-std::optional<app_state> load_folder(app_state state, int64_t buffer_id, const std::string& folder, settings& s)
+std::optional<app_state> load_folder(app_state state, uint32_t buffer_id, const std::string& folder, settings& s)
   {
   std::string simplified_folder_name = simplify_folder(folder);
   if (simplified_folder_name.empty())
@@ -1268,11 +1413,16 @@ std::optional<app_state> load_folder(app_state state, int64_t buffer_id, const s
     str << "Folder " << folder << " is invalid\n";
     return add_error_text(state, str.str(), s);
     }
-  if (jtk::is_directory(state.buffers[buffer_id].buffer.name))
+  if (jtk::is_directory(state.buffers[buffer_id].buffer.name) && (state.windows[state.buffer_id_to_window_id[buffer_id]].wt == e_window_type::wt_normal))
     {
+    int64_t command_id = buffer_id-1;
     state.buffers[buffer_id].buffer = read_from_file(simplified_folder_name);
     state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
     state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+    std::string user_command_text = get_user_command_text(state, command_id, s);
+    std::string command_text = get_user_command_text(state, command_id, s);
+    std::string total_line = simplified_folder_name + command_text + "|" + user_command_text;
+    state.buffers[command_id].buffer.content = to_text(total_line);
     return check_scroll_position(state, s);
     }
   else
@@ -1281,7 +1431,7 @@ std::optional<app_state> load_folder(app_state state, int64_t buffer_id, const s
     }
   }
   
-std::optional<app_state> find_text(app_state state, int64_t buffer_id, const std::wstring& command, settings& s)
+std::optional<app_state> find_text(app_state state, uint32_t buffer_id, const std::wstring& command, settings& s)
   {
   if (state.operation == op_editing)
     {
@@ -1292,7 +1442,7 @@ std::optional<app_state> find_text(app_state state, int64_t buffer_id, const std
   return state;
   }
 
-std::optional<app_state> load(app_state state, int64_t buffer_id, const std::wstring& command, settings& s)
+std::optional<app_state> load(app_state state, uint32_t buffer_id, const std::wstring& command, settings& s)
   {
   if (command.empty())
     return state;
@@ -1801,7 +1951,7 @@ app_state execute_external_input_output(app_state state, const std::string& file
   }
   
 
-std::optional<app_state> command_kill(app_state state, int64_t buffer_id, const settings& s)
+std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, const settings& s)
   {
 #ifdef _WIN32
   if (state.buffers[buffer_id].bt == bt_piped)
@@ -1823,7 +1973,7 @@ std::optional<app_state> command_kill(app_state state, int64_t buffer_id, const 
   return state;
   }
   
-app_state start_pipe(app_state state, int64_t buffer_id, const std::string& inputfile, const std::vector<std::string>& parameters, settings& s)
+app_state start_pipe(app_state state, uint32_t buffer_id, const std::string& inputfile, const std::vector<std::string>& parameters, settings& s)
   {
   state = *command_kill(state, buffer_id, s);
   //state.buffer = make_empty_buffer();
@@ -1869,7 +2019,7 @@ app_state start_pipe(app_state state, int64_t buffer_id, const std::string& inpu
   return check_scroll_position(state, s);
   }
 
-app_state start_pipe(app_state state, int64_t buffer_id, const std::string& inputfile, int argc, char** argv, settings& s)
+app_state start_pipe(app_state state, uint32_t buffer_id, const std::string& inputfile, int argc, char** argv, settings& s)
   {
   std::vector<std::string> parameters;
   for (int j = 2; j < argc; ++j)
@@ -1877,7 +2027,7 @@ app_state start_pipe(app_state state, int64_t buffer_id, const std::string& inpu
   return start_pipe(state, buffer_id, inputfile, parameters, s);
   }
   
-std::optional<app_state> execute(app_state state, int64_t buffer_id, const std::wstring& command, settings& s)
+std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std::wstring& command, settings& s)
   {
   auto it = executable_commands.find(command);
   if (it != executable_commands.end())
