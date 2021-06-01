@@ -492,8 +492,8 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
             }
           if (state.g.columns[i].items.empty())
             return state;
-          //return optimize_column(state, state.windows[state.window_pairs[state.g.columns[i].items.back().window_pair_id].window_id].buffer_id);
-          return resize_windows(state, s);
+          return optimize_column(state, state.windows[state.window_pairs[state.g.columns[i].items.back().window_pair_id].window_id].buffer_id, s);
+          //return resize_windows(state, s);
           }
         }
       }
@@ -1298,6 +1298,13 @@ app_state optimize_column(app_state state, uint32_t buffer_id, const settings& s
             c.items[j + 1].top_layer = c.items[j].bottom_layer;
           }
         c.items.back().bottom_layer = 1.0;
+        for (int j = 0; j < c.items.size(); ++j)
+          {
+          if (c.items[j].top_layer > 1)
+            c.items[j].top_layer = 1;
+          if (c.items[j].bottom_layer > 1)
+            c.items[j].bottom_layer = 1;
+          }
         return resize_windows(state, s);
         }
       }
