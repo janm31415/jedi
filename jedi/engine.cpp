@@ -1170,6 +1170,173 @@ std::optional<app_state> move_editor_window_up_down(app_state state, int steps, 
   return state;
   }
   
+std::optional<app_state> load_file(app_state state, int64_t buffer_id, const std::string& filename, settings& s)
+  {
+  if (jtk::file_exists(filename))
+    {
+    state = *command_new_window(state, buffer_id, s);
+    get_active_buffer(state) = read_from_file(filename);
+    int64_t command_id = state.active_buffer-1;
+    state.buffers[command_id].buffer.name = get_active_buffer(state).name;
+    get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
+    get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
+    state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
+    return check_scroll_position(state, s);
+    }
+  else
+    {
+    std::stringstream str;
+    str << "File " << filename << " does not exist\n";
+    return add_error_text(state, str.str(), s);
+    }
+  return state;
+  }
+
+std::vector<std::string> split_folder(const std::string& folder)
+  {
+  std::wstring wfolder = jtk::convert_string_to_wstring(folder);
+  std::vector<std::string> out;
+
+  while (!wfolder.empty())
+    {
+    auto it = wfolder.find_first_of(L'/');
+    auto it_backup = wfolder.find_first_of(L'\\');
+    if (it_backup < it)
+      it = it_backup;
+    if (it == std::wstring::npos)
+      {
+      out.push_back(jtk::convert_wstring_to_string(wfolder));
+      wfolder.clear();
+      }
+    else
+      {
+      std::wstring part = wfolder.substr(0, it);
+      wfolder.erase(0, it + 1);
+      out.push_back(jtk::convert_wstring_to_string(part));
+      }
+    }
+  return out;
+  }
+
+std::vector<std::string> simplify_split_folder(const std::vector<std::string>& split)
+  {
+  std::vector<std::string> out = split;
+  auto it = std::find(out.begin(), out.end(), std::string(".."));
+  while (it != out.end() && it != out.begin())
+    {
+    out.erase(it - 1, it + 1);
+    it = std::find(out.begin(), out.end(), std::string(".."));
+    }
+  it = std::find(out.begin(), out.end(), std::string("."));
+  while (it != out.end() && it != out.begin())
+    {
+    out.erase(it);
+    it = std::find(out.begin(), out.end(), std::string("."));
+    }
+  return out;
+  }
+
+std::string compose_folder_from_split(const std::vector<std::string>& split)
+  {
+  std::string out;
+  for (const auto& s : split)
+    {
+    out.append(s);
+    out.push_back('/');
+    }
+  return out;
+  }
+
+
+std::string simplify_folder(const std::string& folder)
+  {
+  auto split = split_folder(folder);
+  split = simplify_split_folder(split);
+  std::string simplified_folder_name = compose_folder_from_split(split);
+  return simplified_folder_name;
+  }
+
+std::optional<app_state> load_folder(app_state state, int64_t buffer_id, const std::string& folder, settings& s)
+  {
+  std::string simplified_folder_name = simplify_folder(folder);
+  if (simplified_folder_name.empty())
+    {
+    //std::string error_message = "Invalid folder";
+    //state.message = string_to_line(error_message);
+    //return state;
+    std::stringstream str;
+    str << "Folder " << folder << " is invalid\n";
+    return add_error_text(state, str.str(), s);
+    }
+  if (jtk::is_directory(state.buffers[buffer_id].buffer.name))
+    {
+    state.buffers[buffer_id].buffer = read_from_file(simplified_folder_name);
+    state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
+    state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+    return check_scroll_position(state, s);
+    }
+  else
+    {
+    return load_file(state, buffer_id, simplified_folder_name, s);
+    }
+  }
+  
+std::optional<app_state> find_text(app_state state, int64_t buffer_id, const std::wstring& command, settings& s)
+  {
+  if (state.operation == op_editing)
+    {
+    s.last_find = jtk::convert_wstring_to_string(command);
+    state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, command);
+    return check_scroll_position(state, s);
+    }
+  return state;
+  }
+
+std::optional<app_state> load(app_state state, int64_t buffer_id, const std::wstring& command, settings& s)
+  {
+  if (command.empty())
+    return state;
+  std::string folder = jtk::get_folder(state.buffers[buffer_id].buffer.name);
+  if (folder.empty())
+    folder = jtk::get_folder(jtk::get_executable_path());
+  if (folder.back() != '\\' && folder.back() != '/')
+    folder.push_back('/');
+
+  std::string cmd = jtk::convert_wstring_to_string(command);
+  while (!cmd.empty() && cmd.front() == '/')
+    cmd.erase(cmd.begin());
+  if (!cmd.empty() && cmd.front() == '"')
+    cmd.erase(cmd.begin());
+  if (!cmd.empty() && cmd.back() == '"')
+    cmd.pop_back();
+  if (!cmd.empty() && cmd.front() == '<')
+    cmd.erase(cmd.begin());
+  if (!cmd.empty() && cmd.back() == '>')
+    cmd.pop_back();
+  std::string newfilename = folder + cmd;
+
+  if (jtk::file_exists(newfilename))
+    {
+    return load_file(state, buffer_id, newfilename, s);
+    }
+
+  if (jtk::is_directory(newfilename))
+    {
+    return load_folder(state, buffer_id, newfilename, s);
+    }
+
+  if (jtk::file_exists(jtk::convert_wstring_to_string(command)))
+    {
+    return load_file(state, buffer_id, jtk::convert_wstring_to_string(command), s);
+    }
+
+  if (jtk::is_directory(jtk::convert_wstring_to_string(command)))
+    {
+    return load_folder(state, buffer_id, jtk::convert_wstring_to_string(command), s);
+    }
+
+  return find_text(state, buffer_id, command, s);
+  }
   
 screen_ex_pixel find_mouse_text_pick(int x, int y)
   {
@@ -1776,6 +1943,8 @@ std::optional<app_state> execute(app_state state, int64_t buffer_id, const std::
   return state;
   }
 
+
+
 std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, bool double_click, const settings& s)
   {
   screen_ex_pixel p = get_ex(y, x);
@@ -1933,8 +2102,8 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
 
   if (p.type == SET_TEXT_EDITOR || p.type == SET_TEXT_COMMAND)
     {
-    //std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
-    //return load(state, command, s);
+    std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
+    return load(state, p.buffer_id, command, s);
     }
 
 
