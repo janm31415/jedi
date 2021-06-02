@@ -404,8 +404,8 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
           if (f1 > f2)
             std::swap(f1, f2);
             
-          state = *command_kill(state, f1, s);
-          state = *command_kill(state, f2, s);
+          kill(state, f1);
+          kill(state, f2);
 
           state.buffers.erase(state.buffers.begin() + f2);
           state.buffers.erase(state.buffers.begin() + f1);
@@ -1956,10 +1956,8 @@ app_state execute_external_input_output(app_state state, const std::string& file
 #endif
   return state;
   }
-  
 
-std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, const settings& s)
-  {
+void kill(app_state& state, uint32_t buffer_id) {
 #ifdef _WIN32
   if (state.buffers[buffer_id].bt == bt_piped)
     {
@@ -1977,6 +1975,11 @@ std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, const
 #endif
   if (!state.buffers[buffer_id].buffer.name.empty() && state.buffers[buffer_id].buffer.name[0] == '=')
     state.buffers[buffer_id].buffer.name.clear();
+}
+
+std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, const settings& s)
+  {
+  kill(state, buffer_id);
   return state;
   }
   

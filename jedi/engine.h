@@ -64,6 +64,7 @@ struct app_state
 std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id, const settings& s);
 std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, const settings& s);
 app_state optimize_column(app_state state, uint32_t buffer_id, const settings& s);
+void kill(app_state& state, uint32_t buffer_id);
 
 env_settings convert(const settings& s);
 
