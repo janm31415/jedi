@@ -3,6 +3,14 @@
 #include <stdint.h>
 #include "pdcex.h"
 
+struct rearranging_window_data
+  {
+  int64_t rearranging_file_id;
+  unsigned long icon_sign;
+  unsigned long current_sign_left, current_sign_mid, current_sign_right;
+  int x, y;
+  };
+  
 struct mouse_data
   {
   mouse_data();
@@ -18,6 +26,8 @@ struct mouse_data
   bool middle_button_down;
   screen_ex_pixel left_drag_start;
   screen_ex_pixel left_drag_end;
+  bool rearranging_windows;
+  rearranging_window_data rwd;
   };
 
 extern mouse_data mouse;

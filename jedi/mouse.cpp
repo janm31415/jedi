@@ -6,6 +6,7 @@ mouse_data::mouse_data()
   left_button_down = false;
   right_button_down = false;
   middle_button_down = false;
+  rearranging_windows = false;
   }
 
 mouse_data mouse;

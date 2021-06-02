@@ -389,7 +389,7 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
         auto& f = state.buffers[w.buffer_id];
         if (f.buffer.modification_mask == 1)
           {
-          f.buffer.modification_mask = 2;
+          f.buffer.modification_mask |= 2;
           std::stringstream str;
           str << f.buffer.name << " modified";
           return add_error_text(state, str.str(), s);
@@ -518,7 +518,7 @@ std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_
           {
           show_error_window = true;
           str << f.name << " modified\n";
-          f.modification_mask = 2;
+          f.modification_mask |= 2;
           }
         }
       if (show_error_window)
@@ -1226,15 +1226,26 @@ int compute_rows_necessary(const app_state& state, int number_of_column_cols, in
   return command_rows+4;
   }
   
-  
-app_state optimize_column(app_state state, uint32_t buffer_id, const settings& s)
-  {
+int get_available_rows(const app_state& state, uint32_t target_column) {
   int rows, cols;
-  int offsety = 0;
   getmaxyx(stdscr, rows, cols);
   rows -= 3; // make room for bottom operation stuff
   rows -= state.windows[state.g.topline_window_id].rows; // subtract rows for topline window
+  const auto& c = state.g.columns[target_column];
+  rows -= state.windows[c.column_command_window_id].rows; // subtract rows for column command window
+  return rows;
+}
+
+int get_y_offset_from_top(const app_state& state, uint32_t target_column) {
+  int offsety = 0;
   offsety += state.windows[state.g.topline_window_id].rows;
+  const auto& c = state.g.columns[target_column];
+  offsety += state.windows[c.column_command_window_id].rows;
+  return offsety;
+}
+  
+app_state optimize_column(app_state state, uint32_t buffer_id, const settings& s)
+  {
   for (uint32_t i = 0; i < state.g.columns.size(); ++i)
     {
     auto& c = state.g.columns[i];
@@ -1243,11 +1254,14 @@ app_state optimize_column(app_state state, uint32_t buffer_id, const settings& s
       auto& wp = state.window_pairs[ci.window_pair_id];
       if (state.windows[wp.window_id].buffer_id == buffer_id)
         {
+        int rows, cols;
+        getmaxyx(stdscr, rows, cols);
+        rows = get_available_rows(state, i);
+        int offsety = get_y_offset_from_top(state, i);
+        
         int left = (int)std::round(c.left*cols);
         int right = (int)std::round(c.right*cols);
-        
-        rows -= state.windows[c.column_command_window_id].rows; // subtract rows for column command window
-        offsety += state.windows[c.column_command_window_id].rows;
+                
         std::vector<int> nr_of_rows_necessary;
         int total_rows = 0;
         for (int j = 0; j < c.items.size(); ++j)
@@ -1538,7 +1552,33 @@ std::optional<app_state> mouse_motion(app_state state, int x, int y, const setti
 
   if (mouse.left_dragging)
     {
-    if (mouse.left_drag_start.type == screen_ex_type::SET_PLUS) {
+    if (mouse.rearranging_windows) {
+      move(mouse.rwd.y, mouse.rwd.x - 1);
+      if (mouse.rwd.x - 1 > 0)
+        addch(mouse.rwd.current_sign_left);
+      move(mouse.rwd.y, mouse.rwd.x);
+      addch(mouse.rwd.current_sign_mid);
+      move(mouse.rwd.y, mouse.rwd.x + 1);
+      if (mouse.rwd.x + 1 < SP->cols)
+        addch(mouse.rwd.current_sign_right);
+      mouse.rwd.x = x;
+      mouse.rwd.y = y;
+      mouse.rwd.current_sign_left = mvinch(y, x - 1);
+      mouse.rwd.current_sign_mid = mvinch(y, x);
+      mouse.rwd.current_sign_right = mvinch(y, x + 1);
+      move(y, x - 1);
+      if (mouse.rwd.x - 1 > 0)
+        addch(mouse.rwd.icon_sign);
+      move(y, x);
+      addch(mouse.rwd.icon_sign);
+      move(y, x + 1);
+      if (mouse.rwd.x + 1 < SP->cols)
+        addch(mouse.rwd.icon_sign);
+      refresh();
+      SDL_UpdateWindowSurface(pdc_window);
+      return state;
+    }
+    else if (mouse.left_drag_start.type == screen_ex_type::SET_PLUS) {
       auto window_id = state.buffer_id_to_window_id[mouse.left_drag_start.buffer_id];
       if (window_id == state.g.topline_window_id) {
         state.windows[window_id].rows = y;
@@ -2102,8 +2142,492 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
     return start_pipe(state, buffer_id, file_path, parameters, s);
   return state;
   }
+  
+
+app_state move_column(app_state state, uint64_t c, int x, int y, const settings& s)
+  {
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+
+  auto& column = state.g.columns[c];
+
+  int left = (int)std::round(column.left*cols);
+  int right = (int)std::round(column.right*cols);
+
+  if (left < x)
+    {
+    if (!c)
+      return state;
+    while (x >= right)
+      --x;
+    if (x < right)
+      {
+      while (right - x < 2) // leave at least column width 2 for collapsing column
+        --x;
+      column.left = x / double(cols);
+      state.g.columns[c - 1].right = column.left;
+      return resize_windows(state, s);
+      }
+    }
+  else // left > x
+    {
+    if (!c)
+      return state;
+    int leftleft = (int)(state.g.columns[c - 1].left*cols);
+    while (x <= leftleft)
+      ++x;
+    if (leftleft < x)
+      {
+      while (x - leftleft < 2) // leave at least column width 2 for collapsing column
+        ++x;
+      column.left = x / double(cols);
+      state.g.columns[c - 1].right = column.left;
+      return resize_windows(state, s);
+      }
+    }
+  return state;
+  }
+
+app_state move_window_to_other_column(app_state state, uint64_t c, uint64_t ci, int x, int y, const settings& s)
+  {
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+
+  uint64_t target_c = 0;
+  for (; target_c < state.g.columns.size(); ++target_c)
+    {
+    auto& local_col = state.g.columns[target_c];
+
+    int left = (int)std::round(local_col.left*cols);
+    int right = (int)std::round(local_col.right*cols);
+
+    if (x >= left && x <= right)
+      break;
+    }
+
+  if (c == target_c)
+    return state;
+
+  auto& source_column = state.g.columns[c];
+  auto& target_column = state.g.columns[target_c];
+
+  auto item = source_column.items[ci];
+
+  if (ci)
+    source_column.items[ci - 1].bottom_layer = item.bottom_layer;
+  else if (ci + 1 < source_column.items.size())
+    source_column.items[ci + 1].top_layer = item.top_layer;
+
+  source_column.items.erase(source_column.items.begin() + ci);
+
+  int left = (int)(target_column.left*cols);
+  int right = (int)(target_column.right*cols);
+
+  int irows = get_available_rows(state, target_c);
+
+  y -= get_y_offset_from_top(state, target_c);
+  if (y < 0)
+    y = 0;
+
+  uint64_t new_pos = 0;
+  for (; new_pos < target_column.items.size(); ++new_pos)
+    {
+    int top = (int)std::round(target_column.items[new_pos].top_layer * irows);
+    if (top > y)
+      break;
+    }
+
+  target_column.items.insert(target_column.items.begin() + new_pos, item);
+  if (new_pos > 0)
+    {
+    double new_bot = (y) / double(irows);
+    target_column.items[new_pos].bottom_layer = target_column.items[new_pos - 1].bottom_layer;
+    target_column.items[new_pos - 1].bottom_layer = new_bot;
+    target_column.items[new_pos].top_layer = new_bot;
+    }
+  else if (new_pos + 1 < target_column.items.size())
+    {
+    if (target_column.items[new_pos + 1].top_layer != 0.0)
+      {
+      target_column.items[new_pos].bottom_layer = target_column.items[new_pos + 1].top_layer;
+      target_column.items[new_pos].top_layer = 0.0;
+      }
+    else
+      {
+      double new_top = (target_column.items[new_pos + 1].top_layer + target_column.items[new_pos + 1].bottom_layer)*0.5;
+      target_column.items[new_pos + 1].top_layer = new_top;
+      target_column.items[new_pos].bottom_layer = new_top;
+      target_column.items[new_pos].top_layer = 0.0;
+      }
+    }
+  else
+    {
+    target_column.items[new_pos].top_layer = 0.0;
+    target_column.items[new_pos].bottom_layer = 1.0;
+    }
+  return resize_windows(state, s);
+  }
+
+app_state move_window_to_top(app_state state, uint64_t c, int64_t ci, const settings& s)
+  {
+  auto& column = state.g.columns[c];
+  auto col_item = column.items[ci];
+  for (int i = ci - 1; i >= 0; --i)
+    column.items[i + 1] = column.items[i];
+  column.items[0] = col_item;
+  column.items[0].top_layer = 0.0;
+  column.items[0].bottom_layer = column.items[1].top_layer;
+  for (int i = 1; i < column.items.size() - 1; ++i)
+    column.items[i].bottom_layer = column.items[i + 1].top_layer;
+  column.items.back().bottom_layer = 1.0;
+  return resize_windows(state, s);
+  //return *optimize_column(state, state.windows[state.window_pairs[col_item.window_pair_id].window_id].file_id);
+  }
+  
+int get_minimum_number_of_rows(const column_item& ci, const app_state& state) {
+  return state.windows[state.window_pairs[ci.window_pair_id].command_window_id].rows+1;
+}
+
+app_state move_window_up_down(app_state state, uint64_t c, int64_t ci, int x, int y, const settings& s)
+  {
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+
+  auto& column = state.g.columns[c];
+
+  auto& col_item = column.items[ci];
+
+  int left = (int)std::round(column.left*cols);
+  int right = (int)std::round(column.right*cols);
+
+  int irows = get_available_rows(state, c);
+
+  int top = (int)std::round(col_item.top_layer*irows);
+  int bottom = (int)std::round(col_item.bottom_layer*irows);
+
+  auto y_offset = get_y_offset_from_top(state, c);
+
+  y -= y_offset;
+
+  if (y < top)
+    {
+    // First we check whether we want to move this item to the top.
+    if (ci) // if ci == 0, then it is already at the top
+      {
+      int top_top = (int)std::round(column.items[0].top_layer*irows);
+      if (y < top_top)
+        return move_window_to_top(state, c, ci, s);
+      }
+
+    int minimum_size_for_higher_items = 0;
+    for (int64_t other = (int64_t)ci - 1; other >= 0; --other)
+      minimum_size_for_higher_items += get_minimum_number_of_rows(column.items[other], state);
+    if (y < minimum_size_for_higher_items)
+      y = minimum_size_for_higher_items;
+
+    col_item.top_layer = (y) / double(irows);
+    double last_top_layer = col_item.top_layer;
+    for (int other_ci = ci - 1; other_ci >= 0; --other_ci)
+      {
+      auto& other_col_item = column.items[other_ci];
+      other_col_item.bottom_layer = last_top_layer;
+      if (other_col_item.top_layer >= other_col_item.bottom_layer)
+        {
+        other_col_item.top_layer = ((int)std::round(other_col_item.bottom_layer*irows) - 1) / double(irows);
+        }
+      last_top_layer = other_col_item.top_layer;
+      }
+    }
+  else if (y >= top && y < bottom)
+    {
+    int minimum_nr_rows = get_minimum_number_of_rows(col_item, state);
+
+    // y + minimum_nr_rows > bottom
+    while (bottom < (y + minimum_nr_rows))
+      --y;
+    col_item.top_layer = (y) / double(irows);
+    if (ci > 0)
+      column.items[ci - 1].bottom_layer = col_item.top_layer;
+    else
+      {
+      invalidate_range(left, y_offset, right - left, bottom - top);
+      }
+    }
+  else
+    {
+    //int minimum_size_for_lower_items = column.items.size() - ci;
+    int minimum_size_for_lower_items = 0;
+    for (int64_t other = (int64_t)ci; other < column.items.size(); ++other)
+      {
+      minimum_size_for_lower_items += get_minimum_number_of_rows(column.items[other], state);
+      }
+    if (irows - minimum_size_for_lower_items < y)
+      y = irows - minimum_size_for_lower_items;
+
+    col_item.top_layer = (y) / double(irows);
+    if (col_item.bottom_layer <= col_item.top_layer)
+      col_item.bottom_layer = ((int)std::round(col_item.top_layer*irows) + get_minimum_number_of_rows(col_item, state)) / (double)(irows);
+    if (ci > 0)
+      {
+      column.items[ci - 1].bottom_layer = col_item.top_layer;
+      }
+    else
+      {
+      invalidate_range(left, y_offset, right - left, bottom - top);
+      }
+
+    double last_bottom_layer = col_item.bottom_layer;
+    for (int64_t other = (int64_t)ci + 1; other < column.items.size(); ++other)
+      {
+      auto& other_col_item = column.items[other];
+      other_col_item.top_layer = last_bottom_layer;
+      if (other_col_item.bottom_layer <= other_col_item.top_layer)
+        other_col_item.bottom_layer = ((int)std::round(other_col_item.top_layer*irows) + +get_minimum_number_of_rows(other_col_item, state)) / (double)(irows);
+      last_bottom_layer = other_col_item.bottom_layer;
+      }
+    /*
+    int minimum_nr_rows = get_minimum_number_of_rows(col_item, right - left, state);
+    col_item.top_layer = ((int)std::round(col_item.bottom_layer*irows) - minimum_nr_rows) / double(irows);
+    if (ci > 0)
+      column.items[ci - 1].bottom_layer = col_item.top_layer;
+    else
+      {
+      invalidate_range(left, y_offset, right - left, bottom - top);
+      }
+    */
+    }
+  return resize_windows(state, s);
+  }
+
+app_state enlarge_window_as_much_as_possible(app_state state, int64_t buffer_id, const settings& s)
+  {
+  int64_t win_id = state.buffer_id_to_window_id[buffer_id];
+  for (uint64_t c = 0; c < state.g.columns.size(); ++c)
+    {
+    auto& column = state.g.columns[c];
+    for (uint64_t ci = 0; ci < column.items.size(); ++ci)
+      {
+      uint32_t win_pair = column.items[ci].window_pair_id;
+      if (state.window_pairs[win_pair].window_id == win_id || state.window_pairs[win_pair].command_window_id == win_id)
+        {
+        column.contains_maximized_item = false;
+        //int icols = get_cols();
+        auto& col_item = column.items[ci];
+        
+        int rows, cols;
+        getmaxyx(stdscr, rows, cols);
+
+        int left = (int)std::round(column.left*cols);
+        int right = (int)std::round(column.right*cols);
+
+        int irows = get_available_rows(state, c);
+
+        int minimum_size_for_higher_items = 0;
+        for (int64_t other = (int64_t)ci - 1; other >= 0; --other)
+          minimum_size_for_higher_items += get_minimum_number_of_rows(column.items[other], state);
+
+        int top = minimum_size_for_higher_items;
+
+        int minimum_size_for_lower_items = 0;
+        for (uint64_t other = ci + 1; other < column.items.size(); ++other)
+          minimum_size_for_lower_items += get_minimum_number_of_rows(column.items[other], state);
 
 
+        int bottom = irows - minimum_size_for_lower_items;
+
+        double new_top = top / (double)irows;
+        double new_bottom = bottom / (double)irows;
+
+        col_item.top_layer = new_top;
+        col_item.bottom_layer = new_bottom;
+
+        for (uint64_t other = ci + 1; other < column.items.size(); ++other)
+          {
+          column.items[other].top_layer = new_bottom;
+          bottom += get_minimum_number_of_rows(column.items[other], state);
+          new_bottom = bottom / (double)irows;
+          column.items[other].bottom_layer = new_bottom;
+          }
+        for (int64_t other = (int64_t)ci - 1; other >= 0; --other)
+          {
+          column.items[other].bottom_layer = new_top;
+          top -= get_minimum_number_of_rows(column.items[other], state);
+          new_top = top / (double)irows;
+          column.items[other].top_layer = new_top;
+          }
+
+        return resize_windows(state, s);
+        }
+      }
+    }
+  return state;
+  }
+
+
+app_state enlarge_window(app_state state, int64_t buffer_id, const settings& s)
+  {
+  int64_t win_id = state.buffer_id_to_window_id[buffer_id];
+  for (uint64_t c = 0; c < state.g.columns.size(); ++c)
+    {
+    auto& column = state.g.columns[c];
+    for (uint64_t ci = 0; ci < column.items.size(); ++ci)
+      {
+      uint32_t win_pair = column.items[ci].window_pair_id;
+      if (state.window_pairs[win_pair].window_id == win_id || state.window_pairs[win_pair].command_window_id == win_id)
+        {
+        if (column.contains_maximized_item)
+          {
+          column.contains_maximized_item = false;
+          return enlarge_window_as_much_as_possible(state, buffer_id, s);
+          }
+        int rows, cols;
+        getmaxyx(stdscr, rows, cols);
+
+        auto& col_item = column.items[ci];
+
+        int left = (int)std::round(column.left*cols);
+        int right = (int)std::round(column.right*cols);
+
+        int irows = get_available_rows(state, c);
+
+        int bottom = (int)std::round(col_item.bottom_layer*irows);
+
+        int minimum_size_for_lower_items = 0;
+        for (uint64_t other = ci + 1; other < column.items.size(); ++other)
+          minimum_size_for_lower_items += get_minimum_number_of_rows(column.items[other], state);
+
+        ++bottom;
+        while (bottom > irows - minimum_size_for_lower_items)
+          --bottom;
+
+
+        if (bottom == (int)std::round(col_item.bottom_layer*irows)) // could not enlarge at the bottom, try the top
+          {
+          int top = (int)std::round(col_item.top_layer*irows);
+
+          int minimum_size_for_upper_items = 0;
+          for (uint64_t other = 0; other < ci; ++other)
+            minimum_size_for_upper_items += get_minimum_number_of_rows(column.items[other], state);
+
+          --top;
+          while (top < minimum_size_for_upper_items)
+            ++top;
+
+          double new_top = top / (double)irows;
+          col_item.top_layer = new_top;
+          for (int64_t other = ci - 1; other >= 0; --other)
+            {
+            column.items[other].bottom_layer = new_top;
+            int bottom = top;
+            top = (int)std::round(column.items[other].top_layer*irows);
+            new_top = column.items[other].top_layer;
+            if (bottom - top < get_minimum_number_of_rows(column.items[other], state))
+              {
+              top = bottom - get_minimum_number_of_rows(column.items[other], state);
+              new_top = top / (double)irows;
+              }
+            column.items[other].top_layer = new_top;
+            }
+          }
+        else
+          {
+          double new_bottom = bottom / (double)irows;
+
+          col_item.bottom_layer = new_bottom;
+
+          for (uint64_t other = ci + 1; other < column.items.size(); ++other)
+            {
+            column.items[other].top_layer = new_bottom;
+            int top = bottom;
+            bottom = (int)std::round(column.items[other].bottom_layer*irows);
+            new_bottom = column.items[other].bottom_layer;
+            if (bottom - top < get_minimum_number_of_rows(column.items[other], state))
+              {
+              bottom = top + get_minimum_number_of_rows(column.items[other], state);
+              new_bottom = bottom / (double)irows;
+              }
+            column.items[other].bottom_layer = new_bottom;
+            }
+          }
+
+        int top = (int)std::round(col_item.top_layer*irows) + get_y_offset_from_top(state, c);
+        SDL_WarpMouseInWindow(pdc_window, left*font_width + font_width / 2.0, top*font_height + font_height / 2.0); // move mouse on icon, so that you can keep clicking
+
+        return resize_windows(state, s);
+        }
+      }
+    }
+  return state;
+  }
+
+app_state maximize_window(app_state state, int64_t buffer_id, const settings& s)
+  {
+  int64_t win_id = state.buffer_id_to_window_id[buffer_id];
+  for (uint64_t c = 0; c < state.g.columns.size(); ++c)
+    {
+    auto& column = state.g.columns[c];
+    for (uint64_t ci = 0; ci < column.items.size(); ++ci)
+      {
+      uint32_t win_pair = column.items[ci].window_pair_id;
+      if (state.window_pairs[win_pair].window_id == win_id || state.window_pairs[win_pair].command_window_id == win_id)
+        {
+        column.contains_maximized_item = true;
+        //int icols = get_cols();
+        auto& col_item = column.items[ci];
+
+        col_item.top_layer = 0.0;
+        col_item.bottom_layer = 1.0;
+
+        for (uint64_t other = ci + 1; other < column.items.size(); ++other)
+          {
+          column.items[other].top_layer = 1.0;
+          column.items[other].bottom_layer = 1.0;
+          }
+        for (int64_t other = (int64_t)ci - 1; other >= 0; --other)
+          {
+          column.items[other].top_layer = 0.0;
+          column.items[other].bottom_layer = 0.0;
+          }
+
+        return resize_windows(state, s);
+        }
+      }
+    }
+  return state;
+  }
+
+app_state adapt_grid(app_state state, int x, int y, const settings& s)
+  {
+  //int icols = get_cols();
+  //int irows = get_lines();
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+  
+  int64_t win_id = state.buffer_id_to_window_id[mouse.rwd.rearranging_file_id];
+  for (uint64_t c = 0; c < state.g.columns.size(); ++c)
+    {
+    if (state.g.columns[c].column_command_window_id == win_id)
+      return move_column(state, c, x, y, s);
+
+    auto& column = state.g.columns[c];
+
+    int left = (int)std::round(column.left*cols);
+    int right = (int)std::round(column.right*cols);
+
+    for (uint64_t ci = 0; ci < column.items.size(); ++ci)
+      {
+      uint32_t win_pair = column.items[ci].window_pair_id;
+      if (state.window_pairs[win_pair].window_id == win_id || state.window_pairs[win_pair].command_window_id == win_id)
+        {
+        if (x >= left - 2 && x <= right + 2)
+          return move_window_up_down(state, c, ci, x, y, s);
+        else
+          return move_window_to_other_column(state, c, ci, x, y, s);
+        }
+      }
+    }
+  return state;
+  }
 
 std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, bool double_click, const settings& s)
   {
@@ -2125,6 +2649,18 @@ std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, b
     mouse.left_button_down = false;
     return select_word(state, x, y, s);
     }
+    
+if (p.type == SET_COMMAND_ICON) {
+    mouse.rearranging_windows = true;
+    mouse.rwd.rearranging_file_id = p.buffer_id;
+    mouse.rwd.x = x;
+    mouse.rwd.y = y;
+    mouse.rwd.current_sign_left = mvinch(y, x - 1);
+    mouse.rwd.current_sign_mid = mvinch(y, x);
+    mouse.rwd.current_sign_right = mvinch(y, x + 1);
+    mouse.rwd.icon_sign = mouse.rwd.current_sign_mid;
+    return state;
+  }
 
   mouse.left_drag_start = find_mouse_text_pick(x, y);
   if (mouse.left_drag_start.type == SET_TEXT_EDITOR || mouse.left_drag_start.type == SET_TEXT_COMMAND)
@@ -2179,6 +2715,12 @@ std::optional<app_state> left_mouse_button_up(app_state state, int x, int y, con
   mouse.left_button_down = false;
 
   auto p = get_ex(y, x);
+  
+  if (mouse.rearranging_windows) {
+    mouse.rearranging_windows = false;
+    return adapt_grid(state, x, y, s);
+  }
+  
   if (p.type == SET_SCROLLBAR_EDITOR && !was_dragging)
     {
     int offsetx, offsety, cols, rows;
