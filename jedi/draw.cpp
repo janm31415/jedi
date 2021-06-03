@@ -153,7 +153,7 @@ bool is_command_window(e_window_type wt) {
 
 bool line_can_be_wrapped(line ln, int maxcol, int maxrow, const env_settings& senv)
   {
-  int64_t max_length_allowed = (maxcol-1)*(maxrow-1);
+  int64_t max_length_allowed = (maxcol-1)*(maxrow);
   int64_t full_len = line_length_up_to_column(ln, max_length_allowed + 1, senv);
   return (full_len < max_length_allowed);
   }
@@ -377,6 +377,10 @@ int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, p
           if (r >= maxrow)
             break; // test this
           wide_characters_offset = -(int)current.col - 1;
+          for (int k = 0; k < xoffset; ++k) {
+            move((int)r + yoffset+wy, (int)current.col + 1 + k + wide_characters_offset+wx);
+            addch(' ');
+          }
           move((int)r + yoffset+wy, (int)current.col + xoffset + wide_characters_offset+wx);
           wide_characters_offset -= cnt;
           }
