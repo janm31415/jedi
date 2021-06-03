@@ -99,3 +99,6 @@ target_link_libraries(jedi
     SDL2main
     SDL2_ttf
     )	
+
+add_custom_command(TARGET jedi POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/jedi_syntax.json" "$<TARGET_FILE_DIR:jedi>/jedi_syntax.json")

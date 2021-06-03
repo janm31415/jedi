@@ -336,7 +336,7 @@ syntax_highlighter::syntax_highlighter()
   {
   extension_to_data = build_comment_data_hardcoded();
   extension_to_keywords = build_keyword_data_hardcoded();
-  read_syntax_from_json(extension_to_data, extension_to_keywords, get_file_in_executable_path("jed_syntax.json"));
+  read_syntax_from_json(extension_to_data, extension_to_keywords, get_file_in_executable_path("jedi_syntax.json"));
   for (auto& kd : extension_to_keywords)
     {
     std::sort(kd.second.keywords_1.begin(), kd.second.keywords_1.end());

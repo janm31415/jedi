@@ -15,7 +15,6 @@ settings::settings()
   h = 25;
   x = 100;
   y = 100;
-  command_text = "";
   font_size = 17;
   mouse_scroll_steps = 3;
   startup_folder = "";
@@ -70,15 +69,6 @@ void update_settings_if_different(settings& s, const settings& new_settings, con
 
   if (new_settings.y != old_settings.y)
     s.y = new_settings.y;
-
-  if (new_settings.command_text != old_settings.command_text)
-    s.command_text = new_settings.command_text;
-    
-  if (new_settings.column_command_text != old_settings.column_command_text)
-    s.column_command_text = new_settings.column_command_text;
-    
-  if (new_settings.topline_text != old_settings.topline_text)
-    s.topline_text = new_settings.topline_text;
 
   if (new_settings.font_size != old_settings.font_size)
     s.font_size = new_settings.font_size;
@@ -152,9 +142,6 @@ void update_settings(settings& s, const char* filename)
   f["show_all_characters"] >> s.show_all_characters;
   f["width"] >> s.w;
   f["height"] >> s.h;
-  f["command_text"] >> s.command_text;
-  f["column_command_text"] >> s.column_command_text;
-  f["topline_text"] >> s.topline_text;
   f["x"] >> s.x;
   f["y"] >> s.y;
   f["font_size"] >> s.font_size;
@@ -200,9 +187,6 @@ void write_settings(const settings& s, const char* filename)
   f << "show_all_characters" << s.show_all_characters;
   f << "width" << s.w;
   f << "height" << s.h;
-  f << "command_text" << s.command_text;
-  f << "column_command_text" << s.column_command_text;
-  f << "topline_text" << s.topline_text;
   f << "x" << s.x;
   f << "y" << s.y;
   f << "font_size" << s.font_size;

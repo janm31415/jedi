@@ -65,6 +65,7 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
 std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, const settings& s);
 app_state optimize_column(app_state state, uint32_t buffer_id, const settings& s);
 void kill(app_state& state, uint32_t buffer_id);
+std::string get_user_command_text(const file_buffer& fb);
 
 env_settings convert(const settings& s);
 

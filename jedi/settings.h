@@ -12,7 +12,6 @@ struct settings
   bool show_line_numbers;
   bool wrap;
   int w, h, x, y;
-  std::string command_text, column_command_text, topline_text;
   int font_size;
   int mouse_scroll_steps;
   std::string startup_folder;
