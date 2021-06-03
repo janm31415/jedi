@@ -2296,7 +2296,8 @@ app_state move_window_to_top(app_state state, uint64_t c, int64_t ci, const sett
   }
   
 int get_minimum_number_of_rows(const column_item& ci, const app_state& state) {
-  return state.windows[state.window_pairs[ci.window_pair_id].command_window_id].rows+1;
+  int rows = state.windows[state.window_pairs[ci.window_pair_id].command_window_id].rows;
+  return rows <= 0 ? 1 : rows;
 }
 
 app_state move_window_up_down(app_state state, uint64_t c, int64_t ci, int x, int y, const settings& s)
@@ -2654,14 +2655,8 @@ std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, b
     {
     return state;
     }
-
-  if (double_click)
-    {
-    mouse.left_button_down = false;
-    return select_word(state, x, y, s);
-    }
     
-if (p.type == SET_COMMAND_ICON) {
+  if (p.type == SET_COMMAND_ICON) {
     mouse.rearranging_windows = true;
     mouse.rwd.rearranging_file_id = p.buffer_id;
     mouse.rwd.x = x;
@@ -2670,6 +2665,12 @@ if (p.type == SET_COMMAND_ICON) {
     mouse.rwd.current_sign_mid = mvinch(y, x);    
     return state;
   }
+  
+  if (double_click)
+    {
+    mouse.left_button_down = false;
+    return select_word(state, x, y, s);
+    }
 
   mouse.left_drag_start = find_mouse_text_pick(x, y);
   if (mouse.left_drag_start.type == SET_TEXT_EDITOR || mouse.left_drag_start.type == SET_TEXT_COMMAND)
@@ -2727,6 +2728,10 @@ std::optional<app_state> left_mouse_button_up(app_state state, int x, int y, con
   
   if (mouse.rearranging_windows) {
     mouse.rearranging_windows = false;
+    if (p.buffer_id == mouse.rwd.rearranging_file_id && p.type == SET_COMMAND_ICON)
+      {
+      return enlarge_window(state, p.buffer_id, s);
+      }
     return adapt_grid(state, x, y, s);
   }
   
@@ -2780,6 +2785,11 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
     std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
     return execute(state, p.buffer_id, command, s);
     }
+    
+  if (p.type == SET_COMMAND_ICON)
+    {
+    return enlarge_window_as_much_as_possible(state, p.buffer_id, s);
+    }
 
   if (p.type == SET_NONE)
     {
@@ -2817,6 +2827,10 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
     return load(state, p.buffer_id, command, s);
     }
 
+  if (p.type == SET_COMMAND_ICON)
+    {
+    return maximize_window(state, p.buffer_id, s);
+    }
 
   if (p.type == SET_NONE)
     {
