@@ -363,7 +363,7 @@ app_state add_error_text(app_state state, const std::string& errortext, const se
       }
     }
 
-  if (buffer_id < 0)
+  if (buffer_id == 0xffffffff)
     {
     state = add_error_window(state, s);
     buffer_id = state.buffers.size() - 1;
@@ -1917,6 +1917,15 @@ app_state get(app_state state, uint32_t buffer_id)
 
 std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settings& s)
   {
+  const auto& w = state.windows[state.buffer_id_to_window_id[buffer_id]];
+  if (w.wt != e_window_type::wt_normal) {
+    if (w.wt == e_window_type::wt_command)
+      buffer_id = w.buffer_id+1;
+    else
+      buffer_id = state.active_buffer;
+  }
+  if (state.windows[state.buffer_id_to_window_id[buffer_id]].wt != e_window_type::wt_normal)
+    return state;
   auto& f = state.buffers[buffer_id];
   if (f.buffer.modification_mask == 1)
     {
@@ -1925,7 +1934,7 @@ std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settin
     str << f.buffer.name << " modified\n";
     return add_error_text(state, str.str(), s);
     }
-  return get(state, state.active_buffer);
+  return get(state, buffer_id);
   }
 
 std::optional<app_state> command_show_all_characters(app_state state, uint32_t, settings& s)
@@ -3272,6 +3281,22 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           case SDLK_F5:
           {
           return command_get(state, buffer_id, s);
+          }
+        case SDLK_c:
+          {
+          if (ctrl_pressed())
+            {
+            return command_copy_to_snarf_buffer(state, buffer_id, s);
+            }
+          break;
+          }
+        case SDLK_v:
+          {
+          if (ctrl_pressed())
+            {
+            return command_paste_from_snarf_buffer(state, buffer_id, s);
+            }
+          break;
           }
           }
         //return state;
