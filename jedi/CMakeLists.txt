@@ -9,6 +9,7 @@ keyboard.h
 mouse.h
 pdcex.h
 pref_file.h
+serialize.h
 settings.h
 syntax_highlight.h
 utils.h
@@ -27,6 +28,7 @@ main.cpp
 mouse.cpp
 pdcex.cpp
 pref_file.cpp
+serialize.cpp
 settings.cpp
 syntax_highlight.cpp
 utils.cpp
