@@ -395,7 +395,7 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
           {
           f.buffer.modification_mask |= 2;
           std::stringstream str;
-          str << f.buffer.name << " modified";
+          str << f.buffer.name << " modified\n";
           return add_error_text(state, str.str(), s);
           }
         else
@@ -1797,20 +1797,197 @@ std::optional<app_state> select_word(app_state state, int x, int y, const settin
   return state;
   }
   
+
+std::optional<app_state> command_acme_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xff000000;
+  s.color_editor_background = 0xfff0ffff;
+  s.color_editor_tag = 0xfff18255;
+  s.color_editor_text_bold = 0xff000000;
+  s.color_editor_background_bold = 0xffa2e9eb;
+  s.color_editor_tag_bold = 0xffff9b73;
+  s.color_line_numbers = 0xfff18255;
+
+  s.color_command_text = 0xff000000;
+  s.color_command_background = 0xfffcfbe7;
+  s.color_command_tag = 0xfff18255;
+
+  s.color_titlebar_text = 0xff000000;
+  s.color_titlebar_background = 0xfffcfbe7;
+
+  s.color_comment = 0xff036206;
+  s.color_string = 0xff1104ae;
+  s.color_keyword = 0xffff0000;
+  s.color_keyword_2 = 0xffff8080;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
+std::optional<app_state> command_dark_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xffc0c0c0;
+  s.color_editor_background = 0xff000000;
+  s.color_editor_tag = 0xfff18255;
+  s.color_editor_text_bold = 0xffffffff;
+  s.color_editor_background_bold = 0xff000000;
+  s.color_editor_tag_bold = 0xffff9b73;
+  s.color_line_numbers = 0xff505050;
+
+  s.color_command_text = 0xffc0c0c0;
+  s.color_command_background = 0xff282828;
+  s.color_command_tag = 0xfff18255;
+
+  s.color_titlebar_text = 0xffc0c0c0;
+  s.color_titlebar_background = 0xff282828;
+
+  s.color_comment = 0xff64c385;
+  s.color_string = 0xff6464db;
+  s.color_keyword = 0xffff8080;
+  s.color_keyword_2 = 0xffffc0c0;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
+std::optional<app_state> command_matrix_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xff5bed08;
+  s.color_editor_background = 0xff000000;
+  s.color_editor_tag = 0xff00ff00;
+  s.color_editor_text_bold = 0xff8ded08;
+  s.color_editor_background_bold = 0xff000000;
+  s.color_editor_tag_bold = 0xff00ff00;
+  s.color_line_numbers = 0xff005000;
+
+  s.color_command_text = 0xff83ff83;
+  s.color_command_background = 0xff002000;
+  s.color_command_tag = 0xff00ff00;
+
+  s.color_titlebar_text = 0xff83ff83;
+  s.color_titlebar_background = 0xff002000;
+
+  s.color_comment = 0xff006f00;
+  s.color_string = 0xff00de89;
+  s.color_keyword = 0xff63ac00;
+  s.color_keyword_2 = 0xff90ff46;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
+std::optional<app_state> command_light_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xff000000;
+  s.color_editor_background = 0xffffffff;
+  s.color_editor_tag = 0xff808080;
+  s.color_editor_text_bold = 0xff000000;
+  s.color_editor_background_bold = 0xff000000;
+  s.color_editor_tag_bold = 0xff808080;
+  s.color_line_numbers = 0xff808080;
+
+  s.color_command_text = 0xff000000;
+  s.color_command_background = 0xffe9dbd6;
+  s.color_command_tag = 0xff808080;
+
+  s.color_titlebar_text = 0xff000000;
+  s.color_titlebar_background = 0xffe9dbd6;
+
+  s.color_comment = 0xff008000;
+  s.color_string = 0xff1515a3;
+  s.color_keyword = 0xffff0b4c;
+  s.color_keyword_2 = 0xffb7912b;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+  
+app_state get(app_state state, uint32_t buffer_id)
+  {
+  state.buffers[buffer_id].buffer = read_from_file(state.buffers[buffer_id].buffer.name);
+  state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
+  state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+  state.operation = op_editing;
+  return state;
+  }
+
+std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settings& s)
+  {
+  auto& f = state.buffers[buffer_id];
+  if (f.buffer.modification_mask == 1)
+    {
+    f.buffer.modification_mask |= 2;
+    std::stringstream str;
+    str << f.buffer.name << " modified\n";
+    return add_error_text(state, str.str(), s);
+    }
+  return get(state, state.active_buffer);
+  }
+
+std::optional<app_state> command_show_all_characters(app_state state, uint32_t, settings& s)
+  {
+  s.show_all_characters = !s.show_all_characters;
+  return state;
+  }
+
+std::optional<app_state> command_line_numbers(app_state state, uint32_t, settings& s)
+  {
+  s.show_line_numbers = !s.show_line_numbers;
+  return state;
+  }
+  
+std::optional<app_state> command_wrap(app_state state, uint32_t, settings& s)
+  {
+  s.wrap = !s.wrap;
+  return state;
+  }
+
+std::optional<app_state> command_tab(app_state state, uint32_t, std::wstring& sz, settings& s)
+  {
+  int save_tab_space = s.tab_space;
+  std::wstringstream str;
+  str << sz;
+  str >> s.tab_space;
+  if (s.tab_space < 0 || s.tab_space > 100)
+    s.tab_space = save_tab_space;
+  return state;
+  }
+
+std::optional<app_state> command_tab_spaces(app_state state, uint32_t, settings& s)
+  {
+  s.use_spaces_for_tab = !s.use_spaces_for_tab;
+  return state;
+  }
   
 
-const auto executable_commands = std::map<std::wstring, std::function<std::optional<app_state>(app_state, int64_t, settings&)>>
+const auto executable_commands = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, settings&)>>
   {
+  {L"AcmeTheme", command_acme_theme},
+  {L"AllChars", command_show_all_characters},
+  {L"Copy", command_copy_to_snarf_buffer},
+  {L"DarkTheme", command_dark_theme},
+  {L"Delcol", command_delete_column},
+  {L"Del", command_delete_window},
   {L"Exit", command_exit},
+  {L"Get", command_get},
+  {L"Kill", command_kill},
+  {L"LightTheme", command_light_theme},
+  {L"LineNumbers", command_line_numbers},
+  {L"MatrixTheme", command_matrix_theme},
   {L"New", command_new_window},
   {L"Newcol", command_new_column},
-  {L"Delcol", command_delete_column},
-  {L"Del", command_delete_window}
+  {L"Paste", command_paste_from_snarf_buffer},
+  {L"TabSpaces", command_tab_spaces},
+  {L"Wrap", command_wrap}
   };
 
-const auto executable_commands_with_parameters = std::map<std::wstring, std::function<std::optional<app_state>(app_state, std::wstring&, settings&)>>
+const auto executable_commands_with_parameters = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, std::wstring&, settings&)>>
   {
-  //{L"Tab", command_tab},
+  {L"Tab", command_tab},
   //{L"Win", command_piped_win}
   };
 
@@ -2166,7 +2343,7 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
   auto it2 = executable_commands_with_parameters.find(cmd_id);
   if (it2 != executable_commands_with_parameters.end())
     {
-    return it2->second(state, cmd_remainder, s);
+    return it2->second(state, buffer_id, cmd_remainder, s);
     }
 
   auto file_path = get_file_path(jtk::convert_wstring_to_string(cmd_id), get_active_buffer(state).name);
@@ -2901,6 +3078,101 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
   return state;
   }
 
+
+#ifndef _WIN32
+std::string pbpaste()
+  {
+#if defined(__APPLE__)
+  FILE* pipe = popen("pbpaste", "r");
+#else
+  FILE* pipe = popen("xclip -o", "r");
+#endif
+  if (!pipe) return "ERROR";
+  char buffer[128];
+  std::string result = "";
+  while (!feof(pipe))
+    {
+    if (fgets(buffer, 128, pipe) != NULL)
+      {
+      result += buffer;
+      }
+    }
+  pclose(pipe);
+  return result;
+  }
+#endif
+
+std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t, const settings& s)
+  {
+  if (state.operation == op_editing)
+    state.snarf_buffer = get_selection(get_active_buffer(state), convert(s));
+  else
+    state.snarf_buffer = get_selection(state.operation_buffer, convert(s));
+  state.message = string_to_line("[Copy]");
+#ifdef _WIN32
+  std::wstring txt = to_wstring(state.snarf_buffer);
+  copy_to_windows_clipboard(jtk::convert_wstring_to_string(txt));
+#else
+  std::string txt = to_string(state.snarf_buffer);
+  int pipefd[3];
+#if defined(__APPLE__)
+  std::string pbcopy = get_file_path("pbcopy", "");
+#else
+  std::string pbcopy = get_file_path("xclip", "");
+#endif
+  char** argv = alloc_arguments(pbcopy, std::vector<std::string>());
+  int err = jtk::create_pipe(pbcopy.c_str(), argv, nullptr, pipefd);
+  free_arguments(argv);
+  if (err != 0)
+    {
+    std::string error_message = "Could not create child process";
+    state.message = string_to_line(error_message);
+    return state;
+    }
+  jtk::send_to_pipe(pipefd, txt.c_str());
+  jtk::close_pipe(pipefd);
+#endif
+  return state;
+  }
+
+std::optional<app_state> command_paste_from_snarf_buffer(app_state state, uint32_t, const settings& s)
+  {
+  state.message = string_to_line("[Paste]");
+#if defined(_WIN32)
+  auto txt = get_text_from_windows_clipboard();
+  if (state.operation == op_editing)
+    {
+    get_active_buffer(state) = insert(get_active_buffer(state), txt, convert(s));
+    return check_scroll_position(state, s);
+    }
+  else
+    state.operation_buffer = insert(state.operation_buffer, txt, convert(s));
+#else
+  std::string txt = pbpaste();
+  if (state.operation == op_editing)
+    {
+    get_active_buffer(state) = insert(get_active_buffer(state), txt, convert(s));
+    return check_scroll_position(state, s);
+    }
+  else
+    state.operation_buffer = insert(state.operation_buffer, txt, convert(s));
+#endif
+  return state;
+  }
+
+std::optional<app_state> command_select_all(app_state state, uint32_t, settings& s)
+  {
+  state.message = string_to_line("[Select all]");
+  if (state.operation == op_editing)
+    {
+    get_active_buffer(state) = select_all(get_active_buffer(state), convert(s));
+    return check_scroll_position(state, s);
+    }
+  else
+    state.operation_buffer = select_all(state.operation_buffer, convert(s));
+  return state;
+  }
+
 std::optional<app_state> process_input(app_state state, uint32_t buffer_id, settings& s) {
   SDL_Event event;
   auto tic = std::chrono::steady_clock::now();
@@ -2964,9 +3236,42 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           {
           if (shift_pressed()) // copy
             {
-            //state = *command_copy_to_snarf_buffer(state, s);
+            state = *command_copy_to_snarf_buffer(state, buffer_id, s);
             }
           return del(state, s);
+          }
+          case SDLK_LALT:
+          case SDLK_RALT:
+          {
+          if (state.operation == op_editing && get_active_buffer(state).start_selection != std::nullopt)
+            get_active_buffer(state).rectangular_selection = true;
+          return state;
+          }
+          case SDLK_LSHIFT:
+          case SDLK_RSHIFT:
+          {
+          if (keyb_data.selecting)
+            break;
+          keyb_data.selecting = true;
+          if (state.operation == op_editing)
+            {
+            if (get_active_buffer(state).start_selection == std::nullopt)
+              {
+              get_active_buffer(state).start_selection = get_actual_position(get_active_buffer(state));
+              if (!get_active_buffer(state).rectangular_selection)
+                get_active_buffer(state).rectangular_selection = alt_pressed();
+              }
+            }
+          else
+            {
+            if (state.operation_buffer.start_selection == std::nullopt)
+              state.operation_buffer.start_selection = get_actual_position(state.operation_buffer);
+            }
+          return state;
+          }
+          case SDLK_F5:
+          {
+          return command_get(state, buffer_id, s);
           }
           }
         //return state;
@@ -3130,9 +3435,6 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
 
   state.w = s.w * font_width;
   state.h = s.h * font_height;
-
-
-  s.show_line_numbers = true;
 
   nodelay(stdscr, TRUE);
   noecho();
