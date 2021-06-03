@@ -702,10 +702,23 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
   return optimize_column(state, editor_id, s);
 }
 
+void get_window_rect_for_editing(int& offset_x, int& offset_y, int& rows, int& cols, uint32_t buffer_id, const app_state& state, const settings& s)
+  {
+  auto window_id = state.buffer_id_to_window_id[buffer_id];
+  get_window_edit_range(offset_x, offset_y, cols, rows, state.buffers[buffer_id].scroll_row, state.windows[window_id], s);
+  }
+
+void get_window_size_for_editing(int& rows, int& cols, uint32_t buffer_id, const app_state& state, const settings& s)
+  {
+  int offset_x, offset_y;
+  get_window_rect_for_editing(offset_x, offset_y, rows, cols, buffer_id, state, s);
+  }
+
 void get_active_window_rect_for_editing(int& offset_x, int& offset_y, int& rows, int& cols, const app_state& state, const settings& s)
   {
-  auto window_id = state.buffer_id_to_window_id[state.buffers[state.active_buffer].buffer_id];
-  get_window_edit_range(offset_x, offset_y, cols, rows, state.buffers[state.active_buffer].scroll_row, state.windows[window_id], s);
+  //auto window_id = state.buffer_id_to_window_id[state.buffers[state.active_buffer].buffer_id];
+  //get_window_edit_range(offset_x, offset_y, cols, rows, state.buffers[state.active_buffer].scroll_row, state.windows[window_id], s);
+  get_window_rect_for_editing(offset_x, offset_y, rows, cols, state.active_buffer, state, s);
   }
 
 void get_active_window_size_for_editing(int& rows, int& cols, const app_state& state, const settings& s)
@@ -713,9 +726,60 @@ void get_active_window_size_for_editing(int& rows, int& cols, const app_state& s
   int offset_x, offset_y;
   get_active_window_rect_for_editing(offset_x, offset_y, rows, cols, state, s);
   }
+  
+app_state check_scroll_position(app_state state, uint32_t buffer_id, const settings& s)
+  {
+  int rows, cols;
+  get_window_size_for_editing(rows, cols, buffer_id, state, s);
+  if (state.buffers[buffer_id].scroll_row > state.buffers[buffer_id].buffer.pos.row)
+    state.buffers[buffer_id].scroll_row  = state.buffers[buffer_id].buffer.pos.row;
+  else
+    {
+    if (s.wrap)
+      {
+      auto senv = convert(s);
+      int64_t actual_rows = 0;
+      int r = 0;
+      for (; r < rows; ++r)
+        {
+        if (state.buffers[buffer_id].scroll_row  + r >= state.buffers[buffer_id].buffer.content.size())
+          break;
+        actual_rows += wrapped_line_rows(state.buffers[buffer_id].buffer.content[state.buffers[buffer_id].scroll_row  + r], cols, rows, senv);
+        if (actual_rows >= rows)
+          break;
+        }
+      int64_t my_row = 0;
+      if (state.buffers[buffer_id].buffer.pos.row < state.buffers[buffer_id].buffer.content.size())
+        my_row = wrapped_line_rows(state.buffers[buffer_id].buffer.content[state.buffers[buffer_id].buffer.pos.row], cols, rows, senv);
+      if (state.buffers[buffer_id].scroll_row  + r < state.buffers[buffer_id].buffer.pos.row + my_row - 1)
+        {
+        state.buffers[buffer_id].scroll_row  = state.buffers[buffer_id].buffer.pos.row;
+        r = 0;
+        actual_rows = my_row;
+        for (; r < rows; ++r)
+          {
+          if (state.buffers[buffer_id].scroll_row  == 0)
+            break;
+          actual_rows += wrapped_line_rows(state.buffers[buffer_id].buffer.content[state.buffers[buffer_id].scroll_row - 1], cols, rows, senv);
+          if (actual_rows <= rows)
+            --state.buffers[buffer_id].scroll_row;
+          else
+            break;
+          }
+        }
+      }
+    else if (state.buffers[buffer_id].scroll_row  + rows <= state.buffers[buffer_id].buffer.pos.row)
+      {
+      state.buffers[buffer_id].scroll_row  = state.buffers[buffer_id].buffer.pos.row - rows + 1;
+      }
+    }
+  return state;
+  }
 
 app_state check_scroll_position(app_state state, const settings& s)
   {
+  return check_scroll_position(state, state.active_buffer, s);
+  /*
   int rows, cols;
   get_active_window_size_for_editing(rows, cols, state, s);
   if (get_active_scroll_row(state) > get_active_buffer(state).pos.row)
@@ -761,6 +825,7 @@ app_state check_scroll_position(app_state state, const settings& s)
       }
     }
   return state;
+  */
   }
   
 app_state check_operation_scroll_position(app_state state, const settings& s)
@@ -1990,7 +2055,9 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
   {L"New", command_new_window},
   {L"Newcol", command_new_column},
   {L"Paste", command_paste_from_snarf_buffer},
+  {L"Redo", command_redo},
   {L"TabSpaces", command_tab_spaces},
+  {L"Undo", command_undo},
   {L"Wrap", command_wrap}
   };
 
@@ -3088,6 +3155,26 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
   }
 
 
+std::optional<app_state> command_undo(app_state state, uint32_t buffer_id, const settings& s)
+  {
+  state.message = string_to_line("[Undo]");
+  if (state.operation == op_editing)
+    state.buffers[buffer_id].buffer = undo(state.buffers[buffer_id].buffer, convert(s));
+  else
+    state.operation_buffer = undo(state.operation_buffer, convert(s));
+  return check_scroll_position(state, buffer_id, s);
+  }
+
+std::optional<app_state> command_redo(app_state state, uint32_t buffer_id, const settings& s)
+  {
+  state.message = string_to_line("[Redo]");
+  if (state.operation == op_editing)
+    state.buffers[buffer_id].buffer = redo(state.buffers[buffer_id].buffer, convert(s));
+  else
+    state.operation_buffer = redo(state.operation_buffer, convert(s));
+  return check_scroll_position(state, buffer_id, s);
+  }
+
 #ifndef _WIN32
 std::string pbpaste()
   {
@@ -3295,6 +3382,26 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           if (ctrl_pressed())
             {
             return command_paste_from_snarf_buffer(state, buffer_id, s);
+            }
+          break;
+          }
+          case SDLK_y:
+          {
+          if (ctrl_pressed())
+            {
+            switch (state.operation)
+              {
+              //case op_query_save: return command_yes(state, s);
+              default: return command_redo(state, buffer_id, s);
+              }
+            }
+          break;
+          }
+        case SDLK_z:
+          {
+          if (ctrl_pressed())
+            {
+            return command_undo(state, buffer_id, s);
             }
           break;
           }
@@ -3526,7 +3633,7 @@ void engine::run()
   state = draw(state, s);
   SDL_UpdateWindowSurface(pdc_window);
 
-  while (auto new_state = process_input(state, 0, s))
+  while (auto new_state = process_input(state, state.active_buffer, s))
     {
     state = check_update_active_command_text(*new_state, s);
     if (!mouse.rearranging_windows)

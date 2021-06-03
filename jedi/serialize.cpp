@@ -68,7 +68,7 @@ buffer_data load_buffer_from_stream(std::istream& str, const settings& s) {
       if (i+1 < nr_of_lines)
         command_text.push_back('\n');
     }
-    bd.buffer = insert(bd.buffer, command_text, convert(s));
+    bd.buffer = insert(bd.buffer, command_text, convert(s), false);
   }
   return bd;
 }

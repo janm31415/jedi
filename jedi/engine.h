@@ -68,6 +68,8 @@ void kill(app_state& state, uint32_t buffer_id);
 std::string get_user_command_text(const file_buffer& fb);
 std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t, const settings& s);
 std::optional<app_state> command_paste_from_snarf_buffer(app_state state, uint32_t, const settings& s);
+std::optional<app_state> command_redo(app_state state, uint32_t buffer_id, const settings& s);
+std::optional<app_state> command_undo(app_state state, uint32_t buffer_id, const settings& s);
 
 env_settings convert(const settings& s);
 
