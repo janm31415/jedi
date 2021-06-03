@@ -25,7 +25,7 @@ namespace
     ::init_color(id, conv_rgb(value.r), conv_rgb(value.g), conv_rgb(value.b));
     }
 
-
+/*
   enum jed_colors
     {
     jed_editor_text = 16,
@@ -52,7 +52,7 @@ namespace
     jed_keyword_2 = 35,
     jed_line_colors = 36
     };
-
+*/
   }
 
 

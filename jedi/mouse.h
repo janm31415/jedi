@@ -6,8 +6,7 @@
 struct rearranging_window_data
   {
   int64_t rearranging_file_id;
-  unsigned long icon_sign;
-  unsigned long current_sign_left, current_sign_mid, current_sign_right;
+  unsigned long current_sign_left, current_sign_mid;
   int x, y;
   };
   

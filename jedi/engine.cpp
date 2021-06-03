@@ -1559,21 +1559,32 @@ std::optional<app_state> mouse_motion(app_state state, int x, int y, const setti
       move(mouse.rwd.y, mouse.rwd.x);
       addch(mouse.rwd.current_sign_mid);
       move(mouse.rwd.y, mouse.rwd.x + 1);
-      if (mouse.rwd.x + 1 < SP->cols)
-        addch(mouse.rwd.current_sign_right);
       mouse.rwd.x = x;
       mouse.rwd.y = y;
       mouse.rwd.current_sign_left = mvinch(y, x - 1);
       mouse.rwd.current_sign_mid = mvinch(y, x);
-      mouse.rwd.current_sign_right = mvinch(y, x + 1);
+      
+      auto pn = PAIR_NUMBER(mouse.rwd.current_sign_left);
+      short fg, bg;
+      PDC_pair_content(pn, &fg, &bg);
+      unsigned int color_pair = bg == jed_colors::jed_editor_bg ? COLOR_PAIR(column_command_plus) : COLOR_PAIR(command_plus);
+            
       move(y, x - 1);
       if (mouse.rwd.x - 1 > 0)
-        addch(mouse.rwd.icon_sign);
+        addch('>' | color_pair);
+      else {
+        move(y, x);
+        addch('>' | color_pair);
+      }
+      /*
       move(y, x);
-      addch(mouse.rwd.icon_sign);
+      //addch(mouse.rwd.icon_sign);
+      addch('>' | color_pair);
       move(y, x + 1);
       if (mouse.rwd.x + 1 < SP->cols)
-        addch(mouse.rwd.icon_sign);
+        addch('>' | color_pair);
+      */
+        //addch(mouse.rwd.icon_sign);
       refresh();
       SDL_UpdateWindowSurface(pdc_window);
       return state;
@@ -2656,9 +2667,7 @@ if (p.type == SET_COMMAND_ICON) {
     mouse.rwd.x = x;
     mouse.rwd.y = y;
     mouse.rwd.current_sign_left = mvinch(y, x - 1);
-    mouse.rwd.current_sign_mid = mvinch(y, x);
-    mouse.rwd.current_sign_right = mvinch(y, x + 1);
-    mouse.rwd.icon_sign = mouse.rwd.current_sign_mid;
+    mouse.rwd.current_sign_mid = mvinch(y, x);    
     return state;
   }
 
@@ -3093,7 +3102,8 @@ void engine::run()
   while (auto new_state = process_input(state, 0, s))
     {
     state = check_update_active_command_text(*new_state, s);
-    state = draw(state, s);
+    if (!mouse.rearranging_windows)
+      state = draw(state, s);
 
     SDL_UpdateWindowSurface(pdc_window);
     }
