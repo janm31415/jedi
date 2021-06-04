@@ -699,8 +699,8 @@ void draw_help_text(const app_state& state)
   getmaxyx(stdscr, rows, cols);
   if (state.operation == op_editing)
     {
-    static std::string line1("^N New    ^O Open   ^S Put    ^W Save   ^C Copy   ^V Paste  ^Z Undo   ^Y Redo");
-    static std::string line2("F1 Help   ^X Exit   ^F Find   ^G Goto   ^H Replace^A Sel/all^I Incr");
+    static std::string line1("^N New    ^O Open   ^S Put    ^C Copy   ^V Paste  ^Z Undo   ^Y Redo   F5 Refresh");
+    static std::string line2("F1 Help   ^X Exit   ^F Find   ^G Goto   ^H Replace^A Sel/all^I Incr   F3 FindNxt");
     draw_help_line(line1, rows - 2, cols);
     draw_help_line(line2, rows - 1, cols - 1); // cols - 1 because we need to avoid that the last character is drawn: pdcurses will do a \n, causing our layout to be messed up
     }

@@ -1383,9 +1383,8 @@ app_state make_replace_buffer(app_state state, const settings& s)
   return check_scroll_position(state, s);
 }
 
-app_state find_next(app_state state, settings& s)
+std::optional<app_state> command_find_next(app_state state, uint32_t buffer_id, settings& s)
 {
-  uint32_t buffer_id = state.active_buffer;
   state.message = string_to_line("[Find next]");
   state.operation = op_editing;
   state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, s.last_find);
@@ -2413,6 +2412,24 @@ std::optional<app_state> command_incremental_search(app_state state, uint32_t bu
   return state;
 }
 
+std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, std::wstring& parameters, settings& s)
+  {
+  remove_whitespace(parameters);
+  /*
+  std::string exepath = jtk::get_executable_path();
+  exepath.insert(exepath.begin(), '"');
+  exepath.push_back('"');
+  if (!parameters.empty())
+    {
+    exepath.push_back(' ');
+    exepath.push_back('=');
+    exepath.append(jtk::convert_wstring_to_string(parameters));
+    }
+  return execute(state, jtk::convert_string_to_wstring(exepath), s);
+  */
+  return state;
+  }
+
 const auto executable_commands = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, settings&)>>
 {
   {L"AcmeTheme", command_acme_theme},
@@ -2426,6 +2443,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
   {L"Del", command_delete_window},
   {L"Exit", command_exit},
   {L"Find", command_find},
+  {L"FindNxt", command_find_next},
   {L"Get", command_get},
   {L"Goto", command_goto},
   {L"Help", command_help},
@@ -2451,7 +2469,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
 const auto executable_commands_with_parameters = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, std::wstring&, settings&)>>
 {
   {L"Tab", command_tab},
-  //{L"Win", command_piped_win}
+  {L"Win", command_piped_win}
 };
 
 
@@ -3823,7 +3841,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
                   s.last_find = to_string(get_selection(fb, convert(s)));
                 }
               }
-              return find_next(state, s);
+              return command_find_next(state, buffer_id, s);
             }
             case SDLK_F5:
             {

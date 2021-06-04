@@ -799,6 +799,8 @@ text get_selection(file_buffer fb, const env_settings& s)
     {
     if (fb.content.empty() || fb.content[p2.row].empty())
       return text();
+    if (fb.content[p2.row].size() <= p2.col)
+      return text();
     return text().push_back(line().push_back(fb.content[p2.row][p2.col]));
     }
   auto p1 = *fb.start_selection;
