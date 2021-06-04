@@ -2465,6 +2465,9 @@ std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, 
   state = *command_new_window(state, buffer_id, s);
   buffer_id = (uint32_t)(state.buffers.size() - 1);
   parameters = clean_command(parameters);
+  if (parameters.empty()) {
+    parameters = to_wstring(get_selection(state.buffers[active_buffer].buffer, convert(s)));
+  }
   parameters = L"="+parameters;
   state.active_buffer = active_buffer;
   return execute(state, buffer_id, parameters, s);
