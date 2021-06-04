@@ -1774,7 +1774,7 @@ std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const st
   else if (jtk::file_exists(filename))
   {
     auto ext = jtk::get_extension(filename);
-    if (get_plumber().extension_has_executable(ext)) {
+    if (get_plumber().extension_has_executable(ext) && !ctrl_pressed()) {
       std::vector<std::string> parameters;
       parameters.push_back(filename);
       return execute_external(state, get_plumber().get_executable(ext), parameters, s);
