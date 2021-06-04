@@ -61,7 +61,7 @@ buffer_data make_empty_buffer_data() {
 bool can_be_saved(const std::string& name) {
   if (name.empty())
     return true;
-  if (name.front() == '+')
+  if (name.front() == '+' || name.front() == '=')
     return false;
   return true;
 }
@@ -422,7 +422,7 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
       {
         auto& w = state.windows[wp.window_id];
         auto& f = state.buffers[w.buffer_id];
-        if (f.buffer.modification_mask == 1)
+        if (f.buffer.modification_mask == 1 && can_be_saved(f.buffer.name))
         {
           f.buffer.modification_mask |= 2;
           std::stringstream str;
@@ -549,7 +549,7 @@ std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_
       {
         auto& wp = state.window_pairs[ci.window_pair_id];
         auto& f = state.buffers[state.windows[wp.window_id].buffer_id].buffer;
-        if (f.modification_mask==1)
+        if (f.modification_mask==1 && can_be_saved(f.name))
         {
           show_error_window = true;
           str << f.name << " modified\n";
@@ -2299,7 +2299,7 @@ std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settin
   if (buffer_id == 0xffffffff)
     return state;
   auto& f = state.buffers[buffer_id];
-  if (f.buffer.modification_mask == 1)
+  if (f.buffer.modification_mask == 1 && can_be_saved(f.buffer.name))
   {
     f.buffer.modification_mask |= 2;
     std::stringstream str;
@@ -2414,20 +2414,13 @@ std::optional<app_state> command_incremental_search(app_state state, uint32_t bu
 
 std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, std::wstring& parameters, settings& s)
   {
-  remove_whitespace(parameters);
-  /*
-  std::string exepath = jtk::get_executable_path();
-  exepath.insert(exepath.begin(), '"');
-  exepath.push_back('"');
-  if (!parameters.empty())
-    {
-    exepath.push_back(' ');
-    exepath.push_back('=');
-    exepath.append(jtk::convert_wstring_to_string(parameters));
-    }
-  return execute(state, jtk::convert_string_to_wstring(exepath), s);
-  */
-  return state;
+  auto active_buffer = state.active_buffer;
+  state = *command_new_window(state, buffer_id, s);
+  buffer_id = (uint32_t)(state.buffers.size() - 1);
+  parameters = clean_command(parameters);
+  parameters = L"="+parameters;
+  state.active_buffer = active_buffer;
+  return execute(state, buffer_id, parameters, s);
   }
 
 const auto executable_commands = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, settings&)>>
@@ -2762,6 +2755,11 @@ app_state start_pipe(app_state state, uint32_t buffer_id, const std::string& inp
   state = *command_kill(state, buffer_id, s);
   //state.buffer = make_empty_buffer();
   state.buffers[buffer_id].buffer.name = "=" + inputfile;
+  state.buffers[buffer_id-1].buffer.name = "=" + inputfile;
+  
+  state.buffers[buffer_id-1].buffer.pos = position(0, 0);
+  state.buffers[buffer_id-1].buffer = insert(state.buffers[buffer_id-1].buffer, state.buffers[buffer_id-1].buffer.name, convert(s), false);
+  
   state.buffers[buffer_id].scroll_row = 0;
   state.operation = op_editing;
   state.buffers[buffer_id].bt = bt_piped;
@@ -4079,6 +4077,19 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
     std::this_thread::sleep_for(std::chrono::duration<double, std::milli>(5.0));
     auto toc = std::chrono::steady_clock::now();
     auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(toc - tic).count();
+    if (time_elapsed > 1000) {
+      bool modifications = false;
+      for (uint32_t b = 0; b < state.buffers.size(); ++b) {
+        if (state.buffers[b].bt == e_buffer_type::bt_piped) {
+          bool this_buffer_modified = false;
+          state = check_pipes(this_buffer_modified, state, s);
+          modifications |= this_buffer_modified;
+        }
+      }
+    if (modifications)
+      return state;
+    tic = std::chrono::steady_clock::now();
+    }
   }
 }
 

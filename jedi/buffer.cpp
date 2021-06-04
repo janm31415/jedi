@@ -1090,6 +1090,8 @@ position get_last_position(file_buffer fb)
 
 file_buffer update_position(file_buffer fb, position pos, const env_settings& s)
   {
+  if (pos.row >= fb.content.size())
+    pos.row = fb.content.empty() ? 0 : fb.content.size()-1;
   fb.pos = pos;
   fb.xpos = get_x_position(fb, s);
   return fb;
