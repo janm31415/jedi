@@ -4337,6 +4337,8 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
     bool piped = input[0] == '=';
     if (piped)
       input.erase(input.begin());
+    if (input[0] == '-') // options
+      continue;
     remove_quotes(input);
     if (jtk::is_directory(input)) {
       auto inputfolder = jtk::get_cwd();
