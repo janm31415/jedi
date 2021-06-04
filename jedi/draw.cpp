@@ -523,7 +523,7 @@ void draw_window(const app_state& state, const window& w, const buffer_data& bd,
     if (is_command_window(w.wt)) {
       if (r == 0 && w.wt == e_window_type::wt_command) {
         // draw icon
-        if (state.buffers[bd.buffer_id+1].buffer.modification_mask) // check whether the corresponding edit window is modified
+        if (state.buffers[bd.buffer_id+1].buffer.modification_mask && can_be_saved(state.buffers[bd.buffer_id+1].buffer.name)) // check whether the corresponding edit window is modified
           attron(COLOR_PAIR(command_plus_modified));
         else
           attron(COLOR_PAIR(command_plus));
@@ -651,7 +651,175 @@ void draw_window(const app_state& state, const window& w, const buffer_data& bd,
   
 }
 
-app_state draw(app_state state, const settings& s) {
+
+std::string get_operation_text(e_operation op)
+  {
+  switch (op)
+    {
+    case op_find: return std::string("Find: ");
+    case op_incremental_search: return std::string("Incremental search: ");
+    case op_replace: return std::string("Replace: ");
+    case op_replace_find: return std::string("Find:  ");
+    case op_goto: return std::string("Go to line: ");
+    case op_open: return std::string("Open file: ");
+    case op_save: return std::string("Save file: ");
+    case op_query_save: return std::string("Save file: ");
+    default: return std::string();
+    }
+  }
+
+void draw_help_line(const std::string& text, int r, int sz)
+  {
+  attrset(DEFAULT_COLOR);
+  move(r, 0);
+  int length = (int)text.length();
+  if (length > sz)
+    length = sz;
+
+  for (int i = 0; i < length; ++i)
+    {
+    if (i % 10 == 0 || i % 10 == 1)
+      {
+      //attrset(COMMAND_COLOR);
+      attron(A_REVERSE);
+      }
+    add_ex(position(), 0xffffffff, SET_NONE);
+    addch(text[i]);
+    if (i % 10 == 0 || i % 10 == 1)
+      {
+      //attrset(DEFAULT_COLOR);
+      attroff(A_REVERSE);
+      }
+    }
+  }
+
+void draw_help_text(const app_state& state)
+  {
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+  if (state.operation == op_editing)
+    {
+    static std::string line1("^N New    ^O Open   ^S Put    ^W Save   ^C Copy   ^V Paste  ^Z Undo   ^Y Redo");
+    static std::string line2("F1 Help   ^X Exit   ^F Find   ^G Goto   ^H Replace^A Sel/all^I Incr");
+    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line2, rows - 1, cols - 1); // cols - 1 because we need to avoid that the last character is drawn: pdcurses will do a \n, causing our layout to be messed up
+    }
+  if (state.operation == op_find)
+    {
+    static std::string line1("^X Cancel");
+    draw_help_line(line1, rows - 2, cols);
+    }
+  if (state.operation == op_incremental_search)
+    {
+    static std::string line1("^X Cancel");
+    draw_help_line(line1, rows - 2, cols);
+    }
+  if (state.operation == op_replace_find)
+    {
+    static std::string line1("^X Cancel");
+    draw_help_line(line1, rows - 2, cols);
+    }
+  if (state.operation == op_replace)
+    {
+    static std::string line1("^X Cancel ^A All    ^S Select");
+    draw_help_line(line1, rows - 2, cols);
+    }
+  if (state.operation == op_goto)
+    {
+    static std::string line1("^X Cancel");
+    draw_help_line(line1, rows - 2, cols);
+    }
+  if (state.operation == op_open)
+    {
+    static std::string line1("^X Cancel");
+    draw_help_line(line1, rows - 2, cols);
+    }
+  if (state.operation == op_save)
+    {
+    static std::string line1("^X Cancel");
+    draw_help_line(line1, rows - 2, cols);
+    }
+  if (state.operation == op_query_save)
+    {
+    static std::string line1("^X Cancel ^Y Yes    ^N No");
+    draw_help_line(line1, rows - 2, cols);
+    }
+  }
+
+void draw_operation_buffer(const app_state& state, const settings& s) {
+  uint32_t buffer_id = state.active_buffer;
+  if (state.operation != op_editing)
+    {
+    int rows, cols;
+    getmaxyx(stdscr, rows, cols);
+    auto cursor = get_actual_position(state.operation_buffer);
+    position current;
+    current.col = 0;
+    current.row = 0;
+    std::string txt = get_operation_text(state.operation);
+    move((int)rows - 3, 0);
+    attrset(DEFAULT_COLOR);
+    attron(A_BOLD);
+    for (auto ch : txt)
+      {
+      add_ex(position(), buffer_id, SET_NONE);
+      addch(ch);
+      }
+    int cols_available = cols - txt.length();
+    int wide_characters_offset = 0;
+    int multiline_offset_x = txt.length();
+    keyword_data kd;
+    if (!state.operation_buffer.content.empty())
+    /*
+      int multiline_offset_x = draw_line(wide_characters_offset, bd.buffer, bd.buffer_id, current, cursor, bd.buffer.pos, underline,
+    main_color, r, offset_y, offset_x, maxcol, maxrow, bd.buffer.start_selection,
+    bd.buffer.rectangular_selection, active, set_type, kd, s.wrap, s, senv, w.x, w.y);
+
+     */
+      multiline_offset_x = draw_line(wide_characters_offset, state.operation_buffer, buffer_id, current, cursor, state.operation_buffer.pos, position(-1, -1), DEFAULT_COLOR | A_BOLD, rows, - 3, multiline_offset_x, cols_available, 1, state.operation_buffer.start_selection, state.operation_buffer.rectangular_selection, true, SET_TEXT_OPERATION, kd, false, s, convert(s), 0, 0);
+    int x = (int)current.col + multiline_offset_x + wide_characters_offset;
+    if ((current == cursor))
+      {
+      move((int)rows - 3, (int)x);
+      attron(A_REVERSE);
+      add_ex(current, buffer_id, SET_TEXT_OPERATION);
+      addch(' ');
+      ++x;
+      ++current.col;
+      }
+    attroff(A_REVERSE);
+    while (x < cols)
+      {
+      move((int)rows - 3, (int)x);
+      add_ex(current, buffer_id, SET_TEXT_OPERATION);
+      addch(' ');
+      ++current.col;
+      ++x;
+      }
+    }
+  else
+    {
+    attrset(DEFAULT_COLOR);
+    int rows, cols;
+    getmaxyx(stdscr, rows, cols);
+    int message_length = (int)state.message.size();
+    int offset = (cols - message_length) / 2;
+    if (offset > 0)
+      {
+      attron(A_BOLD);
+      for (auto ch : state.message)
+        {
+        move(rows - 3, offset);
+        add_ex(position(), 0xffffffff, SET_NONE);
+        addch(ch);
+        ++offset;
+        }
+      attroff(A_BOLD);
+      }
+    }
+}
+
+void draw(const app_state& state, const settings& s) {
   erase();
 
   invalidate_ex();
@@ -663,6 +831,9 @@ app_state draw(app_state state, const settings& s) {
     draw_window(state, w, state.buffers[w.buffer_id], s, senv, active);
   }
   
+  draw_operation_buffer(state, s);
+  
+  draw_help_text(state);
   
   curs_set(0);
   refresh();

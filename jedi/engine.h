@@ -70,6 +70,9 @@ std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t,
 std::optional<app_state> command_paste_from_snarf_buffer(app_state state, uint32_t, const settings& s);
 std::optional<app_state> command_redo(app_state state, uint32_t buffer_id, const settings& s);
 std::optional<app_state> command_undo(app_state state, uint32_t buffer_id, const settings& s);
+std::optional<app_state> command_goto(app_state state, uint32_t buffer_id, const settings& s);
+uint32_t get_editor_buffer_id(const app_state& state, uint32_t buffer_id);
+bool can_be_saved(const std::string& name);
 
 env_settings convert(const settings& s);
 

@@ -58,6 +58,14 @@ buffer_data make_empty_buffer_data() {
   return bd;
 }
 
+bool can_be_saved(const std::string& name) {
+  if (name.empty())
+    return true;
+  if (name.front() == '+')
+    return false;
+  return true;
+}
+
 line string_to_line(const std::string& txt)
   {
   line out;
@@ -1227,7 +1235,76 @@ app_state ret_editor(app_state state, settings& s)
     }
   }
 
+app_state gotoline(app_state state, const settings& s)
+  {
+  uint32_t buffer_id = state.active_buffer;
+  state.operation = op_editing;
+  std::stringstream messagestr;
+  messagestr << "[Go to line ";
+  if (!state.operation_buffer.content.empty())
+    {
+    int64_t r = -1;
+    std::wstring line_nr = std::wstring(state.operation_buffer.content[0].begin(), state.operation_buffer.content[0].end());
+    std::wstringstream str;
+    str << line_nr;
+    str >> r;
+    messagestr << r << "]";
+    if (r > 0)
+      {
+      state.buffers[buffer_id].buffer.pos.row = r - 1;
+      state.buffers[buffer_id].buffer.pos.col = 0;
+      state.buffers[buffer_id].buffer = clear_selection(state.buffers[buffer_id].buffer);
+      if (state.buffers[buffer_id].buffer.pos.row >= state.buffers[buffer_id].buffer.content.size())
+        {
+        if (state.buffers[buffer_id].buffer.content.empty())
+          state.buffers[buffer_id].buffer.pos.row = 0;
+        else
+          state.buffers[buffer_id].buffer.pos.row = state.buffers[buffer_id].buffer.content.size() - 1;
+        }
+      if (!state.buffers[buffer_id].buffer.content.empty())
+        {
+        state.buffers[buffer_id].buffer.start_selection = state.buffers[buffer_id].buffer.pos;
+        state.buffers[buffer_id].buffer = move_end(state.buffers[buffer_id].buffer, convert(s));
+        }
+      }
+    }
+  state.operation = op_editing;
+
+  state.message = string_to_line(messagestr.str());
+  return check_scroll_position(state, buffer_id, s);
+  }
+  
 std::optional<app_state> ret_operation(app_state state, settings& s) {
+  bool done = false;
+  while (!done)
+    {
+    switch (state.operation)
+      {
+      //case op_find: state = find(state, s); break;
+      case op_goto: state = gotoline(state, s); break;
+      //case op_open: state = open_file(state, s); break;
+      //case op_incremental_search: state = finish_incremental_search(state);  break;
+      //case op_save: state = save_file(state); break;
+      //case op_query_save: state = save_file(state); break;
+      //case op_replace_find: state = replace_find(state, s); break;
+      //case op_replace_to_find: state = make_replace_buffer(state, s); break;
+      //case op_replace: state = replace(state, s); break;
+      //case op_new: state = make_new_buffer(state, s); break;
+      //case op_get: state = get(state); break;
+      case op_exit: return std::nullopt;
+      default: break;
+      }
+    if (state.operation_stack.empty())
+      {
+      //state.operation = op_editing;
+      done = true;
+      }
+    else
+      {
+      state.operation = state.operation_stack.back();
+      state.operation_stack.pop_back();
+      }
+    }
   return state;
 }
 
@@ -1862,6 +1939,20 @@ std::optional<app_state> select_word(app_state state, int x, int y, const settin
   return state;
   }
   
+std::optional<app_state> command_cancel(app_state state, uint32_t buffer_id, settings& s)
+  {
+  if (state.operation == op_editing)
+    {
+    return command_exit(state, buffer_id, s);
+    }
+  else
+    {
+    state.message = string_to_line("[Cancelled]");
+    state.operation = op_editing;
+    state.operation_stack.clear();
+    }
+  return state;
+  }
 
 std::optional<app_state> command_acme_theme(app_state state, uint32_t, settings& s)
   {
@@ -1979,9 +2070,8 @@ app_state get(app_state state, uint32_t buffer_id)
   state.operation = op_editing;
   return state;
   }
-
-std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settings& s)
-  {
+  
+uint32_t get_editor_buffer_id(const app_state& state, uint32_t buffer_id) {
   const auto& w = state.windows[state.buffer_id_to_window_id[buffer_id]];
   if (w.wt != e_window_type::wt_normal) {
     if (w.wt == e_window_type::wt_command)
@@ -1990,6 +2080,14 @@ std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settin
       buffer_id = state.active_buffer;
   }
   if (state.windows[state.buffer_id_to_window_id[buffer_id]].wt != e_window_type::wt_normal)
+    return 0xffffffff;
+  return buffer_id;
+}
+
+std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settings& s)
+  {
+  buffer_id = get_editor_buffer_id(state, buffer_id);
+  if (buffer_id == 0xffffffff)
     return state;
   auto& f = state.buffers[buffer_id];
   if (f.buffer.modification_mask == 1)
@@ -2037,17 +2135,55 @@ std::optional<app_state> command_tab_spaces(app_state state, uint32_t, settings&
   return state;
   }
   
+std::optional<app_state> command_put(app_state state, uint32_t buffer_id, settings& s)
+  {
+  buffer_id = get_editor_buffer_id(state, buffer_id);
+  if (buffer_id == 0xffffffff)
+    return state;
+    
+  if (state.buffers[buffer_id].buffer.name.empty())
+    {
+    std::string error_message = "Error saving nameless file\n";
+    //state.message = string_to_line(error_message);
+    //return state;
+    return add_error_text(state, error_message, s);
+    }
+  if (state.buffers[buffer_id].buffer.name.back() == '/')
+    {
+    std::string error_message = "Error saving folder " + state.buffers[buffer_id].buffer.name + " as file\n";
+    //state.message = string_to_line(error_message);
+    return add_error_text(state, error_message, s);
+    }
+  bool success = false;
+  state.buffers[buffer_id].buffer = save_to_file(success, state.buffers[buffer_id].buffer, state.buffers[buffer_id].buffer.name);
+  if (success)
+    {
+    std::string message = "Saved file " + state.buffers[buffer_id].buffer.name;
+    state.message = string_to_line(message);
+    }
+  else
+    {
+    std::string error_message = "Error saving file " + state.buffers[buffer_id].buffer.name + "\n";
+    //state.message = string_to_line(error_message);
+    return add_error_text(state, error_message, s);
+    }
+  return state;
+  }
+  
 
 const auto executable_commands = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, settings&)>>
   {
   {L"AcmeTheme", command_acme_theme},
   {L"AllChars", command_show_all_characters},
+  {L"Back", command_cancel},
+  {L"Cancel", command_cancel},
   {L"Copy", command_copy_to_snarf_buffer},
   {L"DarkTheme", command_dark_theme},
   {L"Delcol", command_delete_column},
   {L"Del", command_delete_window},
   {L"Exit", command_exit},
   {L"Get", command_get},
+  {L"Goto", command_goto},
   {L"Kill", command_kill},
   {L"LightTheme", command_light_theme},
   {L"LineNumbers", command_line_numbers},
@@ -2055,6 +2191,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
   {L"New", command_new_window},
   {L"Newcol", command_new_column},
   {L"Paste", command_paste_from_snarf_buffer},
+  {L"Put", command_put},
   {L"Redo", command_redo},
   {L"TabSpaces", command_tab_spaces},
   {L"Undo", command_undo},
@@ -2109,6 +2246,23 @@ std::wstring find_command(file_buffer fb, position pos, const settings& s)
     return std::wstring();
   std::wstring out(ln.begin() + x0, ln.begin() + x1);
   return clean_command(out);
+  }
+  
+std::wstring find_bottom_line_help_command(int x, int y)
+  {
+  std::wstring command;
+  int x_start = (x / 10) * 10 + 2;
+  int x_end = x_start + 8;
+  int rows, cols;
+  getmaxyx(stdscr, rows, cols);
+  for (int i = x_start; i < x_end && i < cols; ++i)
+    {
+    move(y, i);
+    chtype ch[2];
+    winchnstr(stdscr, ch, 1);
+    command.push_back((wchar_t)(ch[0] & A_CHARTEXT));
+    }
+  return clean_command(command);
   }
   
 void split_command(std::wstring& first, std::wstring& remainder, const std::wstring& command)
@@ -3068,8 +3222,15 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
 
   screen_ex_pixel p = get_ex(y, x);
   
-  if (p.buffer_id == 0xffffffff)
+  if (p.buffer_id == 0xffffffff) {
+    if (p.type == SET_NONE)
+    {
+    std::wstring command = find_bottom_line_help_command(x, y);
+    return execute(state, state.active_buffer, command, s);
+    }
+  
     return state;
+    }
 
   if (p.type == SET_SCROLLBAR_EDITOR)
     {
@@ -3102,8 +3263,8 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
   if (p.type == SET_NONE)
     {
     // to add when implementing commands
-    //std::wstring command = find_bottom_line_help_command(x, y);
-    //return execute(state, command, s);
+    std::wstring command = find_bottom_line_help_command(x, y);
+    return execute(state, state.active_buffer, command, s);
     }
 
   return state;
@@ -3115,8 +3276,14 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
 
   screen_ex_pixel p = get_ex(y, x);
   
-  if (p.buffer_id == 0xffffffff)
+  if (p.buffer_id == 0xffffffff) {
+    if (p.type == SET_NONE)
+      {
+      std::wstring command = find_bottom_line_help_command(x, y);
+      return load(state, state.active_buffer, command, s);
+      }
     return state;
+    }
 
   if (p.type == SET_SCROLLBAR_EDITOR)
     {
@@ -3140,17 +3307,6 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
     return maximize_window(state, p.buffer_id, s);
     }
 
-  if (p.type == SET_NONE)
-    {
-    std::wstring command;
-    if (y == 0) // clicking on title bar
-      {
-      //command = jtk::convert_string_to_wstring(jtk::get_folder(state.buffer.name));
-      }
-    //else
-      //command = find_bottom_line_help_command(x, y);
-    //return load(state, command, s);
-    }
   return state;
   }
 
@@ -3268,6 +3424,37 @@ std::optional<app_state> command_select_all(app_state state, uint32_t, settings&
     state.operation_buffer = select_all(state.operation_buffer, convert(s));
   return state;
   }
+  
+app_state clear_operation_buffer(app_state state)
+  {
+  state.operation_buffer.content = text();
+  state.operation_buffer.lex = lexer_status();
+  state.operation_buffer.history = immutable::vector<snapshot, false>();
+  state.operation_buffer.undo_redo_index = 0;
+  state.operation_buffer.start_selection = std::nullopt;
+  state.operation_buffer.rectangular_selection = false;
+  state.operation_buffer.pos.row = 0;
+  state.operation_buffer.pos.col = 0;
+  state.operation_scroll_row = 0;
+  return state;
+  }
+  
+std::optional<app_state> make_goto_buffer(app_state state, uint32_t buffer_id, const settings& s)
+  {
+  state = clear_operation_buffer(state);
+  std::stringstream str;
+  str << state.buffers[buffer_id].buffer.pos.row + 1;
+  state.operation_buffer = insert(state.operation_buffer, str.str(), convert(s), false);
+  state.operation_buffer.start_selection = position(0, 0);
+  state.operation_buffer = move_end(state.operation_buffer, convert(s));
+  return state;
+  }
+  
+std::optional<app_state> command_goto(app_state state, uint32_t buffer_id, const settings& s)
+  {
+  state.operation = op_goto;
+  return make_goto_buffer(state, buffer_id, s);
+  }
 
 std::optional<app_state> process_input(app_state state, uint32_t buffer_id, settings& s) {
   SDL_Event event;
@@ -3377,11 +3564,39 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
             }
           break;
           }
+        case SDLK_g:
+          {
+          if (ctrl_pressed())
+            {
+            return command_goto(state, buffer_id, s);
+            }
+          break;
+          }
+        case SDLK_s:
+          {
+          if (ctrl_pressed())
+            {
+            switch (state.operation)
+              {
+              //case op_replace: return replace_selection(state, s);
+              default: return command_put(state, buffer_id, s);
+              }
+            }
+          break;
+          }
         case SDLK_v:
           {
           if (ctrl_pressed())
             {
             return command_paste_from_snarf_buffer(state, buffer_id, s);
+            }
+          break;
+          }
+        case SDLK_x:
+          {
+          if (ctrl_pressed())
+            {
+            return command_cancel(state, buffer_id, s);
             }
           break;
           }
@@ -3630,14 +3845,14 @@ engine::~engine()
 
 void engine::run()
   {
-  state = draw(state, s);
+  draw(state, s);
   SDL_UpdateWindowSurface(pdc_window);
 
   while (auto new_state = process_input(state, state.active_buffer, s))
     {
     state = check_update_active_command_text(*new_state, s);
     if (!mouse.rearranging_windows)
-      state = draw(state, s);
+      draw(state, s);
 
     SDL_UpdateWindowSurface(pdc_window);
     }
