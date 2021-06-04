@@ -16,6 +16,7 @@
 #include <functional>
 #include <sstream>
 #include <cctype>
+#include <fstream>
 
 #include <SDL.h>
 #include <SDL_syswm.h>
@@ -379,7 +380,7 @@ app_state set_filename(app_state state, uint32_t buffer_id, const settings& s) {
   fb = make_empty_buffer();
   fb.name = name;
   fb = insert(fb, new_text, convert(s), false);
-    
+  
   return state;
 }
 
@@ -2407,6 +2408,20 @@ std::optional<app_state> command_put(app_state state, uint32_t buffer_id, settin
   return state;
 }
 
+std::optional<app_state> command_putall(app_state state, uint32_t buffer_id, settings& s)
+{
+  for (uint32_t buffer_id = 0; buffer_id < (uint32_t)state.buffers.size(); ++buffer_id) {
+    const auto& w = state.windows[state.buffer_id_to_window_id[buffer_id]];
+    if (w.wt == e_window_type::wt_normal) {
+      if (can_be_saved(state.buffers[buffer_id].buffer.name) && state.buffers[buffer_id].bt == e_buffer_type::bt_normal) {
+        if (state.buffers[buffer_id].buffer.modification_mask & 1)
+          state = *command_put(state, buffer_id, s);
+      }
+    }
+  }
+  return state;
+}
+
 std::optional<app_state> command_help(app_state state, uint32_t buffer_id, settings& s)
 {
   std::string helppath = jtk::get_folder(jtk::get_executable_path()) + "Help.txt";
@@ -2427,7 +2442,7 @@ std::optional<app_state> command_incremental_search(app_state state, uint32_t bu
 }
 
 std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, std::wstring& parameters, settings& s)
-  {
+{
   auto active_buffer = state.active_buffer;
   state = *command_new_window(state, buffer_id, s);
   buffer_id = (uint32_t)(state.buffers.size() - 1);
@@ -2435,7 +2450,70 @@ std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, 
   parameters = L"="+parameters;
   state.active_buffer = active_buffer;
   return execute(state, buffer_id, parameters, s);
+}
+
+std::optional<app_state> command_dump(app_state state, uint32_t, settings& s)
+{
+  std::stringstream str;
+  save_to_stream(str, state);
+  get_active_buffer(state) = insert(get_active_buffer(state), str.str(), convert(s));
+  return state;
+}
+
+app_state load_dump(std::istream& str, settings& s) {
+  app_state state = load_from_stream(str, s);
+  uint32_t sz = (uint32_t)state.windows.size();
+  auto active_buffer = state.active_buffer;
+  for (uint32_t j = 0; j < sz; ++j) {
+    if (state.windows[j].wt == e_window_type::wt_normal && state.buffers[state.windows[j].buffer_id].bt != e_buffer_type::bt_piped) {
+      uint32_t buffer_id = state.windows[j].buffer_id;
+      std::string filename = state.buffers[buffer_id].buffer.name;
+      if (jtk::file_exists(filename)) {
+        state.buffers[buffer_id].buffer = read_from_file(filename);
+        state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
+        state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+      } else if (jtk::is_directory(filename)) {
+        state.buffers[buffer_id].buffer = read_from_file(filename);
+        state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
+        state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+      }
+      if (state.buffers[buffer_id].scroll_row > get_last_position(state.buffers[buffer_id].buffer).row)
+        state.buffers[buffer_id].scroll_row = get_last_position(state.buffers[buffer_id].buffer).row;
+    }
+    if (state.buffers[state.windows[j].buffer_id].bt == e_buffer_type::bt_piped) {
+      uint32_t buffer_id = state.windows[j].buffer_id;
+      std::string pipe_command = state.buffers[buffer_id].buffer.name;
+      state = *execute(state, buffer_id, jtk::convert_string_to_wstring(pipe_command), s);
+    }
   }
+  state.active_buffer = active_buffer;
+  return state;
+}
+
+std::optional<app_state> command_load(app_state state, uint32_t, settings& s)
+{
+  auto& fb = get_active_buffer(state);
+  if (has_selection(fb))
+  {
+    std::string string_to_load = to_string(get_selection(fb, convert(s)));
+    std::string filepath = get_file_path(string_to_load, fb.name);
+    if (filepath.empty()) {
+      std::stringstream str;
+      str << string_to_load;
+      return load_dump(str, s);
+    } else {
+      app_state result = state;
+      std::ifstream f(filepath);
+      if (f.is_open())
+      {
+        result = load_dump(f, s);
+        f.close();
+      }
+      return result;
+    }
+  }
+  return state;
+}
 
 const auto executable_commands = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, settings&)>>
 {
@@ -2448,6 +2526,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
   {L"DarkTheme", command_dark_theme},
   {L"Delcol", command_delete_column},
   {L"Del", command_delete_window},
+  {L"Dump", command_dump},
   {L"Exit", command_exit},
   {L"Find", command_find},
   {L"FindNxt", command_find_next},
@@ -2458,12 +2537,14 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
   {L"Kill", command_kill},
   {L"LightTheme", command_light_theme},
   {L"LineNumbers", command_line_numbers},
+  {L"Load", command_load},
   {L"MatrixTheme", command_matrix_theme},
   {L"New", command_new_window},
   {L"Newcol", command_new_column},
   {L"Open", command_open},
   {L"Paste", command_paste_from_snarf_buffer},
   {L"Put", command_put},
+  {L"Putall", command_putall},
   {L"Redo", command_redo},
   {L"Replace", command_replace},
   {L"Select", command_select},
@@ -2758,9 +2839,9 @@ void kill(app_state& state, uint32_t buffer_id) {
     state.buffers[buffer_id].buffer.name.clear();
 }
 
-std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, settings& s)
+std::optional<app_state> command_kill(app_state state, uint32_t, settings& s)
 {
-  kill(state, buffer_id);
+  kill(state, state.active_buffer);
   return state;
 }
 
@@ -2773,7 +2854,7 @@ app_state start_pipe(app_state state, uint32_t buffer_id, const std::string& inp
   for (const auto& p : parameters) {
     state.buffers[buffer_id].buffer.name += std::string(" ") + std::string("\"") + p + std::string("\"");
   }
-
+  
   state.buffers[buffer_id-1].buffer.name = state.buffers[buffer_id].buffer.name;
   
   //state.buffers[buffer_id-1].buffer.pos = position(0, 0);
@@ -4106,9 +4187,9 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           modifications |= this_buffer_modified;
         }
       }
-    if (modifications)
-      return state;
-    tic = std::chrono::steady_clock::now();
+      if (modifications)
+        return state;
+      tic = std::chrono::steady_clock::now();
     }
   }
 }
@@ -4117,7 +4198,7 @@ app_state make_topline(app_state state, const settings& s) {
   uint32_t id = (uint32_t)state.buffers.size();
   buffer_data bd = make_empty_buffer_data();
   bd.buffer_id = id;
-  bd.buffer = insert(bd.buffer, "Newcol Exit", convert(s), false);
+  bd.buffer = insert(bd.buffer, "Newcol Kill Putall Exit", convert(s), false);
   state.buffers.push_back(bd);
   int rows, cols;
   getmaxyx(stdscr, rows, cols);
@@ -4175,6 +4256,15 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   init_colors(s);
   bkgd(COLOR_PAIR(default_color));
   
+  app_state result = state;
+  std::ifstream f(get_file_in_executable_path("temp.txt"));
+  if (f.is_open())
+  {
+    result = load_dump(f, s);
+    f.close();
+    state = result;
+  }
+  /*
   state = load_from_file(state, get_file_in_executable_path("temp.txt"), s);
   uint32_t sz = (uint32_t)state.windows.size();
   auto active_buffer = state.active_buffer;
@@ -4201,7 +4291,7 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
     }
   }
   state.active_buffer = active_buffer;
-  
+  */
   SDL_ShowCursor(1);
   SDL_SetWindowSize(pdc_window, state.w, state.h);
   SDL_SetWindowPosition(pdc_window, s.x, s.y);
