@@ -61,16 +61,23 @@ struct app_state
   int64_t operation_scroll_row;
   };
 
-std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id, const settings& s);
-std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, const settings& s);
-app_state optimize_column(app_state state, uint32_t buffer_id, const settings& s);
+std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id, settings& s);
+std::optional<app_state> command_kill(app_state state, uint32_t buffer_id, settings& s);
+app_state optimize_column(app_state state, uint32_t buffer_id, settings& s);
 void kill(app_state& state, uint32_t buffer_id);
 std::string get_user_command_text(const file_buffer& fb);
-std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t, const settings& s);
-std::optional<app_state> command_paste_from_snarf_buffer(app_state state, uint32_t, const settings& s);
-std::optional<app_state> command_redo(app_state state, uint32_t buffer_id, const settings& s);
-std::optional<app_state> command_undo(app_state state, uint32_t buffer_id, const settings& s);
-std::optional<app_state> command_goto(app_state state, uint32_t buffer_id, const settings& s);
+std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t, settings& s);
+std::optional<app_state> command_paste_from_snarf_buffer(app_state state, uint32_t, settings& s);
+std::optional<app_state> command_redo(app_state state, uint32_t buffer_id, settings& s);
+std::optional<app_state> command_undo(app_state state, uint32_t buffer_id, settings& s);
+std::optional<app_state> command_goto(app_state state, uint32_t buffer_id, settings& s);
+std::optional<app_state> command_find(app_state state, uint32_t buffer_id, settings& s);
+std::optional<app_state> command_replace(app_state state, uint32_t buffer_id, settings& s);
+std::optional<app_state> command_select_all(app_state state, uint32_t buffer_id, settings& s);
+std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const std::string& filename, settings& s);
+app_state add_error_text(app_state state, const std::string& errortext, settings& s);
+app_state replace_all(app_state state, settings& s);
+app_state replace_selection(app_state state, settings& s);
 uint32_t get_editor_buffer_id(const app_state& state, uint32_t buffer_id);
 bool can_be_saved(const std::string& name);
 

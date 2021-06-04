@@ -101,4 +101,7 @@ target_link_libraries(jedi
     )	
 
 add_custom_command(TARGET jedi POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/Help.txt" "$<TARGET_FILE_DIR:jedi>/Help.txt")
+   
+add_custom_command(TARGET jedi POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/jedi_syntax.json" "$<TARGET_FILE_DIR:jedi>/jedi_syntax.json")
