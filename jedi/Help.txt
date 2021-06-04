@@ -99,6 +99,7 @@ Find , ^f      : find a word
 Get, F5        : refresh the current file or folder
 Goto , ^g      : go to line
 Help, F1       : show this help text
+Hex <file>     : loads the file in hexagonal notation
 Incr, ^i       : incremental search
 Kill           : kill the current running piped process if any 
                  (cfr. Win command)
@@ -117,7 +118,7 @@ Sel/all, ^a    : select all
 TabSpaces      : toggle tab between spaces and real tab
 Tab <nr>       : Make tab nr spaces wide
 Win <command>  : Make a piped Jedi instance running the command, e.g. Win cmd 
-                 will run Window's command shell inside jed.
+                 will run Window's command shell inside jedi.
 Wrap           : Toggle wrapping of lines in the editor window
 Undo, ^z       : undo
 

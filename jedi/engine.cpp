@@ -9,6 +9,7 @@
 #include "draw.h"
 #include "serialize.h"
 #include "plumber.h"
+#include "hex.h"
 
 #include <jtk/file_utils.h>
 #include <jtk/pipe.h>
@@ -2467,10 +2468,33 @@ std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, 
   parameters = clean_command(parameters);
   if (parameters.empty()) {
     parameters = to_wstring(get_selection(state.buffers[active_buffer].buffer, convert(s)));
+    parameters = clean_command(parameters);
   }
   parameters = L"="+parameters;
   state.active_buffer = active_buffer;
   return execute(state, buffer_id, parameters, s);
+}
+
+std::optional<app_state> command_hex(app_state state, uint32_t buffer_id, std::wstring& parameters, settings& s)
+{
+  auto active_buffer = state.active_buffer;
+  state = *command_new_window(state, buffer_id, s);
+  buffer_id = (uint32_t)(state.buffers.size() - 1);
+  parameters = clean_command(parameters);
+  if (parameters.empty()) {
+    parameters = to_wstring(get_selection(state.buffers[active_buffer].buffer, convert(s)));
+    parameters = clean_command(parameters);
+    auto file_path = get_file_path(jtk::convert_wstring_to_string(parameters),state.buffers[active_buffer].buffer.name);
+    if (!file_path.empty())
+      parameters = jtk::convert_string_to_wstring(file_path);
+  }
+  state.buffers[buffer_id].buffer.content = to_text(to_hex(jtk::convert_wstring_to_string(parameters)));//read_from_file(jtk::convert_wstring_to_string(parameters));
+  state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
+  state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+  int64_t command_id = state.active_buffer-1;
+  //state.buffers[command_id].buffer.name = state.buffers[buffer_id].buffer.name;
+  state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
+  return state;
 }
 
 std::optional<app_state> command_dump(app_state state, uint32_t, settings& s)
@@ -2578,7 +2602,8 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
 const auto executable_commands_with_parameters = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, std::wstring&, settings&)>>
 {
   {L"Tab", command_tab},
-  {L"Win", command_piped_win}
+  {L"Win", command_piped_win},
+  {L"Hex", command_hex}
 };
 
 

@@ -5,6 +5,7 @@ colors.h
 draw.h
 grid.h
 engine.h
+hex.h
 keyboard.h
 mouse.h
 pdcex.h
@@ -24,6 +25,7 @@ colors.cpp
 draw.cpp
 grid.cpp
 engine.cpp
+hex.cpp
 keyboard.cpp
 main.cpp
 mouse.cpp

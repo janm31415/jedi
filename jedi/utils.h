@@ -6,6 +6,7 @@
 std::string get_file_in_executable_path(const std::string& filename);
 
 uint16_t ascii_to_utf16(unsigned char ch);
+uint16_t ascii437_to_utf16(unsigned char ch);
 
 /*
 Input is a filename and the filename of the window.
