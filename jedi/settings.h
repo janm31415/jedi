@@ -14,7 +14,6 @@ struct settings
   int w, h, x, y;
   int font_size;
   int mouse_scroll_steps;
-  std::string startup_folder;
   std::string last_find, last_replace;
 
   uint32_t color_editor_text;

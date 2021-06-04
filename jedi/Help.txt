@@ -126,6 +126,4 @@ When Jedi is closed, it will save any user settings in a file
 jedi_settings.json which lives next to the executable file Jedi.exe. It is 
 possible to override certain settings. In the same folder, make a file 
 jedi_user_settings.json and put here the settings that you want to control. 
-You can, for instance, make your own color scheme here, or fill in a value 
-for "startup_folder" so that jedi (without arguments) always starts in this 
-given folder.
+You can, for instance, make your own color scheme here.

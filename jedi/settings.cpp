@@ -17,7 +17,6 @@ settings::settings()
   y = 100;
   font_size = 17;
   mouse_scroll_steps = 3;
-  startup_folder = "";
 
   color_editor_text = 0xffc0c0c0;
   color_editor_background = 0xff000000;
@@ -75,9 +74,6 @@ void update_settings_if_different(settings& s, const settings& new_settings, con
 
   if (new_settings.mouse_scroll_steps != old_settings.mouse_scroll_steps)
     s.mouse_scroll_steps = new_settings.mouse_scroll_steps;
-
-  if (new_settings.startup_folder != old_settings.startup_folder)
-    s.startup_folder = new_settings.startup_folder;
 
   if (new_settings.last_find != old_settings.last_find)
     s.last_find = new_settings.last_find;
@@ -146,7 +142,6 @@ void update_settings(settings& s, const char* filename)
   f["y"] >> s.y;
   f["font_size"] >> s.font_size;
   f["mouse_scroll_steps"] >> s.mouse_scroll_steps;
-  f["startup_folder"] >> s.startup_folder;
   f["last_find"] >> s.last_find;
   f["last_replace"] >> s.last_replace;
   f["show_line_numbers"] >> s.show_line_numbers;
@@ -191,7 +186,6 @@ void write_settings(const settings& s, const char* filename)
   f << "y" << s.y;
   f << "font_size" << s.font_size;
   f << "mouse_scroll_steps" << s.mouse_scroll_steps;
-  f << "startup_folder" << s.startup_folder;
   f << "last_find" << s.last_find;
   f << "last_replace" << s.last_replace;
   f << "show_line_numbers" << s.show_line_numbers;
