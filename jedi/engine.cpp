@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "draw.h"
 #include "serialize.h"
+#include "plumber.h"
 
 #include <jtk/file_utils.h>
 #include <jtk/pipe.h>
@@ -36,6 +37,12 @@ namespace
 {
 int font_width, font_height;
 }
+
+const plumber& get_plumber()
+  {
+  static plumber p;
+  return p;
+  }
 
 env_settings convert(const settings& s)
 {
@@ -350,6 +357,8 @@ app_state update_filename(app_state state, uint32_t buffer_id, const settings& s
   
   fb.name = name;
   state.buffers[buffer_id+1].buffer.name = name;
+  state.buffers[buffer_id+1].buffer = set_multiline_comments(state.buffers[buffer_id+1].buffer);
+  state.buffers[buffer_id+1].buffer = init_lexer_status(state.buffers[buffer_id+1].buffer);
   return state;
 }
 
@@ -1764,14 +1773,21 @@ std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const st
   }
   else if (jtk::file_exists(filename))
   {
-    state = *command_new_window(state, buffer_id, s);
-    get_active_buffer(state) = read_from_file(filename);
-    int64_t command_id = state.active_buffer-1;
-    state.buffers[command_id].buffer.name = get_active_buffer(state).name;
-    get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
-    get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
-    state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
-    return check_scroll_position(state, s);
+    auto ext = jtk::get_extension(filename);
+    if (get_plumber().extension_has_executable(ext)) {
+      std::vector<std::string> parameters;
+      parameters.push_back(filename);
+      return execute_external(state, get_plumber().get_executable(ext), parameters, s);
+    } else {
+      state = *command_new_window(state, buffer_id, s);
+      get_active_buffer(state) = read_from_file(filename);
+      int64_t command_id = state.active_buffer-1;
+      state.buffers[command_id].buffer.name = get_active_buffer(state).name;
+      get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
+      get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
+      state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
+      return check_scroll_position(state, s);
+    }
   }
   else
   {

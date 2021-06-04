@@ -19,3 +19,5 @@ bool remove_quotes(std::wstring& cmd);
 
 void remove_whitespace(std::string& cmd);
 void remove_whitespace(std::wstring& cmd);
+
+std::vector<std::wstring> break_string(std::string in);

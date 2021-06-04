@@ -296,3 +296,19 @@ bool remove_quotes(std::wstring& cmd)
     }
   return has_quotes;
   }
+
+std::vector<std::wstring> break_string(std::string in)
+    {
+    std::vector<std::wstring> out;
+    while (!in.empty())
+      {
+      auto splitpos = in.find_first_of(' ');
+      std::string keyword = in.substr(0, splitpos);
+      if (splitpos != std::string::npos)
+        in.erase(0, splitpos + 1);
+      else
+        in.clear();
+      out.push_back(jtk::convert_string_to_wstring(keyword));
+      }
+    return out;
+    }
