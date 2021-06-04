@@ -1861,6 +1861,8 @@ std::optional<app_state> load_folder(app_state state, uint32_t buffer_id, const 
     state.buffers[buffer_id].buffer = read_from_file(simplified_folder_name);
     state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
     state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+    state.buffers[buffer_id].buffer.pos = position(0, 0);
+    state.buffers[buffer_id].scroll_row = 0;
     std::string user_command_text = get_user_command_text(state, command_id);
     std::string command_text = get_command_text(state, command_id, s);
     std::string total_line = simplified_folder_name + command_text + user_command_text;
@@ -2643,7 +2645,7 @@ void split_command(std::wstring& first, std::wstring& remainder, const std::wstr
   auto pos_quote_2 = pos_quote + 1;
   while (pos_quote_2 < command.size() && command[pos_quote_2] != L'"')
     ++pos_quote_2;
-  if (pos_quote_2 + 1 == command.size())
+  if (pos_quote_2 + 1 >= command.size())
   {
     first = command;
     return;
@@ -4198,7 +4200,7 @@ app_state make_topline(app_state state, const settings& s) {
   uint32_t id = (uint32_t)state.buffers.size();
   buffer_data bd = make_empty_buffer_data();
   bd.buffer_id = id;
-  bd.buffer = insert(bd.buffer, "Newcol Kill Putall Exit", convert(s), false);
+  bd.buffer = insert(bd.buffer, "Newcol Kill Putall Dump Load Exit", convert(s), false);
   state.buffers.push_back(bd);
   int rows, cols;
   getmaxyx(stdscr, rows, cols);
@@ -4264,34 +4266,7 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
     f.close();
     state = result;
   }
-  /*
-  state = load_from_file(state, get_file_in_executable_path("temp.txt"), s);
-  uint32_t sz = (uint32_t)state.windows.size();
-  auto active_buffer = state.active_buffer;
-  for (uint32_t j = 0; j < sz; ++j) {
-    if (state.windows[j].wt == e_window_type::wt_normal && state.buffers[state.windows[j].buffer_id].bt != e_buffer_type::bt_piped) {
-      uint32_t buffer_id = state.windows[j].buffer_id;
-      std::string filename = state.buffers[buffer_id].buffer.name;
-      if (jtk::file_exists(filename)) {
-        state.buffers[buffer_id].buffer = read_from_file(filename);
-        state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
-        state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
-      } else if (jtk::is_directory(filename)) {
-        state.buffers[buffer_id].buffer = read_from_file(filename);
-        state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
-        state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
-      }
-      if (state.buffers[buffer_id].scroll_row > get_last_position(state.buffers[buffer_id].buffer).row)
-        state.buffers[buffer_id].scroll_row = get_last_position(state.buffers[buffer_id].buffer).row;
-    }
-    if (state.buffers[state.windows[j].buffer_id].bt == e_buffer_type::bt_piped) {
-      uint32_t buffer_id = state.windows[j].buffer_id;
-      std::string pipe_command = state.buffers[buffer_id].buffer.name;
-      state = *execute(state, buffer_id, jtk::convert_string_to_wstring(pipe_command), s);
-    }
-  }
-  state.active_buffer = active_buffer;
-  */
+  
   SDL_ShowCursor(1);
   SDL_SetWindowSize(pdc_window, state.w, state.h);
   SDL_SetWindowPosition(pdc_window, s.x, s.y);
@@ -4311,6 +4286,50 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
     state.active_buffer = 0;
     state = make_topline(state, s);
     state = *command_new_column(state, 0, s);
+  }
+  
+  for (int j = 1; j < argc; ++j) {
+    std::string input(argv[j]);
+    bool piped = input[0] == '=';
+    if (piped)
+      input.erase(input.begin());
+    remove_quotes(input);
+    if (jtk::is_directory(input)) {
+      auto inputfolder = jtk::get_cwd();
+      if (!inputfolder.empty() && inputfolder.back() != '/')
+        inputfolder.push_back('/');
+      if (input.front() == '/')
+        inputfolder.pop_back();
+      inputfolder.append(input);
+      if (jtk::is_directory(inputfolder))
+        input.swap(inputfolder);
+      input = simplify_folder(input);
+      state = *load_file(state, 0, input, s);
+    } else
+    {
+    std::string inputfile = get_file_path(input, std::string());
+    if (inputfile.empty())
+      {
+      inputfile = jtk::get_cwd();
+      if (inputfile.back() != '\\' && inputfile.back() != '/')
+        inputfile.push_back('/');
+
+      inputfile.append(input);
+      }
+    if (piped)
+      {
+      state = *command_new_window(state, 0, s);
+      uint32_t buffer_id = (uint32_t)(state.buffers.size() - 1);
+      std::stringstream str;
+      for (; j < argc; ++j)
+        str << argv[j] << (j+1<argc?" ":"");
+      std::wstring parameters = jtk::convert_string_to_wstring(str.str());
+      state = *execute(state, buffer_id, parameters, s);
+      }
+    else {
+      state = *load_file(state, 0, input, s);
+      }
+    }
   }
   
 }
