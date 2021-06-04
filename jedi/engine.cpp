@@ -369,6 +369,20 @@ std::string get_user_command_text(const app_state& state, uint32_t buffer_id) {
   return get_user_command_text(fb);
 }
 
+app_state set_filename(app_state state, uint32_t buffer_id, const settings& s) {
+  assert(this_is_a_command_window(state, buffer_id));
+  
+  auto& fb = state.buffers[buffer_id].buffer;
+  std::string name = fb.name;
+  std::string new_text = name + get_command_text(state, buffer_id, s) + get_user_command_text(state, buffer_id);
+  
+  fb = make_empty_buffer();
+  fb.name = name;
+  fb = insert(fb, new_text, convert(s), false);
+    
+  return state;
+}
+
 app_state add_error_window(app_state state, settings& s)
 {
   state = *command_new_window(state, 0, s);
@@ -881,24 +895,24 @@ app_state check_operation_buffer(app_state state)
 }
 
 
-app_state check_pipes(bool& modifications, app_state state, const settings& s)
+app_state check_pipes(bool& modifications, uint32_t buffer_id, app_state state, const settings& s)
 {
   modifications = false;
-  if (state.buffers[state.active_buffer].bt != bt_piped)
+  if (state.buffers[buffer_id].bt != bt_piped)
     return state;
 #ifdef _WIN32
-  std::string text = jtk::read_from_pipe(state.buffers[state.active_buffer].process, 10);
+  std::string text = jtk::read_from_pipe(state.buffers[buffer_id].process, 10);
 #else
-  std::string text = jtk::read_from_pipe(state.buffers[state.active_buffer].process.data(), 10);
+  std::string text = jtk::read_from_pipe(state.buffers[buffer_id].process.data(), 10);
 #endif
   if (text.empty())
     return state;
   modifications = true;
-  get_active_buffer(state).pos = get_last_position(get_active_buffer(state));
-  get_active_buffer(state) = insert(get_active_buffer(state), text, convert(s));
-  auto last_line = get_active_buffer(state).content.back();
-  state.buffers[state.active_buffer].piped_prompt = std::wstring(last_line.begin(), last_line.end());
-  return check_scroll_position(state, s);
+  state.buffers[buffer_id].buffer.pos = get_last_position(state.buffers[buffer_id].buffer);
+  state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, text, convert(s));
+  auto last_line = state.buffers[buffer_id].buffer.content.back();
+  state.buffers[buffer_id].piped_prompt = std::wstring(last_line.begin(), last_line.end());
+  return check_scroll_position(state, buffer_id, s);
 }
 
 app_state cancel_selection(app_state state)
@@ -1247,7 +1261,7 @@ app_state ret_editor(app_state state, settings& s)
     get_active_buffer(state).pos = get_last_position(get_active_buffer(state));
     get_active_buffer(state)= insert(get_active_buffer(state), "\n", convert(s));
     bool modifications;
-    state = check_pipes(modifications, state, s);
+    state = check_pipes(modifications, state.active_buffer, state, s);
     return check_scroll_position(state, s);
   }
   else
@@ -2754,11 +2768,17 @@ app_state start_pipe(app_state state, uint32_t buffer_id, const std::string& inp
 {
   state = *command_kill(state, buffer_id, s);
   //state.buffer = make_empty_buffer();
-  state.buffers[buffer_id].buffer.name = "=" + inputfile;
-  state.buffers[buffer_id-1].buffer.name = "=" + inputfile;
+  state.buffers[buffer_id].buffer.name = std::string("=") + std::string("\"") + inputfile + std::string("\"");
   
-  state.buffers[buffer_id-1].buffer.pos = position(0, 0);
-  state.buffers[buffer_id-1].buffer = insert(state.buffers[buffer_id-1].buffer, state.buffers[buffer_id-1].buffer.name, convert(s), false);
+  for (const auto& p : parameters) {
+    state.buffers[buffer_id].buffer.name += std::string(" ") + std::string("\"") + p + std::string("\"");
+  }
+
+  state.buffers[buffer_id-1].buffer.name = state.buffers[buffer_id].buffer.name;
+  
+  //state.buffers[buffer_id-1].buffer.pos = position(0, 0);
+  //state.buffers[buffer_id-1].buffer = insert(state.buffers[buffer_id-1].buffer, state.buffers[buffer_id-1].buffer.name, convert(s), false);
+  state = set_filename(state, buffer_id-1, s);
   
   state.buffers[buffer_id].scroll_row = 0;
   state.operation = op_editing;
@@ -4082,7 +4102,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
       for (uint32_t b = 0; b < state.buffers.size(); ++b) {
         if (state.buffers[b].bt == e_buffer_type::bt_piped) {
           bool this_buffer_modified = false;
-          state = check_pipes(this_buffer_modified, state, s);
+          state = check_pipes(this_buffer_modified, b, state, s);
           modifications |= this_buffer_modified;
         }
       }
@@ -4173,6 +4193,11 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
       }
       if (state.buffers[buffer_id].scroll_row > get_last_position(state.buffers[buffer_id].buffer).row)
         state.buffers[buffer_id].scroll_row = get_last_position(state.buffers[buffer_id].buffer).row;
+    }
+    if (state.buffers[state.windows[j].buffer_id].bt == e_buffer_type::bt_piped) {
+      uint32_t buffer_id = state.windows[j].buffer_id;
+      std::string pipe_command = state.buffers[buffer_id].buffer.name;
+      state = *execute(state, buffer_id, jtk::convert_string_to_wstring(pipe_command), s);
     }
   }
   state.active_buffer = active_buffer;

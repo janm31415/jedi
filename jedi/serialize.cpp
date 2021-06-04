@@ -49,7 +49,12 @@ buffer_data load_buffer_from_stream(std::istream& str, const settings& s) {
   bd.process = {{-1,-1,-1}};
 #endif
   bd.buffer = make_empty_buffer();
-  str >> bd.buffer.name;
+  //str.ignore();
+  std::string buffer_name;
+  std::getline(str, buffer_name);
+  if (buffer_name.empty())
+    std::getline(str, buffer_name);  
+  bd.buffer.name = buffer_name;
   int bt;
   str >> bt;
   bd.bt = (e_buffer_type)bt;
