@@ -1,14 +1,14 @@
 {
 	"/Applications/qView.app/Contents/MacOS/qView":
 	  {"extensions": "jpg png jpeg gif",
-	   "prefixes": ""
+	   "regex": ""
 	  },
 	"/Applications/VLC.app/Contents/MacOS/VLC":
 	  {"extensions": "avi mp3 mp4",
-	   "prefixes": ""
+	   "regex": ""
 	  },
 	"/Applications/Safari.app/Contents/MacOS/Safari":
     {"extensions": "html",
-	   "prefixes": "http:// https://"
+	   "regex": "^(https?:\\/\\/).*"
 	  }
 }

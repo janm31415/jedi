@@ -40,10 +40,10 @@ int font_width, font_height;
 }
 
 const plumber& get_plumber()
-  {
+{
   static plumber p;
   return p;
-  }
+}
 
 env_settings convert(const settings& s)
 {
@@ -1781,7 +1781,7 @@ std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const st
     get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
     get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
     state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
-    return check_scroll_position(state, s);    
+    return check_scroll_position(state, s);
   }
   else
   {
@@ -1922,11 +1922,11 @@ std::optional<app_state> load(app_state state, uint32_t buffer_id, const std::ws
   if (jtk::file_exists(newfilename))
   {
     if (!ctrl_pressed()) {
-    auto exe = get_plumber().get_executable(newfilename);
-    if (!exe.empty()) {
-      std::vector<std::string> parameters;
-      parameters.push_back(newfilename);
-      return execute_external(state, exe, parameters, s);
+      auto exe = get_plumber().get_executable_from_extension(newfilename);
+      if (!exe.empty()) {
+        std::vector<std::string> parameters;
+        parameters.push_back(newfilename);
+        return execute_external(state, exe, parameters, s);
       }
     }
     return load_file(state, buffer_id, newfilename, s);
@@ -1937,23 +1937,31 @@ std::optional<app_state> load(app_state state, uint32_t buffer_id, const std::ws
     return load_folder(state, buffer_id, newfilename, s);
   }
   
-  if (!ctrl_pressed()) {
-    auto exe = get_plumber().get_executable(jtk::convert_wstring_to_string(command));
-    if (!exe.empty()) {
-      std::vector<std::string> parameters;
-      parameters.push_back(jtk::convert_wstring_to_string(command));
-      return execute_external(state, exe, parameters, s);
-      }
-  }
-  
   if (jtk::file_exists(jtk::convert_wstring_to_string(command)))
   {
+    if (!ctrl_pressed()) {
+      auto exe = get_plumber().get_executable_from_extension(newfilename);
+      if (!exe.empty()) {
+        std::vector<std::string> parameters;
+        parameters.push_back(newfilename);
+        return execute_external(state, exe, parameters, s);
+      }
+    }
     return load_file(state, buffer_id, jtk::convert_wstring_to_string(command), s);
   }
   
   if (jtk::is_directory(jtk::convert_wstring_to_string(command)))
   {
     return load_folder(state, buffer_id, jtk::convert_wstring_to_string(command), s);
+  }
+  
+  if (!ctrl_pressed()) {
+    auto exe = get_plumber().get_executable_from_regex(jtk::convert_wstring_to_string(command));
+    if (!exe.empty()) {
+      std::vector<std::string> parameters;
+      parameters.push_back(jtk::convert_wstring_to_string(command));
+      return execute_external(state, exe, parameters, s);
+    }
   }
   
   return find_text(state, buffer_id, command, s);
@@ -4363,27 +4371,27 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
       state = *load_file(state, 0, input, s);
     } else
     {
-    std::string inputfile = get_file_path(input, std::string());
-    if (inputfile.empty())
+      std::string inputfile = get_file_path(input, std::string());
+      if (inputfile.empty())
       {
-      inputfile = jtk::get_cwd();
-      if (inputfile.back() != '\\' && inputfile.back() != '/')
-        inputfile.push_back('/');
-
-      inputfile.append(input);
+        inputfile = jtk::get_cwd();
+        if (inputfile.back() != '\\' && inputfile.back() != '/')
+          inputfile.push_back('/');
+        
+        inputfile.append(input);
       }
-    if (piped)
+      if (piped)
       {
-      state = *command_new_window(state, 0, s);
-      uint32_t buffer_id = (uint32_t)(state.buffers.size() - 1);
-      std::stringstream str;
-      for (; j < argc; ++j)
+        state = *command_new_window(state, 0, s);
+        uint32_t buffer_id = (uint32_t)(state.buffers.size() - 1);
+        std::stringstream str;
+        for (; j < argc; ++j)
         str << argv[j] << (j+1<argc?" ":"");
-      std::wstring parameters = jtk::convert_string_to_wstring(str.str());
-      state = *execute(state, buffer_id, parameters, s);
+        std::wstring parameters = jtk::convert_string_to_wstring(str.str());
+        state = *execute(state, buffer_id, parameters, s);
       }
-    else {
-      state = *load_file(state, 0, input, s);
+      else {
+        state = *load_file(state, 0, input, s);
       }
     }
   }
