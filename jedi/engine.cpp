@@ -265,7 +265,7 @@ std::string get_command_text(const app_state& state, uint32_t buffer_id, const s
   auto& f = state.buffers[buffer_id].buffer;
   auto& textf = state.buffers[buffer_id+1].buffer;
   
-  bool put = textf.modification_mask != 0;
+  bool put = textf.modification_mask != 0 && can_be_saved(f.name);
   bool undo = !textf.history.empty() && textf.undo_redo_index > 0;
   bool redo = !textf.history.empty() && textf.undo_redo_index < textf.history.size();
   
@@ -2432,6 +2432,11 @@ std::optional<app_state> command_put(app_state state, uint32_t buffer_id, settin
   if (state.buffers[buffer_id].buffer.name.back() == '/')
   {
     std::string error_message = "Error saving folder " + state.buffers[buffer_id].buffer.name + " as file\n";
+    return add_error_text(state, error_message, s);
+  }
+  if (!can_be_saved(state.buffers[buffer_id].buffer.name))
+  {
+    std::string error_message = "The name " + state.buffers[buffer_id].buffer.name + " is invalid for saving\n";
     return add_error_text(state, error_message, s);
   }
   bool success = false;
