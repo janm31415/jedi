@@ -2,6 +2,7 @@
 
 #include <jtk/file_utils.h>
 #include <algorithm>
+#include <set>
 
 std::string get_file_in_executable_path(const std::string& filename)
 {
@@ -227,6 +228,20 @@ uint16_t ascii437_to_utf16(unsigned char ch)
   return m[ch];
 }
 
+void remove_doubles(std::vector<std::wstring>& paths) {
+  std::set<std::wstring> treated;
+  auto it = paths.begin();
+  while (it != paths.end()) {
+    auto it2 = treated.find(*it);
+    if (it2 != treated.end())
+      it = paths.erase(it);
+    else {
+      treated.insert(*it);
+      ++it;
+      }
+  }
+}
+
 std::string get_file_path(const std::string& filename, const std::string& buffer_filename)
 {
   if (!jtk::get_folder(filename).empty())
@@ -286,16 +301,22 @@ std::string get_file_path(const std::string& filename, const std::string& buffer
   std::string path = jtk::getenv(std::string("PATH"));
   
 #if defined(__APPLE__)
-  path.append(std::string(":/usr/local/bin"));
+  if (path.empty())
+    path = std::string("/usr/bin:/usr/local/bin");
+  else {
+    if (path[0] == ':')
+      path = std::string("/usr/bin:/usr/local/bin") + path;
+    else
+      path = std::string("/usr/bin:/usr/local/bin:") + path;
+  }
 #endif
   
 #ifdef _WIN32
   auto path_list = split_wstring_by_wchar(jtk::convert_string_to_wstring(path), L';');
 #else
   auto path_list = split_wstring_by_wchar(jtk::convert_string_to_wstring(path), L':');
-  std::sort(path_list.begin(), path_list.end(), [](const std::wstring& left, const std::wstring& right) { return left > right; }); // sort from z to a so that /usr is in front of the list
 #endif
-  
+  remove_doubles(path_list);
   for (const auto& folder_in_path : path_list)
   {
     auto possible_files = jtk::get_files_from_directory(jtk::convert_wstring_to_string(folder_in_path), false);
