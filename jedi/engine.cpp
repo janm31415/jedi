@@ -1265,10 +1265,12 @@ app_state ret_editor(app_state state, settings& s)
     std::string cmd = jtk::convert_wstring_to_string(wcmd);
     cmd.push_back('\n');
 #ifdef _WIN32
-    jtk::send_to_pipe(state.buffers[state.active_buffer].process, cmd.c_str());
+    int res = jtk::send_to_pipe(state.buffers[state.active_buffer].process, cmd.c_str());
 #else
-    jtk::send_to_pipe(state.buffers[state.active_buffer].process.data(), cmd.c_str());
+    int res = jtk::send_to_pipe(state.buffers[state.active_buffer].process.data(), cmd.c_str());
 #endif
+    if (res != 0)
+      kill(state, state.active_buffer);
     get_active_buffer(state).pos = get_last_position(get_active_buffer(state));
     get_active_buffer(state)= insert(get_active_buffer(state), "\n", convert(s));
     bool modifications;
@@ -2481,6 +2483,8 @@ std::optional<app_state> command_incremental_search(app_state state, uint32_t bu
 std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, std::wstring& parameters, settings& s)
 {
   auto active_buffer = state.active_buffer;
+  jtk::active_folder af(jtk::get_folder(get_active_buffer(state).name).c_str());
+  
   state = *command_new_window(state, buffer_id, s);
   buffer_id = (uint32_t)(state.buffers.size() - 1);
   parameters = clean_command(parameters);
@@ -2563,17 +2567,25 @@ std::optional<app_state> command_load(app_state state, uint32_t, settings& s)
     if (filepath.empty()) {
       std::stringstream str;
       str << string_to_load;
-      return load_dump(str, s);
+      state = load_dump(str, s);
     } else {
-      app_state result = state;
       std::ifstream f(filepath);
       if (f.is_open())
       {
-        result = load_dump(f, s);
+        state = load_dump(f, s);
         f.close();
       }
-      return result;
     }
+    SDL_ShowCursor(1);
+    SDL_SetWindowSize(pdc_window, state.w, state.h);
+    SDL_SetWindowPosition(pdc_window, s.x, s.y);
+    
+    resize_term(state.h / font_height, state.w / font_width);
+    resize_term_ex(state.h / font_height, state.w / font_width);
+    
+    //state.active_buffer = 0;
+    state.operation = e_operation::op_editing;
+    return state;
   }
   return state;
 }
@@ -2716,22 +2728,58 @@ void split_command(std::wstring& first, std::wstring& remainder, const std::wstr
   remainder = command.substr(pos_quote_2 + 1);
 }
 
+char* alloc_argument(const std::string& s) {
+  char* ch = new char[s.length()+1];
+  size_t i = 0;
+  for (i = 0; i < s.length(); ++i)
+    ch[i] = s[i];
+  ch[i] = 0;
+  return ch;
+}
+
 char** alloc_arguments(const std::string& path, const std::vector<std::string>& parameters)
 {
   char** argv = new char*[parameters.size() + 2];
-  argv[0] = const_cast<char*>(path.c_str());
+  //argv[0] = const_cast<char*>(path.c_str());
+  argv[0] = alloc_argument(path);
   for (int j = 0; j < parameters.size(); ++j)
-  argv[j + 1] = const_cast<char*>(parameters[j].c_str());
+    //argv[j + 1] = const_cast<char*>(parameters[j].c_str());
+    argv[j+1] = alloc_argument(parameters[j]);
   argv[parameters.size() + 1] = nullptr;
   return argv;
 }
 
 void free_arguments(char** argv)
 {
+  size_t i = 0;
+  while (argv[i]) {
+    delete[] argv[i];
+    ++i;
+  }
   delete[] argv;
 }
 
-app_state execute_external(app_state state, const std::string& file_path, const std::vector<std::string>& parameters, settings& s)
+void kill(app_state& state, uint32_t buffer_id) {
+#ifdef _WIN32
+  if (state.buffers[buffer_id].bt == bt_piped)
+  {
+    jtk::destroy_pipe(state.buffers[buffer_id].process, 9);
+    state.buffers[buffer_id].process = nullptr;
+    state.buffers[buffer_id].bt = bt_normal;
+  }
+#else
+  if (state.buffers[buffer_id].bt == bt_piped)
+  {
+    jtk::destroy_pipe(state.buffers[buffer_id].process.data(), 9);
+    state.buffers[buffer_id].process[0] = state.buffers[buffer_id].process[1] = state.buffers[buffer_id].process[2] = -1;
+    state.buffers[buffer_id].bt = bt_normal;
+  }
+#endif
+  if (!state.buffers[buffer_id].buffer.name.empty() && state.buffers[buffer_id].buffer.name[0] == '=')
+    state.buffers[buffer_id].buffer.name.clear();
+}
+
+app_state execute_external_old(app_state state, const std::string& file_path, const std::vector<std::string>& parameters, settings& s)
 {
   jtk::active_folder af(jtk::get_folder(get_active_buffer(state).name).c_str());
   
@@ -2750,6 +2798,70 @@ app_state execute_external(app_state state, const std::string& file_path, const 
   }
   jtk::destroy_process(process, 0);
   return state;
+}
+
+app_state execute_external(app_state state, const std::string& file_path, const std::vector<std::string>& parameters, settings& s) {
+  jtk::active_folder af(jtk::get_folder(get_active_buffer(state).name).c_str());
+  std::string error_filename("+Errors");
+  uint32_t buffer_id = 0xffffffff;
+  for (const auto& w : state.windows)
+  {
+    if (w.wt == wt_normal)
+    {
+      const auto& f = state.buffers[w.buffer_id].buffer;
+      if (f.name == error_filename)
+        buffer_id = w.buffer_id;
+    }
+  }
+  
+  if (buffer_id == 0xffffffff)
+  {
+    state = add_error_window(state, s);
+    buffer_id = state.buffers.size() - 1;
+  }
+  auto active = state.active_buffer;
+  state.active_buffer = buffer_id;
+  get_active_buffer(state).pos = get_last_position(get_active_buffer(state));
+  
+
+  state = *command_kill(state, buffer_id, s);
+    
+  state.operation = op_editing;
+  state.buffers[buffer_id].bt = bt_piped;
+  
+  char** argv = alloc_arguments(file_path, parameters);
+#ifdef _WIN32
+  state.buffers[buffer_id].process = nullptr;
+  int err = jtk::create_pipe(inputfile.c_str(), argv, nullptr, &state.buffers[buffer_id].process);
+  free_arguments(argv);
+  if (err != 0)
+  {
+    std::string error_message = "Could not create child process\n";
+    state.buffers[buffer_id].bt = bt_normal;
+    return add_error_text(state, error_message, s);
+  }
+  std::string text = jtk::read_from_pipe(state.buffers[buffer_id].process, 100);
+#else
+  int err = jtk::create_pipe(file_path.c_str(), argv, nullptr, state.buffers[buffer_id].process.data());
+  free_arguments(argv);
+  if (err != 0)
+  {
+    std::string error_message = "Could not create child process\n";
+    state.buffers[buffer_id].bt = bt_normal;
+    return add_error_text(state, error_message, s);
+  }
+  std::string text = jtk::read_from_pipe(state.buffers[buffer_id].process.data(), 100);
+#endif
+  text.insert(text.begin(), '\n');
+  state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, text, convert(s));
+  if (!state.buffers[buffer_id].buffer.content.empty())
+  {
+    auto last_line = state.buffers[buffer_id].buffer.content.back();
+    state.buffers[buffer_id].piped_prompt = std::wstring(last_line.begin(), last_line.end());
+  }
+  state.buffers[buffer_id].buffer.pos = get_last_position(state.buffers[buffer_id].buffer);
+  state.active_buffer = active;
+  return check_scroll_position(state, buffer_id, s);
 }
 
 app_state execute_external_input(app_state state, const std::string& file_path, const std::vector<std::string>& parameters, settings& s)
@@ -2881,26 +2993,6 @@ app_state execute_external_input_output(app_state state, const std::string& file
   jtk::close_pipe(pipefd);
 #endif
   return state;
-}
-
-void kill(app_state& state, uint32_t buffer_id) {
-#ifdef _WIN32
-  if (state.buffers[buffer_id].bt == bt_piped)
-  {
-    jtk::destroy_pipe(state.buffers[buffer_id].process, 9);
-    state.buffers[buffer_id].process = nullptr;
-    state.buffers[buffer_id].bt = bt_normal;
-  }
-#else
-  if (state.buffers[buffer_id].bt == bt_piped)
-  {
-    jtk::destroy_pipe(state.buffers[buffer_id].process.data(), 9);
-    state.buffers[buffer_id].process[0] = state.buffers[buffer_id].process[1] = state.buffers[buffer_id].process[2] = -1;
-    state.buffers[buffer_id].bt = bt_normal;
-  }
-#endif
-  if (!state.buffers[buffer_id].buffer.name.empty() && state.buffers[buffer_id].buffer.name[0] == '=')
-    state.buffers[buffer_id].buffer.name.clear();
 }
 
 std::optional<app_state> command_kill(app_state state, uint32_t, settings& s)
