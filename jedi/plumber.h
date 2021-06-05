@@ -10,9 +10,10 @@ class plumber
     plumber();
     ~plumber();
 
-    bool extension_has_executable(const std::string& ext) const;
-    std::string get_executable(const std::string& ext) const;
+    //returns an empty string if no executable is found
+    std::string get_executable(const std::string& filename) const;
 
   private:
-    std::map<std::string, std::string> extension_to_executable;
+    std::map<std::wstring, std::string> extension_to_executable;
+    std::map<std::wstring, std::string> prefix_to_executable;    
   };

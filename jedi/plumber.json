@@ -1,4 +1,14 @@
 {
-	"jpg png": "/Applications/qView.app/Contents/MacOS/qView",
-	"avi mp4": "/Applications/VLC.app/Contents/MacOS/VLC"
+	"/Applications/qView.app/Contents/MacOS/qView":
+	  {"extensions": "jpg png jpeg gif",
+	   "prefixes": ""
+	  },
+	"/Applications/VLC.app/Contents/MacOS/VLC":
+	  {"extensions": "avi mp3 mp4",
+	   "prefixes": ""
+	  },
+	"/Applications/Safari.app/Contents/MacOS/Safari":
+    {"extensions": "html",
+	   "prefixes": "http:// https://"
+	  }
 }

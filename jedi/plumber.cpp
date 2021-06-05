@@ -9,7 +9,7 @@
 #include <jtk/file_utils.h>
 
 namespace {
-void read_syntax_from_json(std::map<std::string, std::string>& m, const std::string& filename)
+void read_syntax_from_json(std::map<std::wstring, std::string>& extension_to_executable, std::map<std::wstring, std::string>& prefix_to_executable, const std::string& filename)
 {
   nlohmann::json j;
   
@@ -23,14 +23,23 @@ void read_syntax_from_json(std::map<std::string, std::string>& m, const std::str
       for (auto ext_it = j.begin(); ext_it != j.end(); ++ext_it)
       {
         auto element = *ext_it;
-        std::string exe;
-        if (element.is_string())
-          exe = element.get<std::string>();
-        auto extensions = break_string(ext_it.key());
-        for (const auto& we : extensions)
-        {
-          std::string e = jtk::convert_wstring_to_string(we);
-          m[e] = exe;
+        if (element.is_object()) {
+          for (auto it = element.begin(); it != element.end(); ++it) {
+            if (it.key() == "extensions") {
+              if (it.value().is_string()) {
+                auto exts = break_string(it.value().get<std::string>());
+                for (auto e : exts)
+                  extension_to_executable[e] = ext_it.key();
+              }
+            }
+            if (it.key() == "prefixes") {
+              if (it.value().is_string()) {
+                auto prefs = break_string(it.value().get<std::string>());
+                for (auto p : prefs)
+                  prefix_to_executable[p] = ext_it.key();
+              }
+            }
+          }
         }
       }
     }
@@ -40,22 +49,35 @@ void read_syntax_from_json(std::map<std::string, std::string>& m, const std::str
     i.close();
   }
 }
+
+std::wstring to_lower(const std::wstring& s) {
+  std::wstring out = s;
+  std::transform(s.begin(), s.end(), out.begin(), [](wchar_t ch){ return std::tolower(ch);});
+  return out;
+}
 } // namesapce
 
 plumber::plumber()
 {
-  read_syntax_from_json(extension_to_executable, get_file_in_executable_path("plumber.json"));
+  read_syntax_from_json(extension_to_executable, prefix_to_executable, get_file_in_executable_path("plumber.json"));
 }
 
 plumber::~plumber()
 {
 }
 
-bool plumber::extension_has_executable(const std::string& ext) const {
-  return extension_to_executable.find(ext) != extension_to_executable.end();
-}
-
-std::string plumber::get_executable(const std::string& ext) const {
-  assert(extension_has_executable(ext));
-  return extension_to_executable.find(ext)->second;
+std::string plumber::get_executable(const std::string& filename) const {
+  std::string exe;
+  std::wstring wfilename = to_lower(jtk::convert_string_to_wstring(filename));
+  std::string f = jtk::convert_wstring_to_string(wfilename);
+  auto ext = jtk::convert_string_to_wstring(jtk::get_extension(f));
+  auto it = extension_to_executable.find(ext);
+  if (it != extension_to_executable.end())
+    return it->second;
+  for (const auto& pr : prefix_to_executable) {
+    std::wstring pref = wfilename.substr(0, pr.first.length());
+    if (pref == pr.first)
+      return pr.second;
+  }
+  return exe;
 }

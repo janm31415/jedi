@@ -1774,21 +1774,14 @@ std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const st
   }
   else if (jtk::file_exists(filename))
   {
-    auto ext = jtk::get_extension(filename);
-    if (get_plumber().extension_has_executable(ext) && !ctrl_pressed()) {
-      std::vector<std::string> parameters;
-      parameters.push_back(filename);
-      return execute_external(state, get_plumber().get_executable(ext), parameters, s);
-    } else {
-      state = *command_new_window(state, buffer_id, s);
-      get_active_buffer(state) = read_from_file(filename);
-      int64_t command_id = state.active_buffer-1;
-      state.buffers[command_id].buffer.name = get_active_buffer(state).name;
-      get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
-      get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
-      state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
-      return check_scroll_position(state, s);
-    }
+    state = *command_new_window(state, buffer_id, s);
+    get_active_buffer(state) = read_from_file(filename);
+    int64_t command_id = state.active_buffer-1;
+    state.buffers[command_id].buffer.name = get_active_buffer(state).name;
+    get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
+    get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
+    state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
+    return check_scroll_position(state, s);    
   }
   else
   {
@@ -1928,12 +1921,29 @@ std::optional<app_state> load(app_state state, uint32_t buffer_id, const std::ws
   
   if (jtk::file_exists(newfilename))
   {
+    if (!ctrl_pressed()) {
+    auto exe = get_plumber().get_executable(newfilename);
+    if (!exe.empty()) {
+      std::vector<std::string> parameters;
+      parameters.push_back(newfilename);
+      return execute_external(state, exe, parameters, s);
+      }
+    }
     return load_file(state, buffer_id, newfilename, s);
   }
   
   if (jtk::is_directory(newfilename))
   {
     return load_folder(state, buffer_id, newfilename, s);
+  }
+  
+  if (!ctrl_pressed()) {
+    auto exe = get_plumber().get_executable(jtk::convert_wstring_to_string(command));
+    if (!exe.empty()) {
+      std::vector<std::string> parameters;
+      parameters.push_back(jtk::convert_wstring_to_string(command));
+      return execute_external(state, exe, parameters, s);
+      }
   }
   
   if (jtk::file_exists(jtk::convert_wstring_to_string(command)))
