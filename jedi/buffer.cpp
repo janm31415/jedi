@@ -360,7 +360,7 @@ namespace
   {
   file_buffer insert_rectangular(file_buffer fb, std::wstring wtxt, const env_settings& s, bool save_undo)
     {
-    fb.modification_mask |= 1;
+    fb.modification_mask = 1;
 
     int64_t minrow, maxrow, minx, maxx;
     get_rectangular_selection(minrow, maxrow, minx, maxx, fb, *fb.start_selection, fb.pos, s);
@@ -443,7 +443,7 @@ namespace
     if (txt.empty())
       return fb;
 
-    fb.modification_mask |= 1;
+    fb.modification_mask = 1;
 
     int64_t minrow, maxrow, minx, maxx;
     get_rectangular_selection(minrow, maxrow, minx, maxx, fb, *fb.start_selection, fb.pos, s);
@@ -526,7 +526,7 @@ file_buffer insert(file_buffer fb, std::wstring wtxt, const env_settings& s, boo
 
   fb.start_selection = std::nullopt;
 
-  fb.modification_mask |= 1;
+  fb.modification_mask = 1;
 
   auto pos = get_actual_position(fb);
   int nr_of_lines_inserted = 0;
@@ -603,7 +603,7 @@ file_buffer erase(file_buffer fb, const env_settings& s, bool save_undo)
   if (save_undo)
     fb = push_undo(fb);
 
-  fb.modification_mask |= 1;
+  fb.modification_mask = 1;
 
   if (!has_selection(fb))
     {
@@ -730,7 +730,7 @@ file_buffer erase_right(file_buffer fb, const env_settings& s, bool save_undo)
   if (save_undo)
     fb = push_undo(fb);
 
-  fb.modification_mask |= 1;
+  fb.modification_mask = 1;
 
   if (!has_selection(fb))
     {

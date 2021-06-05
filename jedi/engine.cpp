@@ -428,6 +428,8 @@ app_state add_error_text(app_state state, const std::string& errortext, settings
   state.active_buffer = buffer_id;
   get_active_buffer(state).pos = get_last_position(get_active_buffer(state));
   
+  if (get_active_buffer(state).pos.col > 0)
+    get_active_buffer(state) = insert(get_active_buffer(state), "\n", convert(s));
   get_active_buffer(state) = insert(get_active_buffer(state), errortext, convert(s));
   
   state.active_buffer = active;
@@ -2852,7 +2854,8 @@ app_state execute_external(app_state state, const std::string& file_path, const 
   }
   std::string text = jtk::read_from_pipe(state.buffers[buffer_id].process.data(), 100);
 #endif
-  text.insert(text.begin(), '\n');
+  if (get_active_buffer(state).pos.col > 0)
+    text.insert(text.begin(), '\n');
   state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, text, convert(s));
   if (!state.buffers[buffer_id].buffer.content.empty())
   {
