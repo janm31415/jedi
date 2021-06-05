@@ -2597,6 +2597,18 @@ std::optional<app_state> command_load(app_state state, uint32_t, settings& s)
   return state;
 }
 
+std::optional<app_state> command_undo_mouseclick(app_state state, uint32_t buffer_id, settings& s)
+{
+  buffer_id = get_editor_buffer_id(state, buffer_id);
+  return command_undo(state, buffer_id, s);
+}
+
+std::optional<app_state> command_redo_mouseclick(app_state state, uint32_t buffer_id, settings& s)
+{
+  buffer_id = get_editor_buffer_id(state, buffer_id);
+  return command_redo(state, buffer_id, s);
+}
+
 const auto executable_commands = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, settings&)>>
 {
   {L"AcmeTheme", command_acme_theme},
@@ -2627,12 +2639,12 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
   {L"Paste", command_paste_from_snarf_buffer},
   {L"Put", command_put},
   {L"Putall", command_putall},
-  {L"Redo", command_redo},
+  {L"Redo", command_redo_mouseclick},
   {L"Replace", command_replace},
   {L"Select", command_select},
   {L"Sel/all", command_select_all},
   {L"TabSpaces", command_tab_spaces},
-  {L"Undo", command_undo},
+  {L"Undo", command_undo_mouseclick},
   {L"Wrap", command_wrap}
 };
 

@@ -236,16 +236,21 @@ std::string get_file_path(const std::string& filename, const std::string& buffer
     if (jtk::is_directory(jtk::get_folder(filename)))
       return filename;
   }
+  std::vector<std::string> candidates;
   if (!buffer_filename.empty())
   {
     auto window_folder = jtk::get_folder(buffer_filename);
     auto possible_executables = jtk::get_files_from_directory(window_folder, false);
+    
     for (const auto& path : possible_executables)
     {
       auto f = jtk::get_filename(path);
-      if (f == filename || jtk::remove_extension(f) == filename)
+      if (f == filename)
       {
         return path;
+      }
+      if (jtk::remove_extension(f) == filename) {
+        candidates.push_back(path);
       }
     }
   }
@@ -255,9 +260,12 @@ std::string get_file_path(const std::string& filename, const std::string& buffer
   for (const auto& path : possible_executables)
   {
     auto f = jtk::get_filename(path);
-    if (f == filename || jtk::remove_extension(f) == filename)
+    if (f == filename)
     {
       return path;
+    }
+    if (jtk::remove_extension(f) == filename) {
+      candidates.push_back(path);
     }
   }
   
@@ -266,9 +274,12 @@ std::string get_file_path(const std::string& filename, const std::string& buffer
   for (const auto& path : possible_executables)
   {
     auto f = jtk::get_filename(path);
-    if (f == filename || jtk::remove_extension(f) == filename)
+    if (f == filename)
     {
       return path;
+    }
+    if (jtk::remove_extension(f) == filename) {
+      candidates.push_back(path);
     }
   }
   
@@ -282,6 +293,7 @@ std::string get_file_path(const std::string& filename, const std::string& buffer
   auto path_list = split_wstring_by_wchar(jtk::convert_string_to_wstring(path), L';');
 #else
   auto path_list = split_wstring_by_wchar(jtk::convert_string_to_wstring(path), L':');
+  std::sort(path_list.begin(), path_list.end(), [](const std::wstring& left, const std::wstring& right) { return left > right; }); // sort from z to a so that /usr is in front of the list
 #endif
   
   for (const auto& folder_in_path : path_list)
@@ -290,12 +302,17 @@ std::string get_file_path(const std::string& filename, const std::string& buffer
     for (const auto& possible_file : possible_files)
     {
       auto f = jtk::get_filename(possible_file);
-      if (f == filename || jtk::remove_extension(f) == filename)
+      if (f == filename)
       {
         return possible_file;
       }
+      if (jtk::remove_extension(f) == filename) {
+        candidates.push_back(possible_file);
+      }
     }
   }
+  if (!candidates.empty())
+    return candidates.front();
   return "";
 }
 
