@@ -40,3 +40,7 @@ grid load_grid_from_stream(std::istream& str);
 void save_column_item_to_stream(nlohmann::json& j, const column_item& ci);
 void save_column_to_stream(nlohmann::json& j, const column& c);
 void save_grid_to_stream(nlohmann::json& j, const grid& g);
+
+column_item load_column_item_from_stream(nlohmann::json& j);
+column load_column_from_stream(nlohmann::json& j);
+grid load_grid_from_stream(nlohmann::json& j);

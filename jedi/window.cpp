@@ -30,6 +30,32 @@ void save_window_to_stream(std::ostream& str, const window& w)
   str << (int)w.wt << std::endl;
   }
 
+window load_window_from_stream(nlohmann::json& j) {
+  window w = make_window(0, 0, 0, 0, 0, (e_window_type)0);
+  for (nlohmann::json::iterator it = j.begin(); it != j.end(); ++it)
+    {
+    if (it.key() == std::string("x")) {
+        w.x = *it;
+      }
+    if (it.key() == std::string("y")) {
+      w.y = *it;
+      }
+    if (it.key() == std::string("cols")) {
+      w.cols = *it;
+      }
+    if (it.key() == std::string("rows")) {
+      w.rows = *it;
+      }
+    if (it.key() == std::string("buffer_id")) {
+      w.buffer_id = *it;
+      }
+    if (it.key() == std::string("wt")) {
+      w.wt = (e_window_type)(*it);
+      }
+    }
+  return w;
+  }
+
 window load_window_from_stream(std::istream& str)
   {
   window w = make_window(0, 0, 0, 0, 0, (e_window_type)0);
@@ -56,5 +82,19 @@ window_pair load_window_pair_from_stream(std::istream& str)
   window_pair w;
 
   str >> w.window_id >> w.command_window_id;
+  return w;
+  }
+
+window_pair load_window_pair_from_stream(nlohmann::json& j) {
+  window_pair w;
+  for (nlohmann::json::iterator it = j.begin(); it != j.end(); ++it)
+    {
+    if (it.key() == std::string("window_id")) {
+      w.window_id = *it;
+      }
+    if (it.key() == std::string("command_window_id")) {
+      w.command_window_id = *it;
+      }
+    }
   return w;
   }

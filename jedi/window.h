@@ -32,8 +32,12 @@ void save_window_to_stream(std::ostream& str, const window& w);
 
 window load_window_from_stream(std::istream& str);
 
+window load_window_from_stream(nlohmann::json& j);
+
 void save_window_pair_to_stream(nlohmann::json& j, const window_pair& w);
 
 void save_window_pair_to_stream(std::ostream& str, const window_pair& w);
 
 window_pair load_window_pair_from_stream(std::istream& str);
+
+window_pair load_window_pair_from_stream(nlohmann::json& j);

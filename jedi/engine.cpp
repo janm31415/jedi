@@ -4433,7 +4433,7 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   bkgd(COLOR_PAIR(default_color));
   
   app_state result = state;
-  std::ifstream f(get_file_in_executable_path("temp.txt"));
+  std::ifstream f(get_file_in_executable_path("temp.json"));
   if (f.is_open())
   {
     result = load_dump(f, s);
@@ -4441,12 +4441,6 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
     state = result;
   }
   
-  SDL_ShowCursor(1);
-  SDL_SetWindowSize(pdc_window, state.w, state.h);
-  SDL_SetWindowPosition(pdc_window, s.x, s.y);
-  
-  resize_term(state.h / font_height, state.w / font_width);
-  resize_term_ex(state.h / font_height, state.w / font_width);
   
   //state.active_buffer = 0;
   state.operation = e_operation::op_editing;
@@ -4455,12 +4449,24 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   //state = *command_new_column(state, 0, s);
   //state = *command_new_window(state, 1, s);
   
-  if (state.buffers.empty()) // if temp.txt was an invalid file then initialise
+  if (state.buffers.empty()) // if temp.json was an invalid file then initialise
   {
     state.active_buffer = 0;
     state = make_topline(state, s);
     state = *command_new_column(state, 0, s);
   }
+
+  if (state.w == 0 || state.h == 0) {
+    state.w = s.w * font_width;
+    state.h = s.h * font_height;
+    }
+
+  SDL_ShowCursor(1);
+  SDL_SetWindowSize(pdc_window, state.w, state.h);
+  SDL_SetWindowPosition(pdc_window, s.x, s.y);
+
+  resize_term(state.h / font_height, state.w / font_width);
+  resize_term_ex(state.h / font_height, state.w / font_width);
   
   for (int j = 1; j < argc; ++j) {
     std::string input(argv[j]);
