@@ -837,6 +837,4 @@ void draw(const app_state& state, const settings& s) {
   
   curs_set(0);
   refresh();
-
-  return state;
 }

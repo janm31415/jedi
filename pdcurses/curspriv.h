@@ -63,7 +63,7 @@ void    PDC_init_pair(short, short, short);
 int     PDC_modifiers_set(void);
 int     PDC_mouse_set(void);
 void    PDC_napms(int);
-int     PDC_pair_content(short, short *, short *);
+PDCEX int     PDC_pair_content(short, short *, short *);
 void    PDC_reset_prog_mode(void);
 void    PDC_reset_shell_mode(void);
 int     PDC_resize_screen(int, int);

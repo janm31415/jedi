@@ -2851,7 +2851,7 @@ app_state execute_external(app_state state, const std::string& file_path, const 
   char** argv = alloc_arguments(file_path, parameters);
 #ifdef _WIN32
   state.buffers[buffer_id].process = nullptr;
-  int err = jtk::create_pipe(inputfile.c_str(), argv, nullptr, &state.buffers[buffer_id].process);
+  int err = jtk::create_pipe(file_path.c_str(), argv, nullptr, &state.buffers[buffer_id].process);
   free_arguments(argv);
   if (err != 0)
   {
