@@ -1,5 +1,5 @@
 #pragma once
-
+#include "async_messages.h"
 #include "buffer.h"
 #include "settings.h"
 #include "grid.h"
@@ -91,6 +91,7 @@ struct engine
   {
   app_state state;
   settings s;
+  async_messages messages;
 
   engine(int argc, char** argv, const settings& input_settings);
   ~engine();

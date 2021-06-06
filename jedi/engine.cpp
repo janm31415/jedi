@@ -4045,6 +4045,16 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
       keyb.handle_event(event);
       switch (event.type)
       {
+        case SDL_SYSWMEVENT:
+        {
+#ifdef _WIN32
+        if (event.syswm.msg->msg.win.msg == WM_COPYDATA)
+          {
+          return state; // return so that we can process the messages queue
+          }
+#endif
+        break;
+        }
         case SDL_WINDOWEVENT:
         {
           if (event.window.event == SDL_WINDOWEVENT_RESIZED)
@@ -4559,6 +4569,14 @@ void engine::run()
   
   while (auto new_state = process_input(state, state.active_buffer, s))
   {
+    while (!messages.empty())
+      {
+      auto m = messages.pop();
+      if (m.m == ASYNC_MESSAGE_LOAD && jtk::file_exists(m.str))
+        {
+        new_state = load_file(*new_state, new_state->active_buffer, m.str, s);
+        }
+      }
     state = check_update_active_command_text(*new_state, s);
     if (!mouse.rearranging_windows)
       draw(state, s);

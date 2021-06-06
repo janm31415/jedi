@@ -1,4 +1,5 @@
 set(HDRS
+async_messages.h
 buffer.h
 clipboard.h
 colors.h
