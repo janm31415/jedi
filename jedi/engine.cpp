@@ -302,11 +302,40 @@ bool should_update_command_text(const app_state& state, uint32_t buffer_id, cons
   return text != current_text;
 }
 
+void set_updated_command_text_position(file_buffer& fb, 
+  position original_position, 
+  std::optional<position> original_start_selection, 
+  uint32_t original_first_row_length) {
+    uint32_t current_first_row_length = fb.content.empty() ? 0 : fb.content.front().size();
+    if (original_start_selection) {
+      position sel = *original_start_selection;
+      if (sel.row == 0)
+        sel.col = sel.col + (int64_t)current_first_row_length - (int64_t)original_first_row_length;
+      if (sel.col < 0)
+        sel.col = 0;
+      //if (sel > get_last_position(fb))
+      //  sel = get_last_position(fb);
+      fb.start_selection = sel;
+      }
+    if (original_position.row == 0)
+      fb.pos.col = original_position.col + (int64_t)current_first_row_length - (int64_t)original_first_row_length;
+    else
+      fb.pos = original_position;
+    if (fb.pos.col < 0)
+      fb.pos.col = 0;
+    //if (fb.pos > get_last_position(fb))
+    //  fb.pos = get_last_position(fb);
+  }
+
 app_state update_command_text(app_state state, uint32_t buffer_id, const settings& s) {
   assert(this_is_a_command_window(state, buffer_id));
   auto text = get_command_text(state, buffer_id, s);
   auto& fb = state.buffers[buffer_id].buffer;
+
   auto original_position = fb.pos;
+  std::optional<position> original_start_selection = fb.start_selection;
+  uint32_t original_first_row_length = fb.content.empty() ? 0 : fb.content.front().size();
+
   auto pos_del = find_next_occurence(fb.content, position(0, 0), L" Del ");
   if (pos_del.col < 0) {
     auto pos_bar = find_next_occurence(fb.content, position(0, 0), L'|');
@@ -314,14 +343,12 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
       fb.pos = get_last_position(fb);
       text.push_back(L'|');
       fb = insert(fb, text, convert(s), false);
-      if (original_position < get_last_position(fb))
-        fb.pos = original_position;
+      set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length);
       return state;
     }
     fb.pos = pos_bar;
     fb = insert(fb, text, convert(s), false);
-    if (original_position < get_last_position(fb))
-      fb.pos = original_position;
+    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length);
     return state;
   }
   auto pos_bar = find_next_occurence(fb.content, pos_del, L'|');
@@ -329,8 +356,7 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
     fb.pos = get_last_position(fb);
     text.push_back(L'|');
     fb = insert(fb, text, convert(s), false);
-    if (original_position < get_last_position(fb))
-      fb.pos = original_position;
+    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length);
     return state;
   }
   pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
@@ -340,8 +366,7 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
   fb = erase(fb, convert(s), false);
   text.push_back(L'|');
   fb = insert(fb, text, convert(s), false);
-  if (original_position < get_last_position(fb))
-    fb.pos = original_position;
+  set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length);
   return state;
 }
 
@@ -3645,6 +3670,7 @@ std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, b
   if (p.buffer_id == 0xffffffff)
     return state;
   
+  bool swap_window = state.active_buffer != p.buffer_id;
   state.active_buffer = p.buffer_id;
   
   if (p.type == SET_SCROLLBAR_EDITOR)
@@ -3668,6 +3694,9 @@ std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, b
     return select_word(state, x, y, s);
   }
   
+  if (swap_window)
+    return state;
+
   mouse.left_drag_start = find_mouse_text_pick(x, y);
   if (mouse.left_drag_start.type == SET_TEXT_EDITOR || mouse.left_drag_start.type == SET_TEXT_COMMAND)
   {
