@@ -4055,6 +4055,19 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
 #endif
         break;
         }
+        case SDL_DROPFILE:
+        {
+        auto dropped_filedir = event.drop.file;
+        int x, y;
+        SDL_GetMouseState(&x, &y);
+        x /= font_width;
+        y /= font_height;
+        auto p = find_mouse_text_pick(x, y);
+        std::string path(dropped_filedir);
+        SDL_free(dropped_filedir);    // Free dropped_filedir memory
+        return load_file(state, p.buffer_id, path, s);
+        break;
+        }
         case SDL_WINDOWEVENT:
         {
           if (event.window.event == SDL_WINDOWEVENT_RESIZED)
