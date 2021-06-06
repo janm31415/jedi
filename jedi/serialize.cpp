@@ -5,6 +5,8 @@
 #include <fstream>
 #include <sstream>
 
+#include "json.hpp"
+
 namespace {
 
 std::vector<std::string> split_in_lines(const std::string& str) {
@@ -103,6 +105,31 @@ void load_buffers_from_stream(app_state& state, std::istream& str, const setting
 }
 
 void save_to_stream(std::ostream& str, const app_state& state) {
+  nlohmann::json j;
+  
+  j["width"] = state.w;
+  j["height"] = state.h;
+  nlohmann::json& win = j["windows"];
+  for (const auto& w : state.windows) {
+    nlohmann::json winj;
+    save_window_to_stream(winj, w);
+    win.push_back(winj);
+  }
+  nlohmann::json& buffer_to_window = j["buffer_id_to_window_id"];
+  for (auto v : state.buffer_id_to_window_id)
+    buffer_to_window.push_back(v);
+  nlohmann::json& winpairs = j["window_pairs"];
+  for (const auto& wp : state.window_pairs) {
+    nlohmann::json winj;
+    save_window_pair_to_stream(winj, wp);
+    winpairs.push_back(winj);
+  }
+  nlohmann::json& gr = j["grid"];
+  save_grid_to_stream(gr, state.g);
+  str << j.dump(2);
+}
+
+void save_to_stream_old(std::ostream& str, const app_state& state) {
   str << state.w << std::endl;
   str << state.h << std::endl;
   str << (uint32_t)state.windows.size() << std::endl;

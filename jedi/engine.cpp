@@ -4512,7 +4512,7 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
 
 engine::~engine()
 {
-  save_to_file(get_file_in_executable_path("temp.txt"), state);
+  save_to_file(get_file_in_executable_path("temp.json"), state);
   for (uint32_t buffer_id = 0; buffer_id < (uint32_t)state.buffers.size(); ++buffer_id)
   kill(state, buffer_id);
 }

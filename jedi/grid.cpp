@@ -1,5 +1,15 @@
 #include "grid.h"
 
+void save_column_item_to_stream(nlohmann::json& j, const column_item& ci) {
+
+}
+void save_column_to_stream(nlohmann::json& j, const column& c) {
+
+}
+void save_grid_to_stream(nlohmann::json& j, const grid& g) {
+  
+}
+
 void save_grid_to_stream(std::ostream& str, const grid& g)
   {
   str << g.topline_window_id << std::endl;

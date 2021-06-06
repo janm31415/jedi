@@ -11,6 +11,14 @@ window make_window(uint32_t buffer_id, int x, int y, int cols, int rows, e_windo
   return w;
 }
 
+void save_window_to_stream(nlohmann::json& j, const window& w) {
+  j["x"] = w.x;
+  j["y"] = w.y;
+  j["cols"] = w.cols;
+  j["rows"] = w.rows;
+  j["buffer_id"] = w.buffer_id;
+  j["wt"] = (int)w.wt;
+}
 
 void save_window_to_stream(std::ostream& str, const window& w)
   {
@@ -32,6 +40,10 @@ window load_window_from_stream(std::istream& str)
   return w;
   }
 
+void save_window_pair_to_stream(nlohmann::json& j, const window_pair& w) {
+  j["window_id"] = w.window_id;
+  j["command_window_id"] = w.command_window_id;
+}
 
 void save_window_pair_to_stream(std::ostream& str, const window_pair& w)
   {
