@@ -110,5 +110,15 @@ add_custom_command(TARGET jedi POST_BUILD
 add_custom_command(TARGET jedi POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/jedi_syntax.json" "$<TARGET_FILE_DIR:jedi>/jedi_syntax.json")
 
+
+if (WIN32)
 add_custom_command(TARGET jedi POST_BUILD
-   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/plumber.json" "$<TARGET_FILE_DIR:jedi>/plumber.json")
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/win/plumber.json" "$<TARGET_FILE_DIR:jedi>/plumber.json")
+endif (WIN32)
+
+if (UNIX)
+  if (APPLE)
+add_custom_command(TARGET jedi POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/macos/plumber.json" "$<TARGET_FILE_DIR:jedi>/plumber.json")
+  endif(APPLE)
+endif(UNIX)

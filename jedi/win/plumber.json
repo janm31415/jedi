@@ -1,0 +1,14 @@
+{
+	"C:/Program Files/IrfanView/i_view64.exe":
+	  {"extensions": "jpg png jpeg gif",
+	   "regex": ""
+	  },
+	"C:/Program Files/VideoLAN/VLC/vlc.exe":
+	  {"extensions": "avi mp3 mp4",
+	   "regex": ""
+	  },
+	"C:/Program Files (x86)/Google/Chrome/Application/chrome.exe":
+    {"extensions": "html",
+	   "regex": "^(https?:\\/\\/).*"
+	  }
+}
