@@ -846,6 +846,8 @@ void get_active_window_size_for_editing(int& rows, int& cols, const app_state& s
 
 app_state check_scroll_position(app_state state, uint32_t buffer_id, const settings& s)
   {
+  if (buffer_id == 0xffffffff)
+      buffer_id = state.active_buffer;
   int rows, cols;
   get_window_size_for_editing(rows, cols, buffer_id, state, s);
   if (state.buffers[buffer_id].scroll_row > state.buffers[buffer_id].buffer.pos.row)
@@ -2607,12 +2609,23 @@ std::optional<app_state> command_dump(app_state state, uint32_t, settings& s)
   {
   std::stringstream str;
   save_to_stream(str, state);
+  auto pos = get_actual_position(get_last_active_editor_buffer(state));
   get_last_active_editor_buffer(state) = insert(get_last_active_editor_buffer(state), str.str(), convert(s));
-  return state;
+  get_last_active_editor_buffer(state).start_selection = pos;
+
+  return check_scroll_position(state, state.last_active_editor_buffer, s);
   }
 
-app_state load_dump(std::istream& str, settings& s) {
-  app_state state = load_from_stream(str, s);
+app_state load_dump(app_state last_state, std::istream& str, settings& s) {
+  app_state state;
+  try {
+    state = load_from_stream(str, s);
+    }
+  catch (nlohmann::detail::exception e)
+    {
+    last_state = add_error_text(last_state, e.what(), s);
+    return last_state;
+    }
   uint32_t sz = (uint32_t)state.windows.size();
   auto active_buffer = state.active_buffer;
   for (uint32_t j = 0; j < sz; ++j) {
@@ -2652,13 +2665,13 @@ std::optional<app_state> command_load(app_state state, uint32_t, settings& s)
     if (filepath.empty()) {
       std::stringstream str;
       str << string_to_load;
-      state = load_dump(str, s);
+      state = load_dump(state, str, s);
       }
     else {
       std::ifstream f(filepath);
       if (f.is_open())
         {
-        state = load_dump(f, s);
+        state = load_dump(state, f, s);
         f.close();
         }
       }
@@ -4330,11 +4343,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           {
           if (ctrl_pressed())
             {
-            switch (state.operation)
-              {
-              //case op_query_save: return command_yes(state, s);
-              default: return command_redo(state, buffer_id, s);
-              }
+            return command_redo(state, buffer_id, s);              
             }
           break;
           }
@@ -4510,6 +4519,25 @@ app_state check_update_active_command_text(app_state state, const settings& s) {
   return state;
   }
 
+app_state make_empty_state(settings& s) {
+  app_state state;
+  state.active_buffer = 0;
+  state.last_active_editor_buffer = 0;
+  state.operation = e_operation::op_editing;
+  state = make_topline(state, s);
+  state = *command_new_column(state, 0, s);
+      
+  s.w = 80;
+  s.h = 25;
+  s.x = 100;
+  s.y = 100;
+
+  state.w = s.w * font_width;
+  state.h = s.h * font_height;
+
+  return state;
+  }
+
 engine::engine(int argc, char** argv, const settings& input_settings) : s(input_settings)
   {
   pdc_font_size = s.font_size;
@@ -4545,7 +4573,7 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   std::ifstream f(get_file_in_executable_path("temp.json"));
   if (f.is_open())
     {
-    result = load_dump(f, s);
+    result = load_dump(state, f, s);
     f.close();
     state = result;
     }
@@ -4560,14 +4588,7 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
 
   if (state.buffers.empty()) // if temp.json was an invalid file then initialise
     {
-    state.active_buffer = 0;
-    state = make_topline(state, s);
-    state = *command_new_column(state, 0, s);
-    }
-
-  if (state.w == 0 || state.h == 0) {
-    state.w = s.w * font_width;
-    state.h = s.h * font_height;
+    state = make_empty_state(s);
     }
 
   SDL_ShowCursor(1);

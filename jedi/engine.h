@@ -85,7 +85,7 @@ void split_command(std::wstring& first, std::wstring& remainder, const std::wstr
 std::wstring clean_command(std::wstring command);
 std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std::wstring& command, settings& s);
 app_state execute_external(app_state state, const std::string& file_path, const std::vector<std::string>& parameters, settings& s);
-
+app_state make_empty_state(settings& s);
 env_settings convert(const settings& s);
 
 struct engine
