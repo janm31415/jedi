@@ -115,6 +115,8 @@ Putall         : save all modified files
 Redo, ^y       : redo
 Replace, ^h    : find and replace
 Sel/all, ^a    : select all
+SolarizedTheme : change the color code to solarized
+SolDarkTheme   : change the color code to solarized dark
 TabSpaces      : toggle tab between spaces and real tab
 Tab <nr>       : Make tab nr spaces wide
 Win <command>  : Make a piped Jedi instance running the command, e.g. Win cmd 
