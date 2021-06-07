@@ -18,26 +18,33 @@ settings::settings()
   font_size = 17;
   mouse_scroll_steps = 3;
 
-  color_editor_text = 0xffc0c0c0;
-  color_editor_background = 0xff000000;
-  color_editor_tag = 0xfff18255;
-  color_editor_text_bold = 0xffffffff;
-  color_editor_background_bold = 0xff000000;
-  color_editor_tag_bold = 0xffff9b73;
+  color_editor_text = 0xff000000;
+  color_editor_background = 0xffe5ffff;
+  color_editor_tag = 0xff4c9999;
 
-  color_line_numbers = 0xff505050;
+  color_command_text = 0xff000000;
+  color_command_background = 0xffffffe5;
+  color_command_tag = 0xffc07275;
+  
+  color_column_command_text = 0xff000000;
+  color_column_command_background = 0xffffffd5;
+  color_column_command_tag = 0xffc07275;
+  
+  color_topline_command_text = 0xff000000;
+  color_topline_command_background = 0xffffffc5;
+  color_topline_command_tag = 0xffc07275;
+  
+  color_line_numbers = 0xff4c9999;
+  color_scrollbar = 0xff4c9999;
+  color_scrollbar_background = 0xffa5dddd;
+  color_icon = 0xffc07275;
+  color_icon_modified = 0xff1104ae;
+  color_plus = 0xff94933a;
 
-  color_command_text = 0xffc0c0c0;
-  color_command_background = 0xff282828;
-  color_command_tag = 0xfff18255;
-
-  color_titlebar_text = 0xffc0c0c0;
-  color_titlebar_background = 0xff282828;
-
-  color_comment = 0xff64c385;
-  color_string = 0xff6464db;
-  color_keyword = 0xffff8080;
-  color_keyword_2 = 0xffffc0c0;
+  color_comment = 0xff036206;
+  color_string = 0xff1104ae;
+  color_keyword = 0xffff0000;
+  color_keyword_2 = 0xffff8080;
   }
 
 void update_settings_if_different(settings& s, const settings& new_settings, const settings& old_settings)
@@ -90,14 +97,20 @@ void update_settings_if_different(settings& s, const settings& new_settings, con
   if (new_settings.color_editor_tag != old_settings.color_editor_tag)
     s.color_editor_tag = new_settings.color_editor_tag;
 
-  if (new_settings.color_editor_text_bold != old_settings.color_editor_text_bold)
-    s.color_editor_text_bold = new_settings.color_editor_text_bold;
+  if (new_settings.color_scrollbar != old_settings.color_scrollbar)
+    s.color_scrollbar = new_settings.color_scrollbar;
 
-  if (new_settings.color_editor_background_bold != old_settings.color_editor_background_bold)
-    s.color_editor_background_bold = new_settings.color_editor_background_bold;
+  if (new_settings.color_scrollbar_background != old_settings.color_scrollbar_background)
+    s.color_scrollbar_background = new_settings.color_scrollbar_background;
 
-  if (new_settings.color_editor_tag_bold != old_settings.color_editor_tag_bold)
-    s.color_editor_tag_bold = new_settings.color_editor_tag_bold;
+  if (new_settings.color_icon != old_settings.color_icon)
+    s.color_icon = new_settings.color_icon;
+    
+  if (new_settings.color_icon_modified != old_settings.color_icon_modified)
+    s.color_icon_modified = new_settings.color_icon_modified;
+    
+  if (new_settings.color_plus != old_settings.color_plus)
+    s.color_plus = new_settings.color_plus;
 
   if (new_settings.color_line_numbers != old_settings.color_line_numbers)
     s.color_line_numbers = new_settings.color_line_numbers;
@@ -111,11 +124,23 @@ void update_settings_if_different(settings& s, const settings& new_settings, con
   if (new_settings.color_command_tag != old_settings.color_command_tag)
     s.color_command_tag = new_settings.color_command_tag;
 
-  if (new_settings.color_titlebar_text != old_settings.color_titlebar_text)
-    s.color_titlebar_text = new_settings.color_titlebar_text;
+  if (new_settings.color_column_command_text != old_settings.color_column_command_text)
+    s.color_column_command_text = new_settings.color_column_command_text;
 
-  if (new_settings.color_titlebar_background != old_settings.color_titlebar_background)
-    s.color_titlebar_background = new_settings.color_titlebar_background;
+  if (new_settings.color_column_command_background != old_settings.color_column_command_background)
+    s.color_column_command_background = new_settings.color_column_command_background;
+
+  if (new_settings.color_column_command_tag != old_settings.color_column_command_tag)
+    s.color_column_command_tag = new_settings.color_column_command_tag;
+    
+  if (new_settings.color_topline_command_text != old_settings.color_topline_command_text)
+    s.color_topline_command_text = new_settings.color_topline_command_text;
+
+  if (new_settings.color_topline_command_background != old_settings.color_topline_command_background)
+    s.color_topline_command_background = new_settings.color_topline_command_background;
+
+  if (new_settings.color_topline_command_tag != old_settings.color_topline_command_tag)
+    s.color_topline_command_tag = new_settings.color_topline_command_tag;
 
   if (new_settings.color_comment != old_settings.color_comment)
     s.color_comment = new_settings.color_comment;
@@ -150,14 +175,20 @@ void update_settings(settings& s, const char* filename)
   f["color_editor_text"] >> s.color_editor_text;
   f["color_editor_background"] >> s.color_editor_background;
   f["color_editor_tag"] >> s.color_editor_tag;
-  f["color_editor_text_bold"] >> s.color_editor_text_bold;
-  f["color_editor_background_bold"] >> s.color_editor_background_bold;
-  f["color_editor_tag_bold"] >> s.color_editor_tag_bold;
+  f["color_scrollbar"] >> s.color_scrollbar;
+  f["color_scrollbar_background"] >> s.color_scrollbar_background;
+  f["color_icon"] >> s.color_icon;
+  f["color_icon_modified"] >> s.color_icon_modified;
+  f["color_plus"] >> s.color_plus;
   f["color_command_text"] >> s.color_command_text;
   f["color_command_background"] >> s.color_command_background;
   f["color_command_tag"] >> s.color_command_tag;
-  f["color_titlebar_text"] >> s.color_titlebar_text;
-  f["color_titlebar_background"] >> s.color_titlebar_background;
+  f["color_column_command_text"] >> s.color_column_command_text;
+  f["color_column_command_background"] >> s.color_column_command_background;
+  f["color_column_command_tag"] >> s.color_column_command_tag;
+  f["color_topline_command_text"] >> s.color_topline_command_text;
+  f["color_topline_command_background"] >> s.color_topline_command_background;
+  f["color_topline_command_tag"] >> s.color_topline_command_tag;  
   f["color_comment"] >> s.color_comment;
   f["color_string"] >> s.color_string;
   f["color_keyword"] >> s.color_keyword;
@@ -194,18 +225,26 @@ void write_settings(const settings& s, const char* filename)
   f << "color_editor_text" << s.color_editor_text;
   f << "color_editor_background" << s.color_editor_background;
   f << "color_editor_tag" << s.color_editor_tag;
-  f << "color_editor_text_bold" << s.color_editor_text_bold;
-  f << "color_editor_background_bold" << s.color_editor_background_bold;
-  f << "color_editor_tag_bold" << s.color_editor_tag_bold;
   f << "color_command_text" << s.color_command_text;
   f << "color_command_background" << s.color_command_background;
   f << "color_command_tag" << s.color_command_tag;
-  f << "color_titlebar_text" << s.color_titlebar_text;
-  f << "color_titlebar_background" << s.color_titlebar_background;
+  f << "color_column_command_text" << s.color_column_command_text;
+  f << "color_column_command_background" << s.color_column_command_background;
+  f << "color_column_command_tag" << s.color_column_command_tag;
+  f << "color_topline_command_text" << s.color_topline_command_text;
+  f << "color_topline_command_background" << s.color_topline_command_background;
+  f << "color_topline_command_tag" << s.color_topline_command_tag;
+
+
   f << "color_comment" << s.color_comment;
   f << "color_string" << s.color_string;
   f << "color_keyword" << s.color_keyword;
   f << "color_keyword_2" << s.color_keyword_2;
   f << "color_line_numbers" << s.color_line_numbers;
+  f << "color_scrollbar" << s.color_scrollbar;
+  f << "color_scrollbar_background" << s.color_scrollbar_background;
+  f << "color_icon" << s.color_icon;
+  f << "color_icon_modified" << s.color_icon_modified;
+  f << "color_plus" << s.color_plus;
   f.release();
   }

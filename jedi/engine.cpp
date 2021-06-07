@@ -2301,19 +2301,27 @@ std::optional<app_state> command_cancel(app_state state, uint32_t buffer_id, set
 std::optional<app_state> command_acme_theme(app_state state, uint32_t, settings& s)
   {
   s.color_editor_text = 0xff000000;
-  s.color_editor_background = 0xfff0ffff;
-  s.color_editor_tag = 0xfff18255;
-  s.color_editor_text_bold = 0xff000000;
-  s.color_editor_background_bold = 0xffa2e9eb;
-  s.color_editor_tag_bold = 0xffff9b73;
-  s.color_line_numbers = 0xfff18255;
+  s.color_editor_background = 0xffe5ffff;
+  s.color_editor_tag = 0xff4c9999;
 
   s.color_command_text = 0xff000000;
-  s.color_command_background = 0xfffcfbe7;
-  s.color_command_tag = 0xfff18255;
-
-  s.color_titlebar_text = 0xff000000;
-  s.color_titlebar_background = 0xfffcfbe7;
+  s.color_command_background = 0xffffffe5;
+  s.color_command_tag = 0xffc07275;
+  
+  s.color_column_command_text = 0xff000000;
+  s.color_column_command_background = 0xffffffd5;
+  s.color_column_command_tag = 0xffc07275;
+  
+  s.color_topline_command_text = 0xff000000;
+  s.color_topline_command_background = 0xffffffc5;
+  s.color_topline_command_tag = 0xffc07275;
+  
+  s.color_line_numbers = 0xff4c9999;
+  s.color_scrollbar = 0xff4c9999;
+  s.color_scrollbar_background = 0xffa5dddd;
+  s.color_icon = 0xffc07275;
+  s.color_icon_modified = 0xff1104ae;
+  s.color_plus = 0xff94933a;
 
   s.color_comment = 0xff036206;
   s.color_string = 0xff1104ae;
@@ -2330,17 +2338,11 @@ std::optional<app_state> command_dark_theme(app_state state, uint32_t, settings&
   s.color_editor_text = 0xffc0c0c0;
   s.color_editor_background = 0xff000000;
   s.color_editor_tag = 0xfff18255;
-  s.color_editor_text_bold = 0xffffffff;
-  s.color_editor_background_bold = 0xff000000;
-  s.color_editor_tag_bold = 0xffff9b73;
   s.color_line_numbers = 0xff505050;
 
   s.color_command_text = 0xffc0c0c0;
   s.color_command_background = 0xff282828;
   s.color_command_tag = 0xfff18255;
-
-  s.color_titlebar_text = 0xffc0c0c0;
-  s.color_titlebar_background = 0xff282828;
 
   s.color_comment = 0xff64c385;
   s.color_string = 0xff6464db;
@@ -2357,17 +2359,11 @@ std::optional<app_state> command_matrix_theme(app_state state, uint32_t, setting
   s.color_editor_text = 0xff5bed08;
   s.color_editor_background = 0xff000000;
   s.color_editor_tag = 0xff00ff00;
-  s.color_editor_text_bold = 0xff8ded08;
-  s.color_editor_background_bold = 0xff000000;
-  s.color_editor_tag_bold = 0xff00ff00;
   s.color_line_numbers = 0xff005000;
 
   s.color_command_text = 0xff83ff83;
   s.color_command_background = 0xff002000;
   s.color_command_tag = 0xff00ff00;
-
-  s.color_titlebar_text = 0xff83ff83;
-  s.color_titlebar_background = 0xff002000;
 
   s.color_comment = 0xff006f00;
   s.color_string = 0xff00de89;
@@ -2384,17 +2380,21 @@ std::optional<app_state> command_light_theme(app_state state, uint32_t, settings
   s.color_editor_text = 0xff000000;
   s.color_editor_background = 0xffffffff;
   s.color_editor_tag = 0xff808080;
-  s.color_editor_text_bold = 0xff000000;
-  s.color_editor_background_bold = 0xff000000;
-  s.color_editor_tag_bold = 0xff808080;
-  s.color_line_numbers = 0xff808080;
 
   s.color_command_text = 0xff000000;
   s.color_command_background = 0xffececec;//0xffe9dbd6;
   s.color_command_tag = 0xff808080;
-
-  s.color_titlebar_text = 0xff000000;
-  s.color_titlebar_background = 0xffe9dbd6;
+  
+  s.color_column_command_text = 0xff000000;
+  s.color_column_command_background = 0xffececec;//0xffe9dbd6;
+  s.color_column_command_tag = 0xff808080;
+  
+  s.color_topline_command_text = 0xff000000;
+  s.color_topline_command_background = 0xffececec;//0xffe9dbd6;
+  s.color_topline_command_tag = 0xff808080;
+  
+  s.color_line_numbers = 0xff808080;
+  s.color_scrollbar =
 
   s.color_comment = 0xff008000;
   s.color_string = 0xff1515a3;

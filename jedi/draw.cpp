@@ -176,15 +176,19 @@ Returns an x offset (let's call it multiline_offset_x) such that
 equals the x position in the screen of where the next character should come.
 This makes it possible to further fill the line with spaces after calling "draw_line".
  */
-int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, position& current, position cursor, position buffer_pos, position underline, chtype base_color, int& r, int yoffset, int xoffset, int maxcol, int maxrow, std::optional<position> start_selection, bool rectangular, bool active, screen_ex_type set_type, const keyword_data& kd, bool wrap, const settings& s, const env_settings& senv, int wx, int wy)
+int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, position& current, position cursor, position buffer_pos, position underline, chtype base_color, int& r, int yoffset, int xoffset, int maxcol, int maxrow, std::optional<position> start_selection, bool rectangular, bool active, screen_ex_type set_type, e_window_type wt, const keyword_data& kd, bool wrap, const settings& s, const env_settings& senv, int wx, int wy)
   {
   int MULTILINEOFFSET = 10;
   auto tt = get_text_type(fb, current.row);
 
   line ln = fb.content[current.row];
   int multiline_tag = (int)multiline_tag_editor;
-  if (set_type == SET_TEXT_COMMAND)
-    multiline_tag = (int)multiline_tag_command;
+  switch (wt) {
+    case e_window_type::wt_normal: break;
+    case e_window_type::wt_command: multiline_tag = (int)multiline_tag_command; break;
+    case e_window_type::wt_column_command: multiline_tag = (int)multiline_tag_column_command; break;
+    case e_window_type::wt_topline: multiline_tag = (int)multiline_tag_topline_command; break;
+    }
 
   wide_characters_offset = 0;
   bool has_selection = (start_selection != std::nullopt) && (cursor.row >= 0) && (cursor.col >= 0);
@@ -524,9 +528,9 @@ void draw_window(const app_state& state, const window& w, const buffer_data& bd,
       if (r == 0 && w.wt == e_window_type::wt_command) {
         // draw icon
         if (state.buffers[bd.buffer_id+1].buffer.modification_mask && can_be_saved(state.buffers[bd.buffer_id+1].buffer.name)) // check whether the corresponding edit window is modified
-          attron(COLOR_PAIR(command_plus_modified));
+          attron(COLOR_PAIR(command_icon_modified));
         else
-          attron(COLOR_PAIR(command_plus));
+          attron(COLOR_PAIR(command_icon));
         move(offset_y+w.y, w.x);
         add_ex(current, bd.buffer_id, SET_COMMAND_ICON);
         //addch(ascii_to_utf16(167));
@@ -538,9 +542,9 @@ void draw_window(const app_state& state, const window& w, const buffer_data& bd,
         //add_ex(current, bd.buffer_id, SET_COMMAND_ICON);
         //addch(']');
         if (state.buffers[bd.buffer_id+1].buffer.modification_mask)
-          attroff(COLOR_PAIR(command_plus_modified));
+          attroff(COLOR_PAIR(command_icon_modified));
         else
-          attroff(COLOR_PAIR(command_plus));
+          attroff(COLOR_PAIR(command_icon));
       } else {
         for (int x = 0; x < offset_x; ++x) {
           move((int)r + offset_y + w.y, (int)x + w.x);
@@ -601,7 +605,7 @@ void draw_window(const app_state& state, const window& w, const buffer_data& bd,
     int wide_characters_offset = 0;
     int multiline_offset_x = draw_line(wide_characters_offset, bd.buffer, bd.buffer_id, current, cursor, bd.buffer.pos, underline,
     main_color, r, offset_y, offset_x, maxcol, maxrow, bd.buffer.start_selection,
-    bd.buffer.rectangular_selection, active, set_type, kd, s.wrap, s, senv, w.x, w.y);
+    bd.buffer.rectangular_selection, active, set_type, w.wt, kd, s.wrap, s, senv, w.x, w.y);
 
     int x = (int)current.col + multiline_offset_x + wide_characters_offset;
     if (!has_nontrivial_selection && (current == cursor))
@@ -759,7 +763,6 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
     std::string txt = get_operation_text(state.operation);
     move((int)rows - 3, 0);
     attrset(DEFAULT_COLOR);
-    attron(A_BOLD);
     for (auto ch : txt)
       {
       add_ex(position(), buffer_id, SET_NONE);
@@ -776,7 +779,7 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
     bd.buffer.rectangular_selection, active, set_type, kd, s.wrap, s, senv, w.x, w.y);
 
      */
-      multiline_offset_x = draw_line(wide_characters_offset, state.operation_buffer, buffer_id, current, cursor, state.operation_buffer.pos, position(-1, -1), DEFAULT_COLOR | A_BOLD, rows, - 3, multiline_offset_x, cols_available, 1, state.operation_buffer.start_selection, state.operation_buffer.rectangular_selection, true, SET_TEXT_OPERATION, kd, false, s, convert(s), 0, 0);
+      multiline_offset_x = draw_line(wide_characters_offset, state.operation_buffer, buffer_id, current, cursor, state.operation_buffer.pos, position(-1, -1), DEFAULT_COLOR, rows, - 3, multiline_offset_x, cols_available, 1, state.operation_buffer.start_selection, state.operation_buffer.rectangular_selection, true, SET_TEXT_OPERATION, e_window_type::wt_normal, kd, false, s, convert(s), 0, 0);
     int x = (int)current.col + multiline_offset_x + wide_characters_offset;
     if ((current == cursor))
       {
@@ -806,7 +809,6 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
     int offset = (cols - message_length) / 2;
     if (offset > 0)
       {
-      attron(A_BOLD);
       for (auto ch : state.message)
         {
         move(rows - 3, offset);
@@ -814,7 +816,6 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
         addch(ch);
         ++offset;
         }
-      attroff(A_BOLD);
       }
     }
 }

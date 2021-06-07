@@ -11,17 +11,19 @@ enum e_color
   linenumbers_color,
   multiline_tag_editor,
   multiline_tag_command,
+  multiline_tag_column_command,
+  multiline_tag_topline_command,
   scroll_bar_b_editor,
   scroll_bar_f_editor,
-  title_bar,
   comment_color,
   string_color,
   keyword_color,
   keyword_2_color,
   command_plus,
-  command_plus_modified,
   column_command_plus,
-  topline_command_plus
+  topline_command_plus,
+  command_icon,
+  command_icon_modified
   };
   
 enum jedi_colors
@@ -32,23 +34,22 @@ enum jedi_colors
   jedi_command_text = 19,
   jedi_command_bg = 20,
   jedi_command_tag = 21,
-  jedi_title_text = 22,
-  jedi_title_bg = 23,
-
-  jedi_editor_text_bold = 24,
-  jedi_editor_bg_bold = 25,
-  jedi_editor_tag_bold = 26,
-  jedi_command_text_bold = 27,
-  jedi_command_bg_bold = 28,
-  jedi_command_tag_bold = 29,
-  jedi_title_text_bold = 30,
-  jedi_title_bg_bold = 31,
-
-  jedi_comment = 32,
-  jedi_string = 33,
-  jedi_keyword = 34,
-  jedi_keyword_2 = 35,
-  jedi_line_colors = 36
+  jedi_column_command_text = 22,
+  jedi_column_command_bg = 23,
+  jedi_column_command_tag = 24,
+  jedi_topline_command_text = 25,
+  jedi_topline_command_bg = 26,
+  jedi_topline_command_tag = 27,
+  jedi_line_numbers = 28,
+  jedi_scrollbar = 29,
+  jedi_scrollbar_background = 30,
+  jedi_icon = 31,
+  jedi_icon_modified = 32,
+  jedi_plus = 33,
+  jedi_comment = 34,
+  jedi_string = 35,
+  jedi_keyword = 36,
+  jedi_keyword_2 = 37
   };
 
 void init_colors(const settings& s);

@@ -19,18 +19,25 @@ struct settings
   uint32_t color_editor_text;
   uint32_t color_editor_background;
   uint32_t color_editor_tag;
-  uint32_t color_editor_text_bold;
-  uint32_t color_editor_background_bold;
-  uint32_t color_editor_tag_bold;
   uint32_t color_line_numbers;
+  uint32_t color_scrollbar;
+  uint32_t color_scrollbar_background;
+  uint32_t color_icon;
+  uint32_t color_icon_modified;
+  uint32_t color_plus;
 
   uint32_t color_command_text;
   uint32_t color_command_background;
   uint32_t color_command_tag;
 
-  uint32_t color_titlebar_text;
-  uint32_t color_titlebar_background;
-
+  uint32_t color_column_command_text;
+  uint32_t color_column_command_background;
+  uint32_t color_column_command_tag;
+  
+  uint32_t color_topline_command_text;
+  uint32_t color_topline_command_background;
+  uint32_t color_topline_command_tag;
+  
   uint32_t color_comment;
   uint32_t color_string;
   uint32_t color_keyword;
