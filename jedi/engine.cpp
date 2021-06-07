@@ -3895,6 +3895,8 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
 
   if (p.type == SET_SCROLLBAR_EDITOR)
     {
+    state.active_buffer = p.buffer_id;
+    state.last_active_editor_buffer = p.buffer_id;
     int rows, cols;
     get_active_window_size_for_editing(rows, cols, state, s);
     get_active_scroll_row(state) = p.pos.row;
