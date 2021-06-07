@@ -2094,7 +2094,16 @@ std::optional<app_state> mouse_motion(app_state state, int x, int y, settings& s
       auto pn = PAIR_NUMBER(mouse.rwd.current_sign_left);
       short fg, bg;
       PDC_pair_content(pn, &fg, &bg);
-      unsigned int color_pair = bg == jedi_colors::jedi_editor_bg ? COLOR_PAIR(column_command_plus) : COLOR_PAIR(command_plus);
+      bool modified = (state.buffers[mouse.rwd.rearranging_file_id+1].buffer.modification_mask&1) != 0; // +1 because we want to check the editor window, not the command window for modification
+      unsigned int color_pair = modified ? COLOR_PAIR(command_icon_modified) : COLOR_PAIR(command_icon);
+      if (bg == jedi_colors::jedi_editor_bg) {
+        color_pair = modified ? COLOR_PAIR(editor_icon_modified) : COLOR_PAIR(editor_icon);
+      } else if (bg == jedi_colors::jedi_column_command_bg) {
+        color_pair = modified ? COLOR_PAIR(column_command_icon_modified) : COLOR_PAIR(column_command_icon);
+      } else if (bg == jedi_colors::jedi_topline_command_bg) {
+        color_pair = modified ? COLOR_PAIR(topline_command_icon_modified) : COLOR_PAIR(topline_command_icon);
+      }
+      
 
       move(y, x - 1);
       if (mouse.rwd.x - 1 > 0)

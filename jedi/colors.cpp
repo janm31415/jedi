@@ -77,6 +77,12 @@ void init_colors(const settings& s)
   
   init_pair(command_icon, jedi_icon, jedi_command_bg);  
   init_pair(command_icon_modified, jedi_icon_modified, jedi_command_bg);
+  init_pair(column_command_icon, jedi_icon, jedi_column_command_bg);
+  init_pair(column_command_icon_modified, jedi_icon_modified, jedi_column_command_bg);
+  init_pair(topline_command_icon, jedi_icon, jedi_topline_command_bg);
+  init_pair(topline_command_icon_modified, jedi_icon_modified, jedi_topline_command_bg);
+  init_pair(editor_icon, jedi_icon, jedi_editor_bg);
+  init_pair(editor_icon_modified, jedi_icon_modified, jedi_editor_bg);
 
   init_pair(linenumbers_color, jedi_line_numbers, jedi_editor_bg);
 

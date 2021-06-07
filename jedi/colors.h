@@ -23,7 +23,13 @@ enum e_color
   column_command_plus,
   topline_command_plus,
   command_icon,
-  command_icon_modified
+  command_icon_modified,
+  column_command_icon,
+  column_command_icon_modified,
+  topline_command_icon,
+  topline_command_icon_modified,
+  editor_icon,
+  editor_icon_modified
   };
   
 enum jedi_colors
