@@ -1936,11 +1936,15 @@ std::optional<app_state> load_folder(app_state state, uint32_t buffer_id, const 
     state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
     state.buffers[buffer_id].buffer.pos = position(0, 0);
     state.buffers[buffer_id].scroll_row = 0;
+    auto original_position = state.buffers[command_id].buffer.pos;
+    std::optional<position> original_start_selection = state.buffers[command_id].buffer.start_selection;
+    uint32_t original_first_row_length = state.buffers[command_id].buffer.content.empty() ? 0 : state.buffers[command_id].buffer.content.front().size();
     std::string user_command_text = get_user_command_text(state, command_id);
     std::string command_text = get_command_text(state, command_id, s);
     std::string total_line = simplified_folder_name + command_text + user_command_text;
     state.buffers[command_id].buffer.content = to_text(total_line);
-    return check_scroll_position(state, s);
+    set_updated_command_text_position(state.buffers[command_id].buffer, original_position, original_start_selection, original_first_row_length);
+    return check_scroll_position(state, buffer_id, s);
     }
   else
     {
