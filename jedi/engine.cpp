@@ -2318,11 +2318,11 @@ std::optional<app_state> command_acme_theme(app_state state, uint32_t, settings&
   s.color_command_tag = 0xffc07275;
   
   s.color_column_command_text = 0xff000000;
-  s.color_column_command_background = 0xffffffd5;
+  s.color_column_command_background = 0xffefefd5;
   s.color_column_command_tag = 0xffc07275;
   
   s.color_topline_command_text = 0xff000000;
-  s.color_topline_command_background = 0xffffffc5;
+  s.color_topline_command_background = 0xffdfdfc5;
   s.color_topline_command_tag = 0xffc07275;
   
   s.color_line_numbers = 0xff4c9999;
@@ -2387,6 +2387,21 @@ std::optional<app_state> command_matrix_theme(app_state state, uint32_t, setting
   s.color_command_text = 0xff83ff83;
   s.color_command_background = 0xff002000;
   s.color_command_tag = 0xff00ff00;
+  
+  s.color_column_command_text = 0xff83ff83;
+  s.color_column_command_background = 0xff103010;
+  s.color_column_command_tag = 0xff00ff00;
+  
+  s.color_topline_command_text = 0xff83ff83;
+  s.color_topline_command_background = 0xff204020;
+  s.color_topline_command_tag = 0xff00ff00;
+
+  s.color_line_numbers = 0xff204020;
+  s.color_scrollbar = 0xff00de89;
+  s.color_scrollbar_background = 0xff103010;
+  s.color_icon = 0xff90ff46;
+  s.color_icon_modified = 0xff00ff00;
+  s.color_plus = 0xff90ff46;
 
   s.color_comment = 0xff006f00;
   s.color_string = 0xff00de89;
