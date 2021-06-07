@@ -2338,11 +2338,25 @@ std::optional<app_state> command_dark_theme(app_state state, uint32_t, settings&
   s.color_editor_text = 0xffc0c0c0;
   s.color_editor_background = 0xff000000;
   s.color_editor_tag = 0xfff18255;
-  s.color_line_numbers = 0xff505050;
-
+  
   s.color_command_text = 0xffc0c0c0;
   s.color_command_background = 0xff282828;
   s.color_command_tag = 0xfff18255;
+  
+  s.color_column_command_text = 0xffc0c0c0;
+  s.color_column_command_background = 0xff383838;
+  s.color_column_command_tag = 0xfff18255;
+  
+  s.color_topline_command_text = 0xffc0c0c0;
+  s.color_topline_command_background = 0xff484848;
+  s.color_topline_command_tag = 0xfff18255;
+  
+  s.color_line_numbers = 0xff505050;
+  s.color_scrollbar = 0xfff18255;
+  s.color_scrollbar_background = 0xff282828;
+  s.color_icon = 0xff64c385;
+  s.color_icon_modified = 0xff6464db;
+  s.color_plus = 0xff64c385;
 
   s.color_comment = 0xff64c385;
   s.color_string = 0xff6464db;
