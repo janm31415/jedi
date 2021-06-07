@@ -2585,17 +2585,19 @@ std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, 
 
 std::optional<app_state> command_hex(app_state state, uint32_t buffer_id, std::wstring& parameters, settings& s)
   {
-  auto active_buffer = state.active_buffer;
+  auto active_buffer = parameters.empty() ? state.last_active_editor_buffer : state.active_buffer;
+  if (active_buffer == 0xffffffff)
+    active_buffer = state.active_buffer;
   state = *command_new_window(state, buffer_id, s);
   buffer_id = (uint32_t)(state.buffers.size() - 1);
   parameters = clean_command(parameters);
   if (parameters.empty()) {
     parameters = to_wstring(get_selection(state.buffers[active_buffer].buffer, convert(s)));
     parameters = clean_command(parameters);
-    auto file_path = get_file_path(jtk::convert_wstring_to_string(parameters), state.buffers[active_buffer].buffer.name);
-    if (!file_path.empty())
-      parameters = jtk::convert_string_to_wstring(file_path);
     }
+  auto file_path = get_file_path(jtk::convert_wstring_to_string(parameters), state.buffers[active_buffer].buffer.name);
+  if (!file_path.empty())
+    parameters = jtk::convert_string_to_wstring(file_path);
   state.buffers[buffer_id].buffer.content = to_text(to_hex(jtk::convert_wstring_to_string(parameters)));//read_from_file(jtk::convert_wstring_to_string(parameters));
   state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
   state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
