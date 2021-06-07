@@ -827,7 +827,7 @@ void draw(const app_state& state, const settings& s) {
   auto senv = convert(s);
   
   for (const auto& w : state.windows) {
-    bool active = w.buffer_id == state.active_buffer;
+    bool active = w.buffer_id == state.active_buffer || w.buffer_id == state.last_active_editor_buffer;
     draw_window(state, w, state.buffers[w.buffer_id], s, senv, active);
   }
   

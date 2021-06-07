@@ -121,6 +121,7 @@ buffer_data load_buffer_from_stream(std::istream& str, const settings& s) {
 
 void save_buffers_to_stream(nlohmann::json& j, const app_state& state) {
   j["active_buffer"] = state.active_buffer;
+  j["last_active_editor_buffer"] = state.last_active_editor_buffer;
   nlohmann::json& buf = j["buffers"];
   for (const auto& f : state.buffers) {
     nlohmann::json jbuf;
@@ -131,6 +132,7 @@ void save_buffers_to_stream(nlohmann::json& j, const app_state& state) {
 
 void save_buffers_to_stream(std::ostream& str, const app_state& state) {
   str << state.active_buffer << std::endl;
+  str << state.last_active_editor_buffer << std::endl;
   str << (uint32_t)state.buffers.size() << std::endl;
   uint32_t id = 0;
   for (const auto& f : state.buffers)
@@ -142,6 +144,7 @@ void save_buffers_to_stream(std::ostream& str, const app_state& state) {
 
 void load_buffers_from_stream(app_state& state, std::istream& str, const settings& s) {
   str >> state.active_buffer;
+  str >> state.last_active_editor_buffer;
   uint32_t sz;
   str >> sz;
   for (uint32_t i = 0; i < sz; ++i)
@@ -198,6 +201,8 @@ void save_to_stream_old(std::ostream& str, const app_state& state) {
 
 app_state load_from_stream(std::istream& str, const settings& s) {
   app_state result;
+  result.active_buffer = 0xffffffff;
+  result.last_active_editor_buffer = 0xffffffff;
   nlohmann::json j;
   try
     {
@@ -240,6 +245,9 @@ app_state load_from_stream(std::istream& str, const settings& s) {
         for (auto it2 = it->begin(); it2 != it->end(); ++it2) {
           if (it2.key() == std::string("active_buffer")) {
             result.active_buffer = *it2;
+            }
+          if (it2.key() == std::string("last_active_editor_buffer")) {
+            result.last_active_editor_buffer = *it2;
             }
           if (it2.key() == std::string("buffers")) {
             for (auto it3 = it2->begin(); it3 != it2->end(); ++it3) {
