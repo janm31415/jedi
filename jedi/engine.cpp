@@ -70,7 +70,7 @@ buffer_data make_empty_buffer_data() {
 bool can_be_saved(const std::string& name) {
   if (name.empty())
     return true;
-  if (name.front() == '+' || name.front() == '=')
+  if (name == std::string("+Errors") || name.front() == '=')
     return false;
   return true;
   }
@@ -188,7 +188,7 @@ std::optional<app_state> command_exit(app_state state, uint32_t, settings& s)
       if (f.modification_mask == 1 && can_be_saved(f.name))
         {
         show_error_window = true;
-        str << f.name << " modified\n";
+        str << (f.name.empty() ? std::string("<unsaved file>") : f.name) << " modified\n";
         f.modification_mask |= 2;
         }
       }
@@ -485,7 +485,7 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
           {
           f.buffer.modification_mask |= 2;
           std::stringstream str;
-          str << f.buffer.name << " modified\n";
+          str << (f.buffer.name.empty() ? std::string("<unsaved file>") : f.buffer.name) << " modified\n";
           return add_error_text(state, str.str(), s);
           }
         else
@@ -610,6 +610,12 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
         }
       }
     }
+  // no window found to delete, try the last active editor buffer
+  if (state.last_active_editor_buffer != 0xffffffff) {
+    auto& w = state.windows[state.buffer_id_to_window_id[state.last_active_editor_buffer]];
+    if (w.wt == e_window_type::wt_normal)
+      return command_delete_window(state, state.last_active_editor_buffer, s);
+  }
   return state;
   }
 
@@ -629,7 +635,7 @@ std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_
         if (f.modification_mask == 1 && can_be_saved(f.name))
           {
           show_error_window = true;
-          str << f.name << " modified\n";
+          str << (f.name.empty() ? std::string("<unsaved file>") : f.name) << " modified\n";
           f.modification_mask |= 2;
           }
         }
@@ -716,6 +722,22 @@ std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_
         }
       }
     }
+  // no column found to delete, try the column of the current buffer_id
+  if (buffer_id != 0xffffffff) {
+    auto& w = state.windows[state.buffer_id_to_window_id[buffer_id]];
+    if (w.wt == e_window_type::wt_normal || w.wt == e_window_type::wt_command) {
+      auto& c = state.g.columns[get_column_id(state, buffer_id)];
+      return command_delete_column(state, c.column_command_window_id, s);
+      }
+  }
+  // no column found to delete, try the last active editor buffer
+  if (state.last_active_editor_buffer != 0xffffffff) {
+    auto& w = state.windows[state.buffer_id_to_window_id[state.last_active_editor_buffer]];
+    if (w.wt == e_window_type::wt_normal) {
+      auto& c = state.g.columns[get_column_id(state, state.last_active_editor_buffer)];
+      return command_delete_column(state, c.column_command_window_id, s);
+      }
+  }
   return state;
   }
 
@@ -2555,7 +2577,7 @@ std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settin
     {
     f.buffer.modification_mask |= 2;
     std::stringstream str;
-    str << f.buffer.name << " modified\n";
+    str << (f.buffer.name.empty() ? std::string("<unsaved file>") : f.buffer.name) << " modified\n";
     return add_error_text(state, str.str(), s);
     }
   return get(state, buffer_id);

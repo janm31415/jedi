@@ -28,7 +28,7 @@ namespace {
     }
 
   void save_buffer_to_stream(nlohmann::json& j, const buffer_data& b, bool command) {
-    std::string filename = make_filename(b.buffer.name);
+    std::string filename = b.buffer.name;
     j["filename"] = filename;
     j["bt"] = (int)b.bt;
     j["scroll_row"] = b.scroll_row;
