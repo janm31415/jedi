@@ -9,7 +9,7 @@ settings::settings()
   show_all_characters = false;
   tab_space = 2;
   use_spaces_for_tab = true;
-  show_line_numbers = false;
+  show_line_numbers = true;
   wrap = false;
   w = 80;
   h = 25;
