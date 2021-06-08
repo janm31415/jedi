@@ -4161,9 +4161,12 @@ std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t,
   if (err != 0)
     {
     std::string error_message = "Could not create child process\n";
-    add_error_text(state, error_message, s);
+    state = add_error_text(state, error_message, s);
     }
-  jtk::send_to_pipe(pipefd, txt.c_str());
+  if (jtk::send_to_pipe(pipefd, txt.c_str()) != 0) {
+    std::string error_message = "Could not send copy buffer to pipe\n";
+    state = add_error_text(state, error_message, s);
+    }
   jtk::close_pipe(pipefd);
 #endif
   return state;
