@@ -209,7 +209,7 @@ std::vector<std::wstring> split_wstring_by_wchar(std::wstring str, wchar_t separ
   for (auto& p : out)
   {
     std::replace(p.begin(), p.end(), L'\\', L'/');
-    if (p.back() != L'/')
+    if (p.empty() || p.back() != L'/')
       p.push_back(L'/');
   }
   return out;

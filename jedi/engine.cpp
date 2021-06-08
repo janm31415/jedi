@@ -3360,8 +3360,14 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
     auto par_path = get_file_path(jtk::convert_wstring_to_string(first), get_active_buffer(state).name);
     if (par_path.empty())
       parameters.push_back(jtk::convert_wstring_to_string(first));
-    else
+    else {
       parameters.push_back(par_path);
+      if (parameters.back().find(' ')!=std::string::npos) {
+        parameters.back().insert(parameters.back().begin(), '"');
+        parameters.back().push_back('"');
+        has_quotes = false; // set to false as we've already added quotes
+        }
+      }
 #ifdef _WIN32
     if (has_quotes)
       {
