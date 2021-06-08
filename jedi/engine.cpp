@@ -3362,11 +3362,13 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
       parameters.push_back(jtk::convert_wstring_to_string(first));
     else {
       parameters.push_back(par_path);
+#ifdef _WIN32
       if (parameters.back().find(' ')!=std::string::npos) {
         parameters.back().insert(parameters.back().begin(), '"');
         parameters.back().push_back('"');
         has_quotes = false; // set to false as we've already added quotes
         }
+#endif
       }
 #ifdef _WIN32
     if (has_quotes)
