@@ -3529,6 +3529,18 @@ app_state move_window_to_other_column(app_state state, uint64_t c, uint64_t ci, 
     target_column.items[new_pos].top_layer = 0.0;
     target_column.items[new_pos].bottom_layer = 1.0;
     }
+    
+  double last_top_layer = target_column.items[new_pos].top_layer;
+  for (int other_ci = new_pos - 1; other_ci >= 0; --other_ci)
+    {
+    auto& other_col_item = target_column.items[other_ci];
+    other_col_item.bottom_layer = last_top_layer;
+    if (other_col_item.top_layer >= other_col_item.bottom_layer)
+      {
+      other_col_item.top_layer = ((int)std::round(other_col_item.bottom_layer * irows) - 1) / double(irows);
+      }
+    last_top_layer = other_col_item.top_layer;
+    }
   return resize_windows(state, s);
   }
 
