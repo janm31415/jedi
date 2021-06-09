@@ -45,6 +45,7 @@ void invalidate_range(int x, int y, int cols, int rows)
       pdc_ex.data[index].pos.row = -1;
       pdc_ex.data[index].pos.col = -1;
       pdc_ex.data[index].type = SET_NONE;
+      pdc_ex.data[index].buffer_id = 0xffffffff;
       }
     }
   }
@@ -55,5 +56,7 @@ void invalidate_ex()
     {
     p.type = SET_NONE;
     p.buffer_id = 0xffffffff;
+    p.pos.row = -1;
+    p.pos.col = -1;
     }
   }
