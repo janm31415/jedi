@@ -14,9 +14,9 @@ Newcol, new columns will be generated, where each column has a corresponding
 column command window on top where specific commands for columns appear, such
 as New (create an empty window) or Delcol (delete the column). When middle
 clicking on New, empty windows will be added to the column. You can now type
-any content in the corresponding editor window. If you want to save this to 
-a file, then type the filename in the corresponding command window at the
-top left position, and middle click on Put to save.
+any content in the corresponding editor window. If you want to save the content 
+you typed to a file, then type the filename in the corresponding command window 
+at the top left position, and middle click on Put to save.
 You can also type the name of an existing file anywhere and right click on 
 that filename. The corresponding file will be openened in a new window in 
 the corresponding column. 
@@ -30,7 +30,7 @@ On MacOs you can also use the left or right Command button instead of Ctrl.
 At the bottom of the screen you can see some useful shortcuts, such as ^N
 for making a new emtpy window.
 
-At the command line, you can optionally provide an argument to Jedi. 
+When starting Jedi in a terminal, you can optionally provide an argument to Jedi. 
 If this argument is a file, then Jedi will open this file for editing. 
 If the argument is a folder, then Jedi will open this folder for browsing. 
 If the argument is preceded by =, Jedi will consider the argument as
@@ -72,6 +72,12 @@ two buttons, then the middle button is replaced by Ctrl + the left button.
   occurence of this word in the current text.
   If you right click on a word representing a folder, Jedi will open a new
   window where you can browse this folder.
+  It is also possible to bind file extensions to an external program. If you
+  right click on a file that is bound to an external program, this external
+  program will start up and open the file. This is for instance useful for
+  opening png or jpg files with an image editing program. The binding of
+  extensions to external programs is done via a file plumber.json that 
+  exists in the same folder as your Jedi executable.
 - Windows can be controlled by the mouse. Make windows or columns of windows
   larger or smaller by dragging the '+' sign at the right bottom corner of
   a command window. Drag the '>' sign to move windows around or change their
@@ -126,7 +132,7 @@ Undo, ^z       : undo
 
 
 When Jedi is closed, it will save any user settings in a file 
-jedi_settings.json which lives next to the executable file Jedi.exe. It is 
+jedi_settings.json which lives next to the executable file Jedi. It is 
 possible to override certain settings. In the same folder, make a file 
 jedi_user_settings.json and put here the settings that you want to control. 
 You can, for instance, make your own color scheme here.

@@ -312,7 +312,19 @@ bool should_update_command_text(const app_state& state, uint32_t buffer_id, cons
 void set_updated_command_text_position(file_buffer& fb,
   position original_position,
   std::optional<position> original_start_selection,
-  uint32_t original_first_row_length) {
+  uint32_t original_first_row_length,
+  bool active) {
+  if (active) {
+    fb.pos = original_position;
+    fb.start_selection = original_start_selection;
+    if (fb.pos > get_last_position(fb))
+      fb.pos = get_last_position(fb);
+    if (original_start_selection) {
+      if (*fb.start_selection > get_last_position(fb))
+        fb.start_selection = get_last_position(fb);
+    }
+    return;
+  }
   uint32_t current_first_row_length = fb.content.empty() ? 0 : fb.content.front().size();
   if (original_start_selection) {
     position sel = *original_start_selection;
@@ -350,12 +362,12 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
       fb.pos = get_last_position(fb);
       text.push_back(L'|');
       fb = insert(fb, text, convert(s), false);
-      set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length);
+      set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer==buffer_id);
       return state;
       }
     fb.pos = pos_bar;
     fb = insert(fb, text, convert(s), false);
-    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length);
+    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer==buffer_id);
     return state;
     }
   auto pos_bar = find_next_occurence(fb.content, pos_del, L'|');
@@ -363,7 +375,7 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
     fb.pos = get_last_position(fb);
     text.push_back(L'|');
     fb = insert(fb, text, convert(s), false);
-    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length);
+    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer==buffer_id);
     return state;
     }
   pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
@@ -373,7 +385,7 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
   fb = erase(fb, convert(s), false);
   text.push_back(L'|');
   fb = insert(fb, text, convert(s), false);
-  set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length);
+  set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer==buffer_id);
   return state;
   }
 
@@ -389,9 +401,11 @@ app_state update_filename(app_state state, uint32_t buffer_id, const settings& s
   remove_whitespace(name);
 
   fb.name = name;
-  state.buffers[buffer_id + 1].buffer.name = name;
-  state.buffers[buffer_id + 1].buffer = set_multiline_comments(state.buffers[buffer_id + 1].buffer);
-  state.buffers[buffer_id + 1].buffer = init_lexer_status(state.buffers[buffer_id + 1].buffer);
+  if (state.buffers[buffer_id + 1].buffer.name != name) { // this is costly, so avoid if possible
+    state.buffers[buffer_id + 1].buffer.name = name;
+    state.buffers[buffer_id + 1].buffer = set_multiline_comments(state.buffers[buffer_id + 1].buffer);
+    state.buffers[buffer_id + 1].buffer = init_lexer_status(state.buffers[buffer_id + 1].buffer);
+  }
   return state;
   }
 
@@ -1967,7 +1981,7 @@ std::optional<app_state> load_folder(app_state state, uint32_t buffer_id, const 
     std::string command_text = get_command_text(state, command_id, s);
     std::string total_line = simplified_folder_name + command_text + user_command_text;
     state.buffers[command_id].buffer.content = to_text(total_line);
-    set_updated_command_text_position(state.buffers[command_id].buffer, original_position, original_start_selection, original_first_row_length);
+    set_updated_command_text_position(state.buffers[command_id].buffer, original_position, original_start_selection, original_first_row_length, false);
     return check_scroll_position(state, buffer_id, s);
     }
   else
@@ -2116,7 +2130,7 @@ std::optional<app_state> mouse_motion(app_state state, int x, int y, settings& s
       auto pn = PAIR_NUMBER(mouse.rwd.current_sign_left);
       short fg, bg;
       PDC_pair_content(pn, &fg, &bg);
-      bool modified = (state.buffers[mouse.rwd.rearranging_file_id+1].buffer.modification_mask&1) != 0; // +1 because we want to check the editor window, not the command window for modification
+      bool modified = (state.buffers[mouse.rwd.rearranging_file_id+1].buffer.modification_mask&1) != 0 && can_be_saved(state.buffers[mouse.rwd.rearranging_file_id].buffer.name); // +1 because we want to check the editor window, not the command window for modification
       unsigned int color_pair = modified ? COLOR_PAIR(command_icon_modified) : COLOR_PAIR(command_icon);
       if (bg == jedi_colors::jedi_editor_bg) {
         color_pair = modified ? COLOR_PAIR(editor_icon_modified) : COLOR_PAIR(editor_icon);

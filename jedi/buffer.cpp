@@ -1323,6 +1323,8 @@ namespace
 
   uint8_t _get_end_of_line_lexer_status(file_buffer fb, int64_t row, uint8_t status_at_begin_of_line)
     {
+    if (fb.syntax.should_highlight)
+      return lexer_normal;
     uint8_t current_status = status_at_begin_of_line;
     line ln = fb.content[row];
     auto it = ln.begin();
