@@ -270,6 +270,9 @@ std::string get_file_path(const std::string& filename, const std::string& buffer
     }
   }
   
+  if (!candidates.empty())
+    return candidates.front();
+  
   std::string dir = jtk::get_cwd();
   auto possible_executables = jtk::get_files_from_directory(dir, false);
   for (const auto& path : possible_executables)
