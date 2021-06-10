@@ -2602,6 +2602,48 @@ std::optional<app_state> command_light_theme(app_state state, uint32_t, settings
   stdscr->_clear = TRUE;
   return state;
   }
+  
+std::optional<app_state> command_hack(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Hack-Regular.ttf";
+  state = resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
+std::optional<app_state> command_menlo(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Menlo-Regular.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
+std::optional<app_state> command_dejavusansmono(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/DejaVuSansMono.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
+std::optional<app_state> command_firacode(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/FiraCode-Regular.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
+std::optional<app_state> command_monaco(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Monaco-Linux.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
+std::optional<app_state> command_noto(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/NotoMono-Regular.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
+std::optional<app_state> command_inconsolata(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Inconsolata-Regular.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
 
 app_state get(app_state state, uint32_t buffer_id)
   {
@@ -2939,6 +2981,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Case", command_case_sensitive},
     {L"Copy", command_copy_to_snarf_buffer},
     {L"DarkTheme", command_dark_theme},
+    {L"DejaVu", command_dejavusansmono},
     {L"Delcol", command_delete_column},
     {L"Del", command_delete_window},
     {L"DraculaTheme", command_dracula_theme},
@@ -2946,17 +2989,23 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Exit", command_exit},
     {L"Find", command_find},
     {L"FindNxt", command_find_next},
+    {L"FiraCode", command_firacode},
     {L"Get", command_get},
     {L"Goto", command_goto},
+    {L"Hack", command_hack},
     {L"Help", command_help},
+    {L"Inconsolata", command_inconsolata},
     {L"Incr", command_incremental_search},
     {L"Kill", command_kill},
     {L"LightTheme", command_light_theme},
     {L"LineNumbers", command_line_numbers},
     {L"Load", command_load},
     {L"MatrixTheme", command_matrix_theme},
+    {L"Menlo", command_menlo},
+    {L"Monaco", command_monaco},
     {L"New", command_new_window},
     {L"Newcol", command_new_column},
+    {L"Noto", command_noto},
     {L"Open", command_open},
     {L"Paste", command_paste_from_snarf_buffer},
     {L"Put", command_put},

@@ -101,13 +101,17 @@ Case					 : swap case sensitivity when searching
 Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
 DarkTheme      : change the color code to dark
 DraculaTheme   : change the color code to dracula (https://draculatheme.com)
+DejaVu         : change the font to DejaVuSansMono
 Dump           : write the state of jedi to the current cursor position
 Exit, ^x       : exit jedi
 Find , ^f      : find a word
+FiraCode       : change the font to Fira Code (https://github.com/tonsky/FiraCode)
 Get, F5        : refresh the current file or folder
 Goto , ^g      : go to line
+Hack           : change the font to Hack (https://sourcefoundry.org/hack/)
 Help, F1       : show this help text
 Hex <file>     : loads the file in hexagonal notation
+Inconsolata    : change the font to inconsolata (https://fonts.google.com/specimen/Inconsolata)
 Incr, ^i       : incremental search
 Kill           : kill the current running piped process if any 
                  (cfr. Win command)
@@ -115,7 +119,10 @@ LightTheme     : change the color code to light
 LineNumbers    : toggle visualization of line numbers
 Load           : restore the state of jedi from a selection representing a file or a dump
 MatrixTheme    : change the color code to shades of green
+Menlo          : change the font to Menlo
+Monaco         : change the font to Monaco
 New, ^n        : make an empty buffer
+Noto           : change the font to Noto (https://www.google.com/get/noto/)
 Open, ^o       : open a new file or folder
 Paste, ^v      : paste from the clipboard (pbpaste on MacOs, xclip on Linux)
 Put, ^s        : save the current active file
