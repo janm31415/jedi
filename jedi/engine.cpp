@@ -1242,7 +1242,7 @@ app_state text_input_operation(app_state state, const char* txt, settings& s)
       get_active_buffer(state).pos = *get_active_buffer(state).start_selection;
       }
     get_active_buffer(state).start_selection = std::nullopt;
-    get_active_buffer(state) = find_text(get_active_buffer(state), state.operation_buffer.content);
+    get_active_buffer(state) = find_text_case_insensitive(get_active_buffer(state), state.operation_buffer.content);
     s.last_find = to_string(state.operation_buffer.content);
     state = check_scroll_position(state, s);
     }
