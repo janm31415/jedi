@@ -100,6 +100,7 @@ Cancel, ^x     : cancel the current operation
 Case					 : swap case sensitivity when searching
 Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
 DarkTheme      : change the color code to dark
+DraculaTheme   : change the color code to dracula (https://draculatheme.com)
 Dump           : write the state of jedi to the current cursor position
 Exit, ^x       : exit jedi
 Find , ^f      : find a word

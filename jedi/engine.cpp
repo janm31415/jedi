@@ -2417,6 +2417,40 @@ std::optional<app_state> command_solarized_dark_theme(app_state state, uint32_t,
   return state;
   }
 
+std::optional<app_state> command_dracula_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xfff2f8f8;
+  s.color_editor_background = 0xff362a28;
+  s.color_editor_tag = 0xfffde98b;
+
+  s.color_command_text = 0xfff2f8f8;
+  s.color_command_background = 0xff5a4744;
+  s.color_command_tag = 0xfffde98b;
+  
+  s.color_column_command_text = 0xfff2f8f8;
+  s.color_column_command_background = 0xff6a5754;
+  s.color_column_command_tag = 0xfffde98b;
+  
+  s.color_topline_command_text = 0xfff2f8f8;
+  s.color_topline_command_background = 0xff7a6764;
+  s.color_topline_command_tag = 0xfffde98b;
+  
+  s.color_line_numbers = 0xff5a4744;
+  s.color_scrollbar = 0xffc679ff;
+  s.color_scrollbar_background = 0xffa47262;
+  s.color_icon = 0xfffde98b;
+  s.color_icon_modified = 0xff5555ff;
+  s.color_plus = 0xfffde98b;
+
+  s.color_comment = 0xffa47262;
+  s.color_string = 0xff8cfaf1;
+  s.color_keyword = 0xffc679ff;
+  s.color_keyword_2 = 0xfff993bd;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
 
 std::optional<app_state> command_acme_theme(app_state state, uint32_t, settings& s)
   {
@@ -2897,6 +2931,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"DarkTheme", command_dark_theme},
     {L"Delcol", command_delete_column},
     {L"Del", command_delete_window},
+    {L"DraculaTheme", command_dracula_theme},
     {L"Dump", command_dump},
     {L"Exit", command_exit},
     {L"Find", command_find},
