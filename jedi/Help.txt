@@ -101,7 +101,7 @@ Case					 : swap case sensitivity when searching
 Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
 DarkTheme      : change the color code to dark
 DraculaTheme   : change the color code to dracula (https://draculatheme.com)
-DejaVu         : change the font to DejaVuSansMono
+DejaVu         : change the font to DejaVuSansMono (https://www.fontsquirrel.com/fonts/dejavu-sans-mono)
 Dump           : write the state of jedi to the current cursor position
 Exit, ^x       : exit jedi
 Find , ^f      : find a word
@@ -119,8 +119,8 @@ LightTheme     : change the color code to light
 LineNumbers    : toggle visualization of line numbers
 Load           : restore the state of jedi from a selection representing a file or a dump
 MatrixTheme    : change the color code to shades of green
-Menlo          : change the font to Menlo
-Monaco         : change the font to Monaco
+Menlo          : change the font to Menlo (https://en.wikipedia.org/wiki/Menlo_(typeface))
+Monaco         : change the font to Monaco (https://en.wikipedia.org/wiki/Monaco_(typeface))
 New, ^n        : make an empty buffer
 Noto           : change the font to Noto (https://www.google.com/get/noto/)
 Open, ^o       : open a new file or folder
