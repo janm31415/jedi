@@ -10,6 +10,7 @@ struct settings
   int tab_space;
   bool show_all_characters;
   bool show_line_numbers;
+  bool case_sensitive;
   bool wrap;
   int w, h, x, y;
   int font_size;

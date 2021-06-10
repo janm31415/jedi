@@ -97,6 +97,7 @@ F5             : refresh active file or folder
 AcmeTheme      : change the color code to the color scheme of Acme
 AllChars       : toggle printing of all characters
 Cancel, ^x     : cancel the current operation
+Case					 : swap case sensitivity when searching
 Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
 DarkTheme      : change the color code to dark
 Dump           : write the state of jedi to the current cursor position
@@ -123,6 +124,8 @@ Replace, ^h    : find and replace
 Sel/all, ^a    : select all
 SolarizedTheme : change the color code to solarized (https://ethanschoonover.com/solarized/)
 SolDarkTheme   : change the color code to solarized dark (https://ethanschoonover.com/solarized/)
+Syntax         : turn on/off syntax highlighting. Very large files can be slow when syntax
+                 highlighting is turned on.
 TabSpaces      : toggle tab between spaces and real tab
 Tab <nr>       : Make tab nr spaces wide
 Win <command>  : Make a piped Jedi instance running the command, e.g. Win cmd 

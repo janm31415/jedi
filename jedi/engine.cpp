@@ -1242,7 +1242,7 @@ app_state text_input_operation(app_state state, const char* txt, settings& s)
       get_active_buffer(state).pos = *get_active_buffer(state).start_selection;
       }
     get_active_buffer(state).start_selection = std::nullopt;
-    get_active_buffer(state) = find_text_case_insensitive(get_active_buffer(state), state.operation_buffer.content);
+    get_active_buffer(state) = s.case_sensitive ? find_text(get_active_buffer(state), state.operation_buffer.content) : find_text_case_insensitive(get_active_buffer(state), state.operation_buffer.content);
     s.last_find = to_string(state.operation_buffer.content);
     state = check_scroll_position(state, s);
     }
@@ -1406,7 +1406,7 @@ app_state find(app_state state, settings& s)
   if (!state.operation_buffer.content.empty())
     search_string = std::wstring(state.operation_buffer.content[0].begin(), state.operation_buffer.content[0].end());
   s.last_find = jtk::convert_wstring_to_string(search_string);
-  state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, search_string);
+  state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, search_string) : find_text_case_insensitive(state.buffers[buffer_id].buffer, search_string);
   state.operation = op_editing;
   return check_scroll_position(state, s);
   }
@@ -1418,7 +1418,7 @@ app_state replace(app_state state, settings& s)
   state.message = string_to_line("[Replace]");
   state.operation = op_editing;
   std::wstring replace_string;
-  state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, s.last_find);
+  state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, s.last_find) : find_text_case_insensitive(state.buffers[buffer_id].buffer, s.last_find);
   state.buffers[buffer_id].buffer = erase_right(state.buffers[buffer_id].buffer, senv, true);
   if (!state.operation_buffer.content.empty())
     replace_string = std::wstring(state.operation_buffer.content[0].begin(), state.operation_buffer.content[0].end());
@@ -1441,7 +1441,7 @@ app_state replace_all(app_state state, settings& s)
   state.buffers[buffer_id].buffer.pos = position(0, 0); // go to start
   state.buffers[buffer_id].buffer.start_selection = std::nullopt;
   state.buffers[buffer_id].buffer.rectangular_selection = false;
-  state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, find_string);
+  state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, find_string) : find_text_case_insensitive(state.buffers[buffer_id].buffer, find_string);
   if (state.buffers[buffer_id].buffer.pos == get_last_position(state.buffers[buffer_id].buffer))
     return state;
   state.buffers[buffer_id].buffer = push_undo(state.buffers[buffer_id].buffer);
@@ -1450,7 +1450,7 @@ app_state replace_all(app_state state, settings& s)
     {
     state.buffers[buffer_id].buffer = erase_right(state.buffers[buffer_id].buffer, senv, false);
     state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, replace_string, senv, false);
-    state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, find_string);
+    state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, find_string) : find_text_case_insensitive(state.buffers[buffer_id].buffer, find_string);
     }
   return check_scroll_position(state, buffer_id, s);
   }
@@ -1475,7 +1475,7 @@ app_state replace_selection(app_state state, settings& s)
     std::swap(start_pos, end_pos);
 
   state.buffers[buffer_id].buffer.pos = start_pos;
-  state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, find_string);
+  state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, find_string) : find_text_case_insensitive(state.buffers[buffer_id].buffer, find_string);
   if (state.buffers[buffer_id].buffer.pos == get_last_position(state.buffers[buffer_id].buffer))
     return state;
   state.buffers[buffer_id].buffer = push_undo(state.buffers[buffer_id].buffer);
@@ -1485,7 +1485,7 @@ app_state replace_selection(app_state state, settings& s)
     {
     state.buffers[buffer_id].buffer = erase_right(state.buffers[buffer_id].buffer, senv, false);
     state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, replace_string, senv, false);
-    state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, find_string);
+    state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, find_string) : find_text_case_insensitive(state.buffers[buffer_id].buffer, find_string);
     }
   return check_scroll_position(state, buffer_id, s);
   }
@@ -1513,7 +1513,7 @@ std::optional<app_state> command_find_next(app_state state, uint32_t buffer_id, 
   {
   state.message = string_to_line("[Find next]");
   state.operation = op_editing;
-  state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, s.last_find);
+  state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, s.last_find) : find_text_case_insensitive(state.buffers[buffer_id].buffer, s.last_find);
   return check_scroll_position(state, buffer_id, s);
   }
 
@@ -1995,7 +1995,7 @@ std::optional<app_state> find_text(app_state state, uint32_t buffer_id, const st
   if (state.operation == op_editing)
     {
     s.last_find = jtk::convert_wstring_to_string(command);
-    state.buffers[buffer_id].buffer = find_text(state.buffers[buffer_id].buffer, command);
+    state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, command) : find_text_case_insensitive(state.buffers[buffer_id].buffer, command);
     return check_scroll_position(state, s);
     }
   return state;
@@ -2614,6 +2614,35 @@ std::optional<app_state> command_wrap(app_state state, uint32_t, settings& s)
   s.wrap = !s.wrap;
   return state;
   }
+  
+std::optional<app_state> command_case_sensitive(app_state state, uint32_t, settings& s)
+  {
+  s.case_sensitive = !s.case_sensitive;
+  return state;
+  }
+  
+std::optional<app_state> command_syntax_highlighting(app_state state, uint32_t buffer_id, settings& s)
+  {
+  buffer_id = get_editor_buffer_id(state, buffer_id);
+  if (buffer_id == 0xffffffff)
+    return state;
+  auto& f = state.buffers[buffer_id];
+  if (f.buffer.syntax.should_highlight) {
+    f.buffer.syntax.should_highlight = false;
+    f.buffer = init_lexer_status(f.buffer);
+  } else {
+    auto ext = jtk::get_extension(f.buffer.name);
+    auto filename = jtk::get_filename(f.buffer.name);
+    std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return (unsigned char)std::tolower(c); });
+    std::transform(filename.begin(), filename.end(), filename.begin(), [](unsigned char c) { return (unsigned char)std::tolower(c); });
+    const syntax_highlighter& shl = get_syntax_highlighter();
+    if (shl.extension_or_filename_has_syntax_highlighter(ext) || shl.extension_or_filename_has_syntax_highlighter(filename)) {
+      f.buffer.syntax.should_highlight = true;
+      f.buffer = init_lexer_status(f.buffer);
+    }
+  }
+  return state;
+  }
 
 std::optional<app_state> command_tab(app_state state, uint32_t, std::wstring& sz, settings& s)
   {
@@ -2863,6 +2892,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"AllChars", command_show_all_characters},
     {L"Back", command_cancel},
     {L"Cancel", command_cancel},
+    {L"Case", command_case_sensitive},
     {L"Copy", command_copy_to_snarf_buffer},
     {L"DarkTheme", command_dark_theme},
     {L"Delcol", command_delete_column},
@@ -2892,6 +2922,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Sel/all", command_select_all},
     {L"SolarizedTheme", command_solarized_theme},
     {L"SolDarkTheme", command_solarized_dark_theme},
+    {L"Syntax", command_syntax_highlighting},
     {L"TabSpaces", command_tab_spaces},
     {L"Undo", command_undo_mouseclick},
     {L"Wrap", command_wrap}
