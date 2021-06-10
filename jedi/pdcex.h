@@ -18,7 +18,7 @@ enum screen_ex_type
 
 struct screen_ex_pixel
   {
-  screen_ex_pixel() : type(SET_NONE), pos() {}
+  screen_ex_pixel() : pos(), type(SET_NONE), buffer_id(0xffffffff) {}
   position pos;
   screen_ex_type type;
   uint32_t buffer_id;
