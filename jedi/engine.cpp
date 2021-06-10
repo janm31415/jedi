@@ -102,11 +102,15 @@ bool shift_pressed()
   {
   return (keyb.is_down(SDLK_LSHIFT) || keyb.is_down(SDLK_RSHIFT));
   }
-
-app_state resize_font(app_state state, int font_size, settings& s)
-  {
+  
+void set_font(int font_size, settings& s) {
   pdc_font_size = font_size;
   s.font_size = font_size;
+  
+  TTF_CloseFont(pdc_ttffont);
+  pdc_ttffont = TTF_OpenFont(s.font.c_str(), pdc_font_size);
+  
+  if (!pdc_ttffont) {
 #ifdef _WIN32
   TTF_CloseFont(pdc_ttffont);
   pdc_ttffont = TTF_OpenFont("C:/Windows/Fonts/consola.ttf", pdc_font_size);
@@ -117,11 +121,17 @@ app_state resize_font(app_state state, int font_size, settings& s)
   TTF_CloseFont(pdc_ttffont);
   pdc_ttffont = TTF_OpenFont("/System/Library/Fonts/Menlo.ttc", pdc_font_size);
 #endif
+}
 
   TTF_SizeText(pdc_ttffont, "W", &font_width, &font_height);
   pdc_fheight = font_height;
   pdc_fwidth = font_width;
   pdc_fthick = pdc_font_size / 20 + 1;
+}
+
+app_state resize_font(app_state state, int font_size, settings& s)
+  {
+  set_font(font_size, s);
 
   state.w = (state.w / font_width) * font_width;
   state.h = (state.h / font_height) * font_height;
@@ -4788,22 +4798,7 @@ app_state make_empty_state(settings& s) {
 
 engine::engine(int argc, char** argv, const settings& input_settings) : s(input_settings)
   {
-  pdc_font_size = s.font_size;
-#ifdef _WIN32
-  TTF_CloseFont(pdc_ttffont);
-  pdc_ttffont = TTF_OpenFont("C:/Windows/Fonts/consola.ttf", pdc_font_size);
-#elif defined(unix)
-  TTF_CloseFont(pdc_ttffont);
-  pdc_ttffont = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", pdc_font_size);
-#elif defined(__APPLE__)
-  TTF_CloseFont(pdc_ttffont);
-  pdc_ttffont = TTF_OpenFont("/System/Library/Fonts/Menlo.ttc", pdc_font_size);
-#endif
-
-  TTF_SizeText(pdc_ttffont, "W", &font_width, &font_height);
-  pdc_fheight = font_height;
-  pdc_fwidth = font_width;
-  pdc_fthick = pdc_font_size / 20 + 1;
+  set_font(s.font_size, s);
 
   state.w = s.w * font_width;
   state.h = s.h * font_height;

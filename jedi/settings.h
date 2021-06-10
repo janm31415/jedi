@@ -14,6 +14,7 @@ struct settings
   bool wrap;
   int w, h, x, y;
   int font_size;
+  std::string font;
   int mouse_scroll_steps;
   std::string last_find, last_replace;
 

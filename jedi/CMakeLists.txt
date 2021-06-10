@@ -123,3 +123,7 @@ add_custom_command(TARGET jedi POST_BUILD
    COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_CURRENT_SOURCE_DIR}/macos/plumber.json" "$<TARGET_FILE_DIR:jedi>/plumber.json")
   endif(APPLE)
 endif(UNIX)
+
+
+add_custom_command(TARGET jedi POST_BUILD
+   COMMAND ${CMAKE_COMMAND} -E copy_directory "${CMAKE_CURRENT_SOURCE_DIR}/fonts" "$<TARGET_FILE_DIR:jedi>/fonts")

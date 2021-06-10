@@ -17,6 +17,7 @@ settings::settings()
   x = 100;
   y = 100;
   font_size = 17;
+  font = jtk::get_folder(jtk::get_executable_path()) + "fonts/FiraCode-Regular.ttf";
   mouse_scroll_steps = 3;
 
   color_editor_text = 0xff000000;
@@ -82,6 +83,9 @@ void update_settings_if_different(settings& s, const settings& new_settings, con
 
   if (new_settings.font_size != old_settings.font_size)
     s.font_size = new_settings.font_size;
+    
+  if (new_settings.font != old_settings.font)
+    s.font = new_settings.font;
 
   if (new_settings.mouse_scroll_steps != old_settings.mouse_scroll_steps)
     s.mouse_scroll_steps = new_settings.mouse_scroll_steps;
@@ -170,6 +174,7 @@ void update_settings(settings& s, const char* filename)
   f["x"] >> s.x;
   f["y"] >> s.y;
   f["font_size"] >> s.font_size;
+  f["font"] >> s.font;
   f["mouse_scroll_steps"] >> s.mouse_scroll_steps;
   f["last_find"] >> s.last_find;
   f["last_replace"] >> s.last_replace;
@@ -221,6 +226,7 @@ void write_settings(const settings& s, const char* filename)
   f << "x" << s.x;
   f << "y" << s.y;
   f << "font_size" << s.font_size;
+  f << "font" << s.font;  
   f << "mouse_scroll_steps" << s.mouse_scroll_steps;
   f << "last_find" << s.last_find;
   f << "last_replace" << s.last_replace;
