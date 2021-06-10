@@ -98,6 +98,7 @@ AcmeTheme      : change the color code to the color scheme of Acme
 AllChars       : toggle printing of all characters
 Cancel, ^x     : cancel the current operation
 Case					 : swap case sensitivity when searching
+Consolas       : change the font to Consolas (https://en.wikipedia.org/wiki/Consolas)
 Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
 DarkTheme      : change the color code to dark
 DraculaTheme   : change the color code to dracula (https://draculatheme.com)

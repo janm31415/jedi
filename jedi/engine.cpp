@@ -2603,6 +2603,12 @@ std::optional<app_state> command_light_theme(app_state state, uint32_t, settings
   return state;
   }
   
+std::optional<app_state> command_consolas(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/consola.ttf";
+  state = resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+  
 std::optional<app_state> command_hack(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Hack-Regular.ttf";
   state = resize_font(state, s.font_size, s);
@@ -2979,6 +2985,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Back", command_cancel},
     {L"Cancel", command_cancel},
     {L"Case", command_case_sensitive},
+    {L"Consolas", command_consolas},
     {L"Copy", command_copy_to_snarf_buffer},
     {L"DarkTheme", command_dark_theme},
     {L"DejaVu", command_dejavusansmono},
