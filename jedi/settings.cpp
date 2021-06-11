@@ -20,33 +20,33 @@ settings::settings()
   font = jtk::get_folder(jtk::get_executable_path()) + "fonts/FiraCode-Regular.ttf";
   mouse_scroll_steps = 3;
 
-  color_editor_text = 0xff000000;
-  color_editor_background = 0xffe5ffff;
-  color_editor_tag = 0xff4c9999;
+  color_editor_text = 0xfff2f8f8;
+  color_editor_background = 0xff362a28;
+  color_editor_tag = 0xfffde98b;
 
-  color_command_text = 0xff000000;
-  color_command_background = 0xffffffe5;
-  color_command_tag = 0xffc07275;
-  
-  color_column_command_text = 0xff000000;
-  color_column_command_background = 0xffffffd5;
-  color_column_command_tag = 0xffc07275;
-  
-  color_topline_command_text = 0xff000000;
-  color_topline_command_background = 0xffffffc5;
-  color_topline_command_tag = 0xffc07275;
-  
-  color_line_numbers = 0xff4c9999;
-  color_scrollbar = 0xff4c9999;
-  color_scrollbar_background = 0xffa5dddd;
-  color_icon = 0xffc07275;
-  color_icon_modified = 0xff1104ae;
-  color_plus = 0xff94933a;
+  color_command_text = 0xfff2f8f8;
+  color_command_background = 0xff5a4744;
+  color_command_tag = 0xfffde98b;
 
-  color_comment = 0xff036206;
-  color_string = 0xff1104ae;
-  color_keyword = 0xffff0000;
-  color_keyword_2 = 0xffff8080;
+  color_column_command_text = 0xfff2f8f8;
+  color_column_command_background = 0xff6a5754;
+  color_column_command_tag = 0xfffde98b;
+
+  color_topline_command_text = 0xfff2f8f8;
+  color_topline_command_background = 0xff7a6764;
+  color_topline_command_tag = 0xfffde98b;
+
+  color_line_numbers = 0xff5a4744;
+  color_scrollbar = 0xffc679ff;
+  color_scrollbar_background = 0xffa47262;
+  color_icon = 0xfffde98b;
+  color_icon_modified = 0xff5555ff;
+  color_plus = 0xfffde98b;
+
+  color_comment = 0xffa47262;
+  color_string = 0xff8cfaf1;
+  color_keyword = 0xffc679ff;
+  color_keyword_2 = 0xfff993bd;
   }
 
 void update_settings_if_different(settings& s, const settings& new_settings, const settings& old_settings)
