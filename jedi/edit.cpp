@@ -436,7 +436,7 @@ SimpleAddress make_simple_address(std::vector<token>& tokens, AddressTerm& node)
       ln.value = 1;
       return ln;
     }
-  default: break;
+    default: break;
   }
   throw_error(address_expected);
   return Dot();
@@ -623,4 +623,234 @@ std::vector<Expression> parse(std::vector<token> tokens)
     out.push_back(make_expression(tokens));
   }
   return out;
+}
+
+namespace {
+
+struct address {
+  position p1, p2;
+};
+
+
+
+struct simple_address_handler
+{
+  file_buffer f;
+  position starting_pos;
+  bool reverse;
+  
+  simple_address_handler(file_buffer i_f, position i_starting_pos, bool i_reverse) : f(i_f),
+  starting_pos(i_starting_pos), reverse(i_reverse) {}
+  
+  void check_range(address& r)
+  {
+    if (r.p2 < r.p1)
+      std::swap(r.p1, r.p2);
+    if (r.p1.row >= f.content.size())
+      r.p1.row = (int64_t)f.content.size() - 1;
+    if (r.p2.row >= f.content.size())
+      r.p2.row = (int64_t)f.content.size() - 1;
+    if (r.p1.row < 0)
+      r.p1.row = 0;
+    if (r.p2.row < 0)
+      r.p2.row = 0;
+    if (!f.content.empty()) {
+      if (r.p1.col >= f.content[r.p1.row].size())
+        r.p1.col = (int64_t)f.content[r.p1.row].size()-1;
+      if (r.p2.col >= f.content[r.p2.row].size())
+        r.p2.col = (int64_t)f.content[r.p2.row].size()-1;
+    }
+    if (r.p1.col < 0)
+      r.p1.col = 0;
+    if (r.p2.col < 0)
+      r.p2.col = 0;
+  }
+  
+  address operator()(const CharacterNumber& cn)
+  {
+    int64_t v = (int64_t)cn.value;
+    address r;
+    position pos = starting_pos;
+    if (f.content.empty()) {
+      r.p1 = r.p2 = pos;
+      check_range(r);
+      return r;
+    }
+    if (reverse)
+    {
+      while ((pos.row > 0 || pos.col > 0) && v>0) {
+        if (v >= pos.col) {
+          v -= pos.col;
+          pos.col = 0;
+          if (pos.row) {
+            --pos.row;
+            pos.col = f.content[pos.row].size();
+          }
+        } else {
+          pos.col -= v;
+          v = 0;
+        }
+      }
+    }
+    else
+    {
+      while ((pos.row < (f.content.size()-1) || (pos.col+1) < f.content[pos.row].size()) && v>0) {
+        if (v >= f.content[pos.row].size()) {
+          v -= (f.content[pos.row].size()-pos.col);
+          pos.col = 0;
+          ++pos.row;
+          }
+        else {
+          pos.col += v;
+          v = 0;
+        }
+      }
+    }
+    r.p1 = pos;
+    r.p2 = pos;
+    check_range(r);
+    return r;
+  }
+  
+  address operator()(const Dot&)
+  {
+    address r;
+    r.p1 = f.pos;
+    r.p2 = f.start_selection ? *f.start_selection : f.pos;
+    check_range(r);
+    return r;
+  }
+  
+  address operator()(const EndOfFile&)
+  {
+    address r;
+    r.p1 = r.p2 = get_last_position(f);
+    return r;
+  }
+  
+  address operator()(const LineNumber& ln)
+  {
+    address r;
+    r.p1 = starting_pos;
+    r.p2 = starting_pos;
+    if (reverse) {
+      r.p1.row -= ln.value;
+      r.p2.row -= ln.value;
+      }
+    else {
+      r.p1.row += ln.value;
+      r.p2.row += ln.value;
+    }
+    check_range(r);
+    r.p1.col = 0;
+    r.p2.col = (int64_t)(f.content[r.p2.row].size())-1;
+    check_range(r);
+    return r;
+  }
+  
+  address operator()(const RegExp& re)
+  {
+    address ret;
+    ret.p1 = ret.p2 = starting_pos;
+    /*
+    try
+    {
+      ret = find_regex_range(re.regexp, f.content, reverse, starting_pos, f.enc);
+    }
+    catch (std::regex_error e)
+    {
+      throw_error(invalid_regex, e.what());
+    }
+    */
+    return ret;
+  }
+  
+};
+
+address interpret_simple_address(const SimpleAddress& term, position starting_pos, bool reverse, file_buffer f)
+{
+  address out;
+  simple_address_handler sah(f, starting_pos, reverse);
+  out = std::visit(sah, term);
+  return out;
+}
+
+address interpret_address_term(const AddressTerm& addr, file_buffer f)
+{
+  address out;
+  if (addr.operands.size() > 2)
+    throw_error(invalid_address);
+  if (addr.operands.empty())
+    throw_error(invalid_address);
+  out = interpret_simple_address(addr.operands[0], position(0, 0), false, f);
+  if (addr.operands.size() == 2)
+  {
+    if (addr.fops[0] == "+")
+    {
+      return interpret_simple_address(addr.operands[1], out.p2, false, f);
+    }
+    else if (addr.fops[0] == "-")
+    {
+      return interpret_simple_address(addr.operands[1], out.p1, true, f);
+    }
+    else
+      throw_error(not_implemented, addr.fops[0]);
+  }
+  return out;
+}
+
+address interpret_address_range(const AddressRange& addr, file_buffer f)
+{
+  address out;
+  if (addr.operands.size() > 2)
+    throw_error(invalid_address);
+  if (addr.operands.empty())
+    throw_error(invalid_address);
+  out = interpret_address_term(addr.operands[0], f);
+  if (addr.operands.size() == 2)
+  {
+    address right = interpret_address_term(addr.operands[1], f);
+    if (addr.fops[0] == ",")
+    {
+      out.p2 = right.p2;
+    }
+    else
+      throw_error(not_implemented, addr.fops[0]);
+  }
+  return out;
+}
+
+struct expression_handler
+{
+  file_buffer fb;
+  
+  expression_handler(file_buffer i_fb) : fb(i_fb) {}
+  
+  file_buffer operator() (const AddressRange& addr)
+  {
+    address r = interpret_address_range(addr, fb);
+    fb.pos = r.p2;
+    fb.start_selection = r.p1;
+    return fb;
+  }
+  
+  file_buffer operator() (const Command& cmd)
+  {
+    //command_handler ch(state);
+    //return std::visit(ch, cmd);
+    return fb;
+  }
+};
+
+}
+
+file_buffer handle_command(file_buffer fb, std::string command) {
+  auto tokens = tokenize(command);
+  auto cmds = parse(tokens);
+  for (const auto& cmd : cmds)
+  {
+    expression_handler eh(fb);
+    fb = std::visit(eh, cmd);
+  }
+  return fb;
 }

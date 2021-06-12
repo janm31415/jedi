@@ -86,6 +86,25 @@ void parse_test_6() {
   }
 }
 
+void handle_command_test_1() {
+  env_settings s;
+  s.show_all_characters = false;
+  s.tab_space = 8;
+  file_buffer fb = make_empty_buffer();
+  fb = insert(fb, "The quick brown fox jumps over the lazy dog", s);
+  TEST_ASSERT(fb.start_selection == std::nullopt);
+  TEST_ASSERT(fb.pos == get_last_position(fb));
+  fb = handle_command(fb, "1");
+  TEST_ASSERT(fb.start_selection == position(0, 0));
+  TEST_ASSERT(fb.pos == position(0, fb.content[0].size()-1));
+  fb = handle_command(fb, "#1");
+  TEST_ASSERT(fb.start_selection == position(0, 1));
+  TEST_ASSERT(fb.pos == position(0, 1));
+  fb = handle_command(fb, "#0");
+  TEST_ASSERT(fb.start_selection == position(0, 0));
+  TEST_ASSERT(fb.pos == position(0, 0));
+}
+
 void run_all_edit_tests() {
   parse_test_1();
   parse_test_2();
@@ -93,4 +112,5 @@ void run_all_edit_tests() {
   parse_test_4();
   parse_test_5();
   parse_test_6();
+  handle_command_test_1();
 }
