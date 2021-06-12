@@ -4,6 +4,7 @@ buffer.h
 clipboard.h
 colors.h
 draw.h
+edit.h
 grid.h
 engine.h
 hex.h
@@ -25,6 +26,7 @@ clipboard.cpp
 colors.cpp
 draw.cpp
 grid.cpp
+edit.cpp
 engine.cpp
 hex.cpp
 keyboard.cpp
