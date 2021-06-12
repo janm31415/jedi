@@ -176,6 +176,8 @@ text to_text(std::wstring wtxt);
 
 std::string to_string(text txt);
 
+std::string to_string(line ln);
+
 std::string to_string(text txt, position from, position to);
 
 std::wstring to_wstring(text txt);

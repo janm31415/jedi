@@ -4,6 +4,8 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <sstream>
+#include <regex>
+#include <iterator>
 
 void throw_error(error_type t, std::string extra)
 {
@@ -65,11 +67,11 @@ bool is_number(const char* s)
   return true;
 }
 
-void _treat_escape_characters(std::string& s)
+std::string _treat_escape_characters(std::string s)
 {
   auto pos = s.find_first_of('\\');
   if (pos == std::string::npos)
-    return;
+    return s;
   
   std::stringstream str;
   while (pos != std::string::npos)
@@ -92,16 +94,7 @@ void _treat_escape_characters(std::string& s)
       pos = std::string::npos;
   }
   str << s;
-  s = str.str();
-}
-
-void _treat_escape_characters(std::vector<token>& tokens)
-{
-  for (auto& token : tokens)
-  {
-    if (token.type == token::T_TEXT)
-      _treat_escape_characters(token.value);
-  }
+  return str.str();
 }
 
 void _treat_number(std::string& number, std::vector<token>& tokens)
@@ -310,7 +303,6 @@ std::vector<token> tokenize(const std::string& str)
   }
   
   _treat_buffer(buff, tokens, s, s_end);
-  _treat_escape_characters(tokens);
   return tokens;
 }
 
@@ -631,7 +623,64 @@ struct address {
   position p1, p2;
 };
 
-
+address find_regex_range(std::string re, file_buffer fb, bool reverse, position starting_pos)
+{
+  address r;
+  
+  if (fb.content.empty()) {
+    r.p1 = r.p2 = position(0,0);
+    return r;
+  }
+  
+  if (reverse)
+  {
+    r.p1 = r.p2 = position(0, 0);
+    std::regex reg(re);
+    for (int64_t row = starting_pos.row; row >= 0; --row) {
+      std::string line = to_string(fb.content[row]);
+      std::smatch sm;
+      if (std::regex_search(line, sm, reg)) {
+        for (int i = (int)sm.size()-1; i >= 0; --i) {
+          int64_t p1 = sm.position(i);
+          int64_t p2 = p1 + sm.length(i);
+          if (row == starting_pos.row && p2 > starting_pos.col)
+            continue;
+          r.p1.row = row;
+          r.p1.col = p1;
+          r.p2.row = row;
+          r.p2.col = p2;
+          return r;
+        }
+      }
+    }
+  } else
+  {
+    r.p1 = r.p2 = position(fb.content.size()-1, 0);
+    if (!fb.content[r.p1.row].empty()) {
+      r.p1.col = fb.content[r.p1.row].size()-1;
+      r.p2.col = fb.content[r.p1.row].size()-1;
+    }
+    std::regex reg(re);
+    for (int64_t row = starting_pos.row; row < fb.content.size(); ++row) {
+      std::string line = to_string(fb.content[row]);
+      std::smatch sm;
+      if (std::regex_search(line, sm, reg)) {
+        for (int i = 0; i < (int)sm.size(); ++i) {
+          int64_t p1 = sm.position(i);
+          int64_t p2 = p1 + sm.length(i);
+          if (row == starting_pos.row && p1 < starting_pos.col)
+            continue;
+          r.p1.row = row;
+          r.p1.col = p1;
+          r.p2.row = row;
+          r.p2.col = p2;
+          return r;
+        }
+      }
+    }
+  }  
+  return r;
+}
 
 struct simple_address_handler
 {
@@ -699,7 +748,7 @@ struct simple_address_handler
           v -= (f.content[pos.row].size()-pos.col);
           pos.col = 0;
           ++pos.row;
-          }
+        }
         else {
           pos.col += v;
           v = 0;
@@ -736,7 +785,7 @@ struct simple_address_handler
     if (reverse) {
       r.p1.row -= ln.value;
       r.p2.row -= ln.value;
-      }
+    }
     else {
       r.p1.row += ln.value;
       r.p2.row += ln.value;
@@ -752,16 +801,14 @@ struct simple_address_handler
   {
     address ret;
     ret.p1 = ret.p2 = starting_pos;
-    /*
     try
     {
-      ret = find_regex_range(re.regexp, f.content, reverse, starting_pos, f.enc);
+      ret = find_regex_range(re.regexp, f, reverse, starting_pos);
     }
     catch (std::regex_error e)
     {
       throw_error(invalid_regex, e.what());
     }
-    */
     return ret;
   }
   
@@ -820,11 +867,109 @@ address interpret_address_range(const AddressRange& addr, file_buffer f)
   return out;
 }
 
+struct command_handler
+{
+  file_buffer fb;
+  env_settings s;
+  
+  command_handler(file_buffer i_fb, const env_settings& i_s) : fb(i_fb), s(i_s) {}
+  
+  file_buffer operator() (const Cmd_a& cmd) {
+    if (fb.start_selection != std::nullopt) {
+      if (*fb.start_selection > fb.pos)
+        fb.pos = *fb.start_selection;
+      fb.start_selection = std::nullopt;
+    }
+    auto init_pos = fb.pos;
+    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s);
+    fb.start_selection = init_pos;
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_c& cmd) {
+    auto init_pos = fb.pos;
+    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s);
+    fb.start_selection = init_pos;
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_d& cmd) {
+    return erase_right(fb, s);
+  }
+  
+  file_buffer operator() (const Cmd_e& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_g& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_i& cmd) {
+    if (fb.start_selection != std::nullopt) {
+      if (*fb.start_selection < fb.pos)
+        fb.pos = *fb.start_selection;
+      fb.start_selection = std::nullopt;
+    }
+    auto init_pos = fb.pos;
+    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s);
+    fb.start_selection = init_pos;
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_m& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_p& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_p_dot& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_r& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_s& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_t& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_u& cmd) {
+    for (int64_t i = 0; i < cmd.value; ++i)
+    fb = undo(fb, s);
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_v& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_w& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_x& cmd) {
+    return fb;
+  }
+  
+  file_buffer operator() (const Cmd_null& cmd) {
+    return fb;
+  }
+  
+};
+
 struct expression_handler
 {
   file_buffer fb;
-  
-  expression_handler(file_buffer i_fb) : fb(i_fb) {}
+  env_settings s;
+  expression_handler(file_buffer i_fb, const env_settings& i_s) : fb(i_fb), s(i_s) {}
   
   file_buffer operator() (const AddressRange& addr)
   {
@@ -836,20 +981,19 @@ struct expression_handler
   
   file_buffer operator() (const Command& cmd)
   {
-    //command_handler ch(state);
-    //return std::visit(ch, cmd);
-    return fb;
+    command_handler ch(fb, s);
+    return std::visit(ch, cmd);
   }
 };
 
 }
 
-file_buffer handle_command(file_buffer fb, std::string command) {
+file_buffer handle_command(file_buffer fb, std::string command, const env_settings& s) {
   auto tokens = tokenize(command);
   auto cmds = parse(tokens);
   for (const auto& cmd : cmds)
   {
-    expression_handler eh(fb);
+    expression_handler eh(fb, s);
     fb = std::visit(eh, cmd);
   }
   return fb;

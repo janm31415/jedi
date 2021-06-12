@@ -189,4 +189,4 @@ typedef std::variant<AddressRange, Command> Expression;
 std::vector<Expression> parse(std::vector<token> tokens);
 
 
-file_buffer handle_command(file_buffer fb, std::string command);
+file_buffer handle_command(file_buffer fb, std::string command, const env_settings& s);

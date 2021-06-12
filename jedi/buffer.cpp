@@ -1026,14 +1026,19 @@ std::string to_string(text txt)
   std::string out;
   for (auto ln : txt)
     {
-    std::string str;
-    auto it = ln.begin();
-    auto it_end = ln.end();
-    str.reserve(std::distance(it, it_end));
-    utf8::utf16to8(it, it_end, std::back_inserter(str));
-    out.append(str);
+    out.append(to_string(ln));
     }
   return out;
+  }
+  
+std::string to_string(line ln)
+  {
+  std::string str;
+  auto it = ln.begin();
+  auto it_end = ln.end();
+  str.reserve(std::distance(it, it_end));
+  utf8::utf16to8(it, it_end, std::back_inserter(str));
+  return str;
   }
   
 std::string to_string(text txt, position from, position to) {
