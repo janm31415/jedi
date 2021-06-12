@@ -907,6 +907,7 @@ struct command_handler
     auto init_pos = fb.pos;
     fb = insert(fb, _treat_escape_characters(cmd.txt.text), s, save_undo);
     fb.start_selection = init_pos;
+    //fb.pos = get_previous_position(fb, fb.pos);
     return fb;
   }
   
@@ -931,6 +932,7 @@ struct command_handler
     auto init_pos = fb.pos;
     fb = insert(fb, _treat_escape_characters(cmd.txt.text), s, save_undo);
     fb.start_selection = init_pos;
+    //fb.pos = get_previous_position(fb, fb.pos);
     return fb;
   }
   
@@ -999,6 +1001,7 @@ struct command_handler
             fb = insert(fb, cmd.txt.text, s, save_undo);
           }
           fb.start_selection = init_pos;
+          fb.pos = get_previous_position(fb, fb.pos);
           return fb;
         }
       }

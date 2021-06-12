@@ -165,8 +165,19 @@ void handle_command_test_6() {
   fb = handle_command(fb, "s/t/st/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("Pester"));
   fb = handle_command(fb, "u", s);
-  TEST_ASSERT(to_string(fb.content)==std::string("Peter"));  
+  TEST_ASSERT(to_string(fb.content)==std::string("Peter"));
   }
+  
+void handle_command_test_7() {
+  env_settings s;
+  s.show_all_characters = false;
+  s.tab_space = 8;
+  file_buffer fb = make_empty_buffer();
+  fb = handle_command(fb, "a/The quick brown fox jumps over the lazy dog/", s);
+  fb = handle_command(fb, "s/ck/cker/", s);
+  fb = handle_command(fb, "m #15", s);
+  TEST_ASSERT(to_string(fb.content)==std::string("The qui browckern fox jumps over the lazy dog"));
+}
 
 void run_all_edit_tests() {
   parse_test_1();
@@ -181,4 +192,5 @@ void run_all_edit_tests() {
   handle_command_test_4();
   handle_command_test_5();
   handle_command_test_6();
+  handle_command_test_7();
 }
