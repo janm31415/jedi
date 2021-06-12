@@ -73,6 +73,18 @@ void parse_test_5() {
   TEST_ASSERT(std::holds_alternative<Cmd_c>(std::get<Command>(expr.front())));
   TEST_ASSERT(std::get<Cmd_c>(std::get<Command>(expr.front())).txt.text == std::string("Jan"));
   }
+  
+void parse_test_6() {
+  std::string command = "c";
+  auto tokens = tokenize(command);
+  TEST_EQ(1, tokens.size());
+  TEST_EQ(token::T_COMMAND, tokens[0].type);
+  try {
+  auto expr = parse(tokens);
+  } catch (std::runtime_error& e) {
+    TEST_EQ(std::string("I expect a token: /"), std::string(e.what()));
+  }
+}
 
 void run_all_edit_tests() {
   parse_test_1();
@@ -80,4 +92,5 @@ void run_all_edit_tests() {
   parse_test_3();
   parse_test_4();
   parse_test_5();
+  parse_test_6();
 }
