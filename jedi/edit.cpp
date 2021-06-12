@@ -642,7 +642,7 @@ address find_regex_range(std::string re, file_buffer fb, bool reverse, position 
       if (std::regex_search(line, sm, reg)) {
         for (int i = (int)sm.size()-1; i >= 0; --i) {
           int64_t p1 = sm.position(i);
-          int64_t p2 = p1 + sm.length(i);
+          int64_t p2 = p1 + sm.length(i)-1;
           if (row == starting_pos.row && p2 > starting_pos.col)
             continue;
           r.p1.row = row;
@@ -667,7 +667,7 @@ address find_regex_range(std::string re, file_buffer fb, bool reverse, position 
       if (std::regex_search(line, sm, reg)) {
         for (int i = 0; i < (int)sm.size(); ++i) {
           int64_t p1 = sm.position(i);
-          int64_t p2 = p1 + sm.length(i);
+          int64_t p2 = p1 + sm.length(i)-1;
           if (row == starting_pos.row && p1 < starting_pos.col)
             continue;
           r.p1.row = row;
@@ -871,8 +871,9 @@ struct command_handler
 {
   file_buffer fb;
   env_settings s;
+  bool save_undo;
   
-  command_handler(file_buffer i_fb, const env_settings& i_s) : fb(i_fb), s(i_s) {}
+  command_handler(file_buffer i_fb, const env_settings& i_s) : fb(i_fb), s(i_s), save_undo(true) {}
   
   file_buffer operator() (const Cmd_a& cmd) {
     if (fb.start_selection != std::nullopt) {
@@ -881,20 +882,20 @@ struct command_handler
       fb.start_selection = std::nullopt;
     }
     auto init_pos = fb.pos;
-    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s);
+    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s, save_undo);
     fb.start_selection = init_pos;
     return fb;
   }
   
   file_buffer operator() (const Cmd_c& cmd) {
     auto init_pos = fb.pos;
-    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s);
+    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s, save_undo);
     fb.start_selection = init_pos;
     return fb;
   }
   
   file_buffer operator() (const Cmd_d& cmd) {
-    return erase_right(fb, s);
+    return erase_right(fb, s, save_undo);
   }
   
   file_buffer operator() (const Cmd_e& cmd) {
@@ -912,7 +913,7 @@ struct command_handler
       fb.start_selection = std::nullopt;
     }
     auto init_pos = fb.pos;
-    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s);
+    fb = insert(fb, _treat_escape_characters(cmd.txt.text), s, save_undo);
     fb.start_selection = init_pos;
     return fb;
   }
@@ -934,6 +935,44 @@ struct command_handler
   }
   
   file_buffer operator() (const Cmd_s& cmd) {
+    std::regex reg(cmd.regexp.regexp);
+    position p1 = fb.pos;
+    position p2 = p1;
+    if (fb.start_selection)
+      p2 = *fb.start_selection;
+    if (p2 < p1)
+      std::swap(p1, p2);
+        
+    for (int64_t row = p1.row; row <= p2.row; ++row) {
+      std::string line = to_string(fb.content[row]);
+      int64_t offset = 0;
+      if (row == p1.row) {
+        line = line.substr(p1.col);
+        offset = p1.col;
+        }
+      if (row == p2.row) {
+        line = line.substr(0, p2.col - offset);
+      }
+      std::smatch sm;
+      if (std::regex_search(line, sm, reg)) {
+        for (int i = 0; i < (int)sm.size(); ++i) {
+          int64_t pos1 = sm.position(i);
+          int64_t pos2 = pos1 + sm.length(i)-1;
+          fb.start_selection = position(row, pos1);
+          fb.pos = position(row, pos2);
+          auto init_pos = *fb.start_selection;
+          if (pos1 == pos2) {
+            fb = erase_right(fb, s, save_undo);
+            fb = insert(fb, cmd.txt.text, s, false);
+          } else {
+            fb = insert(fb, cmd.txt.text, s, save_undo);
+          }
+          fb.start_selection = init_pos;
+          return fb;
+        }
+      }
+    }
+  
     return fb;
   }
   
