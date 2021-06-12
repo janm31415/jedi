@@ -682,6 +682,22 @@ address find_regex_range(std::string re, file_buffer fb, bool reverse, position 
   return r;
 }
 
+position recompute_position_after_erase(file_buffer fb, position pos, position erase_p1, position erase_p2) {
+  if (pos < erase_p1)
+    return pos;
+  if (pos < erase_p2) {
+    return erase_p1;
+  }
+  if (pos.row == erase_p2.row) {
+    int64_t col_offset = pos.col - erase_p2.col;
+    pos = erase_p1;
+    pos.col += col_offset;
+    return pos;
+  }
+  pos.row -= (erase_p2.row - erase_p1.row);
+  return pos;
+}
+
 struct simple_address_handler
 {
   file_buffer f;
@@ -919,6 +935,21 @@ struct command_handler
   }
   
   file_buffer operator() (const Cmd_m& cmd) {
+    text t = get_selection(fb, s);
+    address addr = interpret_address_range(cmd.addr, fb);
+    position p1 = fb.pos;
+    position p2 = p1;
+    if (fb.start_selection)
+      p2 = *fb.start_selection;
+    if (p2 < p1)
+      std::swap(p1, p2);
+    addr.p1 = recompute_position_after_erase(fb, addr.p1, p1, p2);
+    addr.p2 = recompute_position_after_erase(fb, addr.p2, p1, p2);
+    fb = erase_right(fb, s, save_undo);
+    fb.pos = addr.p2;
+    fb.start_selection = std::nullopt;
+    fb = insert(fb, t, s, false);
+    fb.start_selection = addr.p2;
     return fb;
   }
   
@@ -977,6 +1008,12 @@ struct command_handler
   }
   
   file_buffer operator() (const Cmd_t& cmd) {
+    text t = get_selection(fb, s);
+    address addr = interpret_address_range(cmd.addr, fb);
+    fb.pos = addr.p2;
+    fb.start_selection = std::nullopt;
+    fb = insert(fb, t, s, save_undo);
+    fb.start_selection = addr.p2;
     return fb;
   }
   
