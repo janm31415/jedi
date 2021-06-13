@@ -96,7 +96,7 @@ void handle_command_test_1() {
   TEST_ASSERT(fb.pos == get_last_position(fb));
   fb = handle_command(fb, "1", s);
   TEST_ASSERT(fb.start_selection == position(0, 0));
-  TEST_ASSERT(fb.pos == position(0, fb.content[0].size()-1));
+  TEST_ASSERT(fb.pos == position(0, fb.content[0].size()));
   fb = handle_command(fb, "#1", s);
   TEST_ASSERT(fb.start_selection == std::nullopt);
   TEST_ASSERT(fb.pos == position(0, 1));
@@ -105,7 +105,7 @@ void handle_command_test_1() {
   TEST_ASSERT(fb.pos == position(0, 0));
   fb = handle_command(fb, ",", s);
   TEST_ASSERT(fb.start_selection == position(0, 0));
-  TEST_ASSERT(fb.pos == position(0, fb.content[0].size()-1));
+  TEST_ASSERT(fb.pos == position(0, fb.content[0].size()));
 }
 
 void handle_command_test_2() {
@@ -122,7 +122,7 @@ void handle_command_test_2() {
   fb.pos = position(0, 0);
   fb.start_selection = position(0, 10);
   fb = handle_command(fb, "a/INS/", s);
-  TEST_ASSERT(to_string(fb.content)==std::string("Hello worldINS!\nHere is a newline."));
+  TEST_ASSERT(to_string(fb.content)==std::string("Hello worlINSd!\nHere is a newline."));
 }
 
 void handle_command_test_3() {
@@ -133,7 +133,7 @@ void handle_command_test_3() {
   fb = insert(fb, "The quick brown fox jumps over the lazy dog", s);
   fb = handle_command(fb, "/q.*k/", s);
   TEST_ASSERT(fb.start_selection == position(0, 4));
-  TEST_ASSERT(fb.pos == position(0, 8));
+  TEST_ASSERT(fb.pos == position(0, 9));
   }
   
 void handle_command_test_4() {
@@ -154,6 +154,7 @@ void handle_command_test_5() {
   fb = insert(fb, "The quick brown fox jumps over the lazy dog", s);
   fb = handle_command(fb, ",c/AAA/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("AAA"));
+  printf("%s\n", to_string(fb.content).c_str());
   }
   
 void handle_command_test_6() {
@@ -164,7 +165,7 @@ void handle_command_test_6() {
   fb = handle_command(fb, "a/Peter/", s);
   fb = handle_command(fb, "s/t/st/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("Pester"));
-  //printf("%s\n", to_string(fb.content).c_str());
+  printf("%s\n", to_string(fb.content).c_str());
   fb = handle_command(fb, "u", s);
   TEST_ASSERT(to_string(fb.content)==std::string("Peter"));
   }
@@ -178,20 +179,10 @@ void handle_command_test_7() {
   fb = handle_command(fb, "s/ck/cker/", s);
   fb = handle_command(fb, "m #15", s);
   TEST_ASSERT(to_string(fb.content)==std::string("The qui browckern fox jumps over the lazy dog"));
-}
-  
-void handle_command_test_8() {
-  env_settings s;
-  s.show_all_characters = false;
-  s.tab_space = 8;
-  file_buffer fb = make_empty_buffer();
-  fb = handle_command(fb, "a/The quick brown fox jumps over the lazy dog/", s);
-  fb = handle_command(fb, ", c/AAA/", s);
-  //fb = handle_command(fb, "x/B*/ c/-/", s);
-  //TEST_ASSERT(to_string(fb.content)==std::string("-A-A-A"));
+  printf("%s\n", to_string(fb.content).c_str());
 }
 
-void handle_command_test_9() {
+void handle_command_test_8() {
   env_settings s;
   s.show_all_characters = false;
   s.tab_space = 8;
@@ -200,6 +191,28 @@ void handle_command_test_9() {
   fb = handle_command(fb, "/b/ c/B/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("The quick Brown fox jumps over the lazy dog"));
   printf("%s\n", to_string(fb.content).c_str());
+}
+
+void handle_command_test_9() {
+  env_settings s;
+  s.show_all_characters = false;
+  s.tab_space = 8;
+  file_buffer fb = make_empty_buffer();
+  fb = handle_command(fb, "a/AAA/", s);
+  fb = handle_command(fb, "s/B*/prr/", s);
+  TEST_ASSERT(to_string(fb.content)==std::string("prrAAA"));
+  printf("%s\n", to_string(fb.content).c_str());
+}
+
+void handle_command_test___() {
+  env_settings s;
+  s.show_all_characters = false;
+  s.tab_space = 8;
+  file_buffer fb = make_empty_buffer();
+  fb = handle_command(fb, "a/The quick brown fox jumps over the lazy dog/", s);
+  fb = handle_command(fb, ", c/AAA/", s);
+  //fb = handle_command(fb, "x/B*/ c/-/", s);
+  //TEST_ASSERT(to_string(fb.content)==std::string("-A-A-A"));
 }
 
 void run_all_edit_tests() {
@@ -215,7 +228,7 @@ void run_all_edit_tests() {
   handle_command_test_4();
   handle_command_test_5();
   handle_command_test_6();
-  //handle_command_test_7();
-  //handle_command_test_8();
+  handle_command_test_7();
+  handle_command_test_8();
   handle_command_test_9();
 }
