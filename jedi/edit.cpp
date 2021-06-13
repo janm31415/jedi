@@ -731,19 +731,19 @@ struct simple_address_handler
   {
     if (r.p2 < r.p1)
       std::swap(r.p1, r.p2);
-    if (r.p1.row >= f.content.size())
-      r.p1.row = (int64_t)f.content.size() - 1;
-    if (r.p2.row >= f.content.size())
-      r.p2.row = (int64_t)f.content.size() - 1;
+    if (r.p1.row > f.content.size())
+      r.p1.row = (int64_t)f.content.size();
+    if (r.p2.row > f.content.size())
+      r.p2.row = (int64_t)f.content.size();
     if (r.p1.row < 0)
       r.p1.row = 0;
     if (r.p2.row < 0)
       r.p2.row = 0;
     if (!f.content.empty()) {
-      if (r.p1.col >= f.content[r.p1.row].size())
-        r.p1.col = (int64_t)f.content[r.p1.row].size()-1;
-      if (r.p2.col >= f.content[r.p2.row].size())
-        r.p2.col = (int64_t)f.content[r.p2.row].size()-1;
+      if (r.p1.col > f.content[r.p1.row].size())
+        r.p1.col = (int64_t)f.content[r.p1.row].size();
+      if (r.p2.col > f.content[r.p2.row].size())
+        r.p2.col = (int64_t)f.content[r.p2.row].size();
     }
     if (r.p1.col < 0)
       r.p1.col = 0;
@@ -819,16 +819,16 @@ struct simple_address_handler
     r.p1 = starting_pos;
     r.p2 = starting_pos;
     if (reverse) {
-      r.p1.row -= ln.value;
-      r.p2.row -= ln.value;
+      r.p1.row -= (ln.value-1);
+      r.p2.row -= (ln.value-1);
     }
     else {
-      r.p1.row += ln.value;
-      r.p2.row += ln.value;
+      r.p1.row += (ln.value-1);
+      r.p2.row += (ln.value-1);
     }
     check_range(r);
     r.p1.col = 0;
-    r.p2.col = (int64_t)(f.content[r.p2.row].size())-1;
+    r.p2.col = (int64_t)(f.content[r.p2.row].size());
     check_range(r);
     return r;
   }
@@ -840,8 +840,6 @@ struct simple_address_handler
     try
     {
       ret = find_regex_range(re.regexp, f, reverse, starting_pos);
-      if (ret.p2 > ret.p1)
-        ret.p2 = get_previous_position(f, ret.p2);
     }
     catch (std::regex_error e)
     {
@@ -916,20 +914,20 @@ struct command_handler
   std::pair<position, position> get_dot() const {
     position p1 = fb.pos;
     position p2 = p1;
-    if (fb.start_selection)
+    if (fb.start_selection) {
       p2 = *fb.start_selection;
-    if (p2 < p1)
-      std::swap(p1, p2);
+      if (p2 < p1)
+        std::swap(p1, p2);
+      p2 = get_next_position(fb, p2);
+      }
     return std::pair<position, position>(p1, p2);
   }
   
   file_buffer operator() (const Cmd_a& cmd) {
-    if (fb.start_selection != std::nullopt) {
-      if (*fb.start_selection > fb.pos)
-        fb.pos = *fb.start_selection;
-      fb.start_selection = std::nullopt;
-    }
-    auto init_pos = get_dot().first;
+    auto dot = get_dot();
+    fb.pos = dot.second;
+    auto init_pos = dot.second;
+    fb.start_selection = std::nullopt;
     fb = insert(fb, _treat_escape_characters(cmd.txt.text), s, save_undo);
     fb.start_selection = init_pos;
     return fb;
@@ -1126,6 +1124,7 @@ struct command_handler
   file_buffer operator() (const Cmd_w& cmd) {
     bool success;
     save_to_file(success, fb, cmd.filename);
+    return fb;
   }
   
   file_buffer operator() (const Cmd_x& cmd) {
@@ -1196,8 +1195,13 @@ struct expression_handler
   file_buffer operator() (const AddressRange& addr)
   {
     address r = interpret_address_range(addr, fb);
-    fb.pos = r.p2;
-    fb.start_selection = r.p1;
+    if (r.p1 == r.p2) {
+      fb.pos = r.p1;
+      fb.start_selection = std::nullopt;
+      } else {
+      fb.pos = get_previous_position(fb, r.p2);
+      fb.start_selection = r.p1;
+      }
     return fb;
   }
   
