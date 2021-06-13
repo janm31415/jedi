@@ -2621,6 +2621,24 @@ std::optional<app_state> command_menlo(app_state state, uint32_t, settings& s) {
   return resize_windows(state, s);
 }
 
+std::optional<app_state> command_comic(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/ComicMono.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
+std::optional<app_state> command_fantasque(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/FantasqueSansMono-Regular.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
+std::optional<app_state> command_victor(app_state state, uint32_t, settings& s) {
+  s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/VictorMono-Regular.ttf";
+  state =  resize_font(state, s.font_size, s);
+  return resize_windows(state, s);
+}
+
 std::optional<app_state> command_dejavusansmono(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/DejaVuSansMono.ttf";
   state =  resize_font(state, s.font_size, s);
@@ -2985,6 +3003,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Back", command_cancel},
     {L"Cancel", command_cancel},
     {L"Case", command_case_sensitive},
+    {L"Comic", command_comic},
     {L"Consolas", command_consolas},
     {L"Copy", command_copy_to_snarf_buffer},
     {L"DarkTheme", command_dark_theme},
@@ -2994,6 +3013,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"DraculaTheme", command_dracula_theme},
     {L"Dump", command_dump},
     {L"Exit", command_exit},
+    {L"Fantasque", command_fantasque},
     {L"Find", command_find},
     {L"FindNxt", command_find_next},
     {L"FiraCode", command_firacode},
@@ -3026,6 +3046,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Syntax", command_syntax_highlighting},
     {L"TabSpaces", command_tab_spaces},
     {L"Undo", command_undo_mouseclick},
+    {L"Victor", command_victor},
     {L"Wrap", command_wrap}
   };
 

@@ -94,36 +94,23 @@ F1             : show this help text
 ^F3            : find the current selection
 F3             : find next occurence
 F5             : refresh active file or folder
-AcmeTheme      : change the color code to the color scheme of Acme
 AllChars       : toggle printing of all characters
 Cancel, ^x     : cancel the current operation
 Case					 : swap case sensitivity when searching
-Consolas       : change the font to Consolas (https://en.wikipedia.org/wiki/Consolas)
 Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
-DarkTheme      : change the color code to dark
-DraculaTheme   : change the color code to dracula (https://draculatheme.com)
-DejaVu         : change the font to DejaVuSansMono (https://www.fontsquirrel.com/fonts/dejavu-sans-mono)
 Dump           : write the state of jedi to the current cursor position
 Exit, ^x       : exit jedi
 Find , ^f      : find a word
-FiraCode       : change the font to Fira Code (https://github.com/tonsky/FiraCode)
 Get, F5        : refresh the current file or folder
 Goto , ^g      : go to line
-Hack           : change the font to Hack (https://sourcefoundry.org/hack/)
 Help, F1       : show this help text
 Hex <file>     : loads the file in hexagonal notation
-Inconsolata    : change the font to inconsolata (https://fonts.google.com/specimen/Inconsolata)
 Incr, ^i       : incremental search
 Kill           : kill the current running piped process if any 
                  (cfr. Win command)
-LightTheme     : change the color code to light
 LineNumbers    : toggle visualization of line numbers
 Load           : restore the state of jedi from a selection representing a file or a dump
-MatrixTheme    : change the color code to shades of green
-Menlo          : change the font to Menlo (https://en.wikipedia.org/wiki/Menlo_(typeface))
-Monaco         : change the font to Monaco (https://en.wikipedia.org/wiki/Monaco_(typeface))
 New, ^n        : make an empty buffer
-Noto           : change the font to Noto (https://www.google.com/get/noto/)
 Open, ^o       : open a new file or folder
 Paste, ^v      : paste from the clipboard (pbpaste on MacOs, xclip on Linux)
 Put, ^s        : save the current active file
@@ -131,8 +118,6 @@ Putall         : save all modified files
 Redo, ^y       : redo
 Replace, ^h    : find and replace
 Sel/all, ^a    : select all
-SolarizedTheme : change the color code to solarized (https://ethanschoonover.com/solarized/)
-SolDarkTheme   : change the color code to solarized dark (https://ethanschoonover.com/solarized/)
 Syntax         : turn on/off syntax highlighting for comments and strings. Very large files 
                  can be slow when syntax highlighting is turned on.
 TabSpaces      : toggle tab between spaces and real tab
@@ -141,6 +126,28 @@ Win <command>  : Make a piped Jedi instance running the command, e.g. Win cmd
                  will run Window's command shell inside jedi.
 Wrap           : Toggle wrapping of lines in the editor window
 Undo, ^z       : undo
+
+Available themes:
+AcmeTheme      : change the color code to the color scheme of Acme
+DarkTheme      : change the color code to dark
+DraculaTheme   : change the color code to dracula (https://draculatheme.com)
+LightTheme     : change the color code to light
+MatrixTheme    : change the color code to shades of green
+SolarizedTheme : change the color code to solarized (https://ethanschoonover.com/solarized/)
+SolDarkTheme   : change the color code to solarized dark (https://ethanschoonover.com/solarized/)
+
+Available fonts:
+Comic          : change the font to Comic-mono (https://dtinth.github.io/comic-mono-font/)
+Consolas       : change the font to Consolas (https://en.wikipedia.org/wiki/Consolas)
+DejaVu         : change the font to DejaVuSansMono (https://www.fontsquirrel.com/fonts/dejavu-sans-mono)
+Fantasque      : change the font to Fantasque-sans (https://github.com/belluzj/fantasque-sans/)
+FiraCode       : change the font to Fira Code (https://github.com/tonsky/FiraCode)
+Hack           : change the font to Hack (https://sourcefoundry.org/hack/)
+Inconsolata    : change the font to inconsolata (https://fonts.google.com/specimen/Inconsolata)
+Menlo          : change the font to Menlo (https://en.wikipedia.org/wiki/Menlo_(typeface))
+Monaco         : change the font to Monaco (https://en.wikipedia.org/wiki/Monaco_(typeface))
+Noto           : change the font to Noto (https://www.google.com/get/noto/)
+Victor         : change the font to Victor-mono (https://rubjo.github.io/victor-mono/)
 
 
 When Jedi is closed, it will save any user settings in a file 
