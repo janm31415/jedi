@@ -840,6 +840,8 @@ struct simple_address_handler
     try
     {
       ret = find_regex_range(re.regexp, f, reverse, starting_pos);
+      if (ret.p2 > ret.p1)
+        ret.p2 = get_previous_position(f, ret.p2);
     }
     catch (std::regex_error e)
     {
@@ -1168,7 +1170,7 @@ struct command_handler
             std::swap(new_p1, new_p2);
           position current = recompute_position_after_dot_change(fb, position(row, pos2), position(row, pos1), position(row, pos2), new_p1, new_p2);
           position end = recompute_position_after_dot_change(fb, p2, position(row, pos1), position(row, pos2), new_p1, new_p2);
-          p1 = current;
+          p1 = get_next_position(fb, current);
           p2 = end;
           row = p1.row-1;
         }
