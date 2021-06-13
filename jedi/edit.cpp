@@ -698,6 +698,26 @@ position recompute_position_after_erase(file_buffer fb, position pos, position e
   return pos;
 }
 
+position recompute_position_after_dot_change(file_buffer fb, position pos, position old_dot_p1, position old_dot_p2, position new_dot_p1, position new_dot_p2) {
+  if (old_dot_p1 != new_dot_p1)
+    return pos;
+  if (pos <= old_dot_p1)
+    return pos;
+  if (pos <= old_dot_p2)
+    return old_dot_p1;
+  if (pos.row == old_dot_p2.row) {
+    pos.row = new_dot_p2.row;
+    int64_t col_diff = pos.col - old_dot_p2.col;
+    pos.col = new_dot_p2.col + col_diff;
+  } else {
+  int64_t old_nr_rows = old_dot_p2.row - old_dot_p1.row;
+  int64_t new_nr_rows = new_dot_p2.row - new_dot_p1.row;
+  int64_t row_change = new_nr_rows - old_nr_rows;
+  pos.row += row_change;
+  }
+  return pos;
+}
+
 struct simple_address_handler
 {
   file_buffer f;
@@ -916,10 +936,41 @@ struct command_handler
   }
   
   file_buffer operator() (const Cmd_e& cmd) {
+    file_buffer b = read_from_file(cmd.filename);
+    fb.start_selection = position(0,0);
+    fb.pos = get_last_position(fb);
+    fb = erase_right(fb, s, save_undo);
+    fb = insert(fb, b.content, s, false);
+    fb.start_selection = position(0, 0);
     return fb;
   }
   
   file_buffer operator() (const Cmd_g& cmd) {
+    std::regex reg(cmd.regexp.regexp);
+    position p1 = fb.pos;
+    position p2 = p1;
+    if (fb.start_selection)
+      p2 = *fb.start_selection;
+    if (p2 < p1)
+      std::swap(p1, p2);
+        
+    for (int64_t row = p1.row; row <= p2.row; ++row) {
+      std::string line = to_string(fb.content[row]);
+      int64_t offset = 0;
+      if (row == p1.row) {
+        line = line.substr(p1.col);
+        offset = p1.col;
+        }
+      if (row == p2.row) {
+        line = line.substr(0, p2.col - offset);
+      }
+      std::smatch sm;
+      if (std::regex_search(line, sm, reg)) {
+        fb = std::visit(*this, cmd.cmd.front());
+        return fb;
+      }
+    }
+  
     return fb;
   }
   
@@ -964,6 +1015,10 @@ struct command_handler
   }
   
   file_buffer operator() (const Cmd_r& cmd) {
+    file_buffer b = read_from_file(cmd.filename);
+    auto init_pos = fb.pos;
+    fb = insert(fb, b.content, s, save_undo);
+    fb.start_selection = init_pos;
     return fb;
   }
   
@@ -1027,14 +1082,88 @@ struct command_handler
   }
   
   file_buffer operator() (const Cmd_v& cmd) {
+    std::regex reg(cmd.regexp.regexp);
+    position p1 = fb.pos;
+    position p2 = p1;
+    if (fb.start_selection)
+      p2 = *fb.start_selection;
+    if (p2 < p1)
+      std::swap(p1, p2);
+        
+    for (int64_t row = p1.row; row <= p2.row; ++row) {
+      std::string line = to_string(fb.content[row]);
+      int64_t offset = 0;
+      if (row == p1.row) {
+        line = line.substr(p1.col);
+        offset = p1.col;
+        }
+      if (row == p2.row) {
+        line = line.substr(0, p2.col - offset);
+      }
+      std::smatch sm;
+      if (std::regex_search(line, sm, reg)) {
+        return fb;
+      }
+    }
+    fb = std::visit(*this, cmd.cmd.front());
     return fb;
   }
   
   file_buffer operator() (const Cmd_w& cmd) {
-    return fb;
+    bool success;
+    save_to_file(success, fb, cmd.filename);
   }
   
   file_buffer operator() (const Cmd_x& cmd) {
+  
+    if (save_undo)
+      fb = push_undo(fb);
+  
+    bool save_undo_backup = save_undo;
+    save_undo = false;
+    
+    std::regex reg(cmd.regexp.regexp);
+    position p1 = fb.pos;
+    position p2 = p1;
+    if (fb.start_selection)
+      p2 = *fb.start_selection;
+    if (p2 < p1)
+      std::swap(p1, p2);
+        
+    for (int64_t row = p1.row; row <= p2.row; ++row) {
+      std::string line = to_string(fb.content[row]);
+      int64_t offset = 0;
+      if (row == p1.row) {
+        line = line.substr(p1.col);
+        offset = p1.col;
+        }
+      if (row == p2.row) {
+        line = line.substr(0, p2.col - offset);
+      }
+      std::smatch sm;
+      if (std::regex_search(line, sm, reg)) {
+        for (int i = 0; i < (int)sm.size(); ++i) {
+          int64_t pos1 = sm.position(i);
+          int64_t pos2 = pos1 + sm.length(i)-1;
+          fb.start_selection = position(row, pos1);
+          fb.pos = position(row, pos2);
+          fb = std::visit(*this, cmd.cmd.front());
+          position new_p1 = fb.pos;
+          position new_p2 = fb.pos;
+          if (fb.start_selection)
+            new_p2 = *fb.start_selection;
+          if (new_p2 < new_p1)
+            std::swap(new_p1, new_p2);
+          position current = recompute_position_after_dot_change(fb, position(row, pos2), position(row, pos1), position(row, pos2), new_p1, new_p2);
+          position end = recompute_position_after_dot_change(fb, p2, position(row, pos1), position(row, pos2), new_p1, new_p2);
+          p1 = current;
+          p2 = end;
+          row = p1.row-1;
+        }
+      }
+    }
+    
+    save_undo = save_undo_backup;
     return fb;
   }
   
