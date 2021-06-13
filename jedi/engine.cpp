@@ -10,6 +10,7 @@
 #include "serialize.h"
 #include "plumber.h"
 #include "hex.h"
+#include "edit.h"
 
 #include <jtk/file_utils.h>
 #include <jtk/pipe.h>
@@ -2753,6 +2754,20 @@ std::optional<app_state> command_syntax_highlighting(app_state state, uint32_t b
   }
   return state;
   }
+  
+std::optional<app_state> command_edit(app_state state, uint32_t buffer_id, std::wstring& sz, settings& s)
+  {
+  buffer_id = get_editor_buffer_id(state, buffer_id);
+  if (buffer_id == 0xffffffff)
+    return state;
+  std::string edit_command = jtk::convert_wstring_to_string(sz);
+  try {
+    state.buffers[buffer_id].buffer = handle_command(state.buffers[buffer_id].buffer, edit_command, convert(s));
+  } catch (std::runtime_error e) {
+    state = add_error_text(state, e.what(), s);
+  }
+  return check_scroll_position(state, buffer_id, s);
+  }
 
 std::optional<app_state> command_tab(app_state state, uint32_t, std::wstring& sz, settings& s)
   {
@@ -3052,6 +3067,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
 
 const auto executable_commands_with_parameters = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, std::wstring&, settings&)>>
   {
+    {L"Edit", command_edit},
     {L"Tab", command_tab},
     {L"Win", command_piped_win},
     {L"Hex", command_hex}
