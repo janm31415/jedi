@@ -628,6 +628,7 @@ struct address {
 address find_regex_range(std::string re, file_buffer fb, bool reverse, position starting_pos)
 {
   address r;
+  r.null_selection = true;
   
   if (fb.content.empty()) {
     r.p1 = r.p2 = position(0,0);
@@ -654,7 +655,8 @@ address find_regex_range(std::string re, file_buffer fb, bool reverse, position 
           if (sm.length(i)==0) {
             r.p2.col = p2;
             r.null_selection = true;
-          }
+          } else
+            r.null_selection = false;
           return r;
         }
       }
@@ -683,7 +685,8 @@ address find_regex_range(std::string re, file_buffer fb, bool reverse, position 
           if (sm.length(i)==0) {
             r.p2.col = p2;
             r.null_selection = true;
-          }
+          } else
+            r.null_selection = false;
           return r;
         }
       }
@@ -750,10 +753,10 @@ struct simple_address_handler
     if (r.p2.row < 0)
       r.p2.row = 0;
     if (!f.content.empty()) {
-      if (r.p1.col >= f.content[r.p1.row].size())
-        r.p1.col = (int64_t)f.content[r.p1.row].size()-1;
-      if (r.p2.col >= f.content[r.p2.row].size())
-        r.p2.col = (int64_t)f.content[r.p2.row].size()-1;
+      if (r.p1.col > f.content[r.p1.row].size())
+        r.p1.col = (int64_t)f.content[r.p1.row].size();
+      if (r.p2.col > f.content[r.p2.row].size())
+        r.p2.col = (int64_t)f.content[r.p2.row].size();
     }
     if (r.p1.col < 0)
       r.p1.col = 0;
@@ -765,6 +768,7 @@ struct simple_address_handler
   {
     int64_t v = (int64_t)cn.value;
     address r;
+    r.null_selection = true;
     position pos = starting_pos;
     if (f.content.empty()) {
       r.p1 = r.p2 = pos;
@@ -789,11 +793,13 @@ struct simple_address_handler
     }
     else
     {
-      while ((pos.row < (f.content.size()-1) || (pos.col+1) < f.content[pos.row].size()) && v>0) {
-        if (v >= f.content[pos.row].size()) {
+      while ((pos.row < (f.content.size()-1) || (pos.col) < f.content[pos.row].size()) && v>0) {
+        if (v > f.content[pos.row].size()) {
           v -= (f.content[pos.row].size()-pos.col);
           pos.col = 0;
           ++pos.row;
+          if (pos.row >= f.content.size())
+            throw_error(invalid_address);
         }
         else {
           pos.col += v;
@@ -812,6 +818,7 @@ struct simple_address_handler
     address r;
     r.p1 = f.pos;
     r.p2 = f.start_selection ? *f.start_selection : f.pos;
+    r.null_selection = f.start_selection == std::nullopt;
     check_range(r);
     return r;
   }
@@ -832,15 +839,20 @@ struct simple_address_handler
     if (reverse) {
       r.p1.row -= (ln.value-1);
       r.p2.row -= (ln.value-1);
+      if (r.p1.row < 0)
+        throw_error(invalid_address);
     }
     else {
       r.p1.row += (ln.value-1);
       r.p2.row += (ln.value-1);
+      if (r.p1.row >= f.content.size())
+        throw_error(invalid_address);
     }
     check_range(r);
     r.p1.col = 0;
     r.p2.col = (int64_t)(f.content[r.p2.row].size())-1;
     check_range(r);
+    r.null_selection = f.content[r.p2.row].empty();
     return r;
   }
   
@@ -848,6 +860,7 @@ struct simple_address_handler
   {
     address ret;
     ret.p1 = ret.p2 = starting_pos;
+    ret.null_selection = true;
     try
     {
       ret = find_regex_range(re.regexp, f, reverse, starting_pos);
@@ -906,7 +919,25 @@ address interpret_address_range(const AddressRange& addr, file_buffer f)
     address right = interpret_address_term(addr.operands[1], f);
     if (addr.fops[0] == ",")
     {
-      out.p2 = right.p2;
+      if (right.p2 < out.p1) {
+        out.p2 = out.p1;
+        out.null_selection = true;
+      }
+      else if (right.null_selection) {
+        if (right.p2 != get_last_position(f))
+          out.p2 = get_previous_position(f, right.p2);
+        else
+          out.p2 = right.p2;
+        if (out.p2 < out.p1)
+          out.p2 = out.p1;
+        if (out.null_selection) {
+          if (right.p2 > out.p1)
+            out.null_selection = false;
+        }
+      } else {
+        out.p2 = right.p2;
+        out.null_selection = false;
+      }
     }
     else
       throw_error(not_implemented, addr.fops[0]);

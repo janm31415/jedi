@@ -98,10 +98,10 @@ void handle_command_test_1() {
   TEST_ASSERT(fb.start_selection == position(0, 0));
   TEST_ASSERT(fb.pos == position(0, fb.content[0].size()-1));
   fb = handle_command(fb, "#1", s);
-  TEST_ASSERT(fb.start_selection == position(0, 1));
+  TEST_ASSERT(fb.start_selection == std::nullopt);
   TEST_ASSERT(fb.pos == position(0, 1));
   fb = handle_command(fb, "#0", s);
-  TEST_ASSERT(fb.start_selection == position(0, 0));
+  TEST_ASSERT(fb.start_selection == std::nullopt);
   TEST_ASSERT(fb.pos == position(0, 0));
   fb = handle_command(fb, ",", s);
   TEST_ASSERT(fb.start_selection == position(0, 0));
@@ -111,6 +111,16 @@ void handle_command_test_1() {
   fb = handle_command(fb, "/B/", s);
   TEST_ASSERT(fb.pos == position(0,1));
   TEST_ASSERT(*fb.start_selection == position(0,1));
+  fb = handle_command(fb, "#0,#0", s);
+  TEST_ASSERT(fb.start_selection == std::nullopt);
+  TEST_ASSERT(fb.pos == position(0, 0));
+  fb = handle_command(fb, "#0,#1", s);
+  TEST_ASSERT(fb.start_selection == position(0, 0));
+  TEST_ASSERT(fb.pos == position(0, 0));
+  fb = handle_command(fb, ", c/A/", s);
+  fb = handle_command(fb, "#0,#1", s);
+  TEST_ASSERT(fb.start_selection == position(0, 0));
+  TEST_ASSERT(fb.pos == position(0, 1));
 }
 
 void handle_command_test_2() {
@@ -257,6 +267,35 @@ void handle_command_test_13() {
   //printf("%s\n", to_string(fb.content).c_str());
 }
 
+void handle_command_test_14() {
+  env_settings s;
+  s.show_all_characters = false;
+  s.tab_space = 8;
+  file_buffer fb = make_empty_buffer();
+  fb = handle_command(fb, "a/The quick brown fox jumps over the lazy dog/", s);
+  std::string error;
+  try {
+  fb = handle_command(fb, "100", s);
+  } catch (std::runtime_error e) {
+    error = std::string(e.what());
+  }
+  TEST_ASSERT(error == std::string("Invalid address"));
+  error = "";
+  try {
+  fb = handle_command(fb, "1", s);
+  } catch (std::runtime_error e) {
+    error = std::string(e.what());
+  }
+  TEST_ASSERT(error == std::string(""));
+  error = "";
+  try {
+  fb = handle_command(fb, "#500", s);
+  } catch (std::runtime_error e) {
+    error = std::string(e.what());
+  }
+  TEST_ASSERT(error == std::string("Invalid address"));
+}
+
 
 void run_all_edit_tests() {
   parse_test_1();
@@ -278,4 +317,5 @@ void run_all_edit_tests() {
   handle_command_test_11();
   handle_command_test_12();
   handle_command_test_13();
+  handle_command_test_14();
 }
