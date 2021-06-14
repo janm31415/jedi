@@ -125,14 +125,6 @@ struct Cmd_t // Copy text in dot after address
   AddressRange addr;
 };
 
-struct Cmd_p // Print contents of dot
-{
-};
-
-struct Cmd_p_dot // Print value (line numbers and character numbers) of dot
-{
-};
-
 struct Cmd_u // Undo last n (default 1) changes
 {
   uint64_t value;
@@ -155,6 +147,8 @@ struct Cmd_w // Write file to named disc file
 
 struct Cmd_x; // For each match of regexp, set dot and run command
 
+struct Cmd_y; // Complement of Cmd_x: Between each match of regexp, set dot and run command
+
 struct Cmd_g; // If dot contains match of regexp, run command
 
 struct Cmd_v; // If dot does not contain a match of regexp, run command
@@ -164,7 +158,7 @@ struct Cmd_null
   
 };
 
-typedef std::variant<Cmd_a, Cmd_c, Cmd_d, Cmd_e, Cmd_g, Cmd_i, Cmd_m, Cmd_p, Cmd_p_dot, Cmd_r, Cmd_s, Cmd_t, Cmd_u, Cmd_v, Cmd_w, Cmd_x, Cmd_null> Command;
+typedef std::variant<Cmd_a, Cmd_c, Cmd_d, Cmd_e, Cmd_g, Cmd_i, Cmd_m, Cmd_r, Cmd_s, Cmd_t, Cmd_u, Cmd_v, Cmd_w, Cmd_x, Cmd_y, Cmd_null> Command;
 
 struct Cmd_g // If dot contains match of regexp, run command
 {
@@ -183,6 +177,12 @@ struct Cmd_x // For each match of regexp, set dot and run command
   RegExp regexp;
   std::vector<Command> cmd;
 };
+
+struct Cmd_y // Complement of Cmd_x: Between each match of regexp, set dot and run command
+  {
+  RegExp regexp;
+  std::vector<Command> cmd;
+  };
 
 typedef std::variant<AddressRange, Command> Expression;
 

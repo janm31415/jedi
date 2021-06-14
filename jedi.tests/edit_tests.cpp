@@ -252,7 +252,7 @@ void handle_command_test_12() {
   fb = handle_command(fb, "a/The quick brown fox jumps over the lazy dog/", s);
   fb = handle_command(fb, ", c/AAA/", s);
   fb = handle_command(fb, "x/B*/ c/-/", s);
-  TEST_ASSERT(to_string(fb.content)==std::string("-A-A-A"));
+  TEST_ASSERT(to_string(fb.content)==std::string("-A-A-A-"));
   //printf("%s\n", to_string(fb.content).c_str());
 }
 
@@ -296,6 +296,17 @@ void handle_command_test_14() {
   TEST_ASSERT(error == std::string("Invalid address"));
 }
 
+void handle_command_test_15() {
+  env_settings s;
+  s.show_all_characters = false;
+  s.tab_space = 8;
+  file_buffer fb = make_empty_buffer();
+  fb = handle_command(fb, "a/The quick brown fox jumps over the lazy dog/", s);
+  fb = handle_command(fb, ", c/AAA/", s);
+  fb = handle_command(fb, "y/A/ c/-/", s);
+  TEST_ASSERT(to_string(fb.content) == std::string("-A-A-A-"));
+  printf("%s\n", to_string(fb.content).c_str());
+  }
 
 void run_all_edit_tests() {
   parse_test_1();
@@ -318,4 +329,5 @@ void run_all_edit_tests() {
   handle_command_test_12();
   handle_command_test_13();
   handle_command_test_14();
+  handle_command_test_15();
 }

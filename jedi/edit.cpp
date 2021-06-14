@@ -517,10 +517,6 @@ Command make_command(std::vector<token>& tokens)
       cmd.addr = make_address_range(tokens);
       return cmd;
     }
-    case 'p':
-    {
-      return Cmd_p();
-    }
     case 'r':
     {
       Cmd_r cmd;
@@ -584,9 +580,15 @@ Command make_command(std::vector<token>& tokens)
       cmd.cmd.push_back(make_command(tokens));
       return cmd;
     }
-    case '=':
+    case 'y':
     {
-      return Cmd_p_dot();
+    Cmd_y cmd;
+    require_type(tokens, token::T_DELIMITER_SLASH, "/");
+    cmd.regexp.regexp = current(tokens);
+    require_type(tokens, token::T_TEXT, "regexp");
+    require_type(tokens, token::T_DELIMITER_SLASH, "/");
+    cmd.cmd.push_back(make_command(tokens));
+    return cmd;
     }
   }
   throw_error(command_expected);
@@ -1103,14 +1105,6 @@ struct command_handler
      */
   }
   
-  file_buffer operator() (const Cmd_p& cmd) {
-    return fb;
-  }
-  
-  file_buffer operator() (const Cmd_p_dot& cmd) {
-    return fb;
-  }
-  
   file_buffer operator() (const Cmd_r& cmd) {
     file_buffer b = read_from_file(cmd.filename);
     auto init_pos = get_dot().first;
@@ -1231,12 +1225,10 @@ struct command_handler
         }
       if (row == dot.second.row) {
         const int64_t sz = dot.second.col - offset;
-        if (sz <= 0)
+        if (sz < 0)
           continue;
         line = line.substr(0, sz);
       }
-      if (line.empty())
-        continue;
       std::smatch sm;
       if (std::regex_search(line, sm, reg)) {
         int64_t pos1 = sm.position(0);
@@ -1272,6 +1264,90 @@ struct command_handler
     save_undo = save_undo_backup;
     return fb;
   }
+
+  file_buffer operator() (const Cmd_y& cmd) {
+
+    if (save_undo)
+      fb = push_undo(fb);
+
+    bool save_undo_backup = save_undo;
+    save_undo = false;
+
+    std::regex reg(cmd.regexp.regexp);
+    auto dot = get_dot();
+
+    position prev_dot_end = position(0, 0);
+
+    for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
+      std::string line = to_string(fb.content[row]);
+      int64_t offset = 0;
+      if (row == dot.first.row) {
+        line = line.substr(dot.first.col);
+        offset = dot.first.col;
+        }
+      if (row == dot.second.row) {
+        const int64_t sz = dot.second.col - offset;
+        if (sz < 0)
+          continue;
+        line = line.substr(0, sz);
+        }
+      std::smatch sm;
+      if (std::regex_search(line, sm, reg)) {
+        int64_t pos1 = sm.position(0);
+        int64_t pos2 = pos1 + sm.length(0);
+        if (pos2 > pos1)
+          pos2 -= 1;
+        
+        
+        auto regex_start = position(row, pos1 + offset);
+        auto regex_end = position(row, pos2 + offset);
+
+        if (regex_start == prev_dot_end) {
+          fb.start_selection = std::nullopt;
+          fb.pos = prev_dot_end;
+          }
+        else {
+          fb.start_selection = prev_dot_end;
+          fb.pos = get_previous_position(fb, regex_start);
+          }
+        auto old_dot_p1 = fb.start_selection == std::nullopt ? fb.pos : *fb.start_selection;
+        auto old_dot_p2 = fb.pos;
+
+        fb = std::visit(*this, cmd.cmd.front());
+
+        position new_p1 = fb.pos;
+        position new_p2 = fb.pos;
+        if (fb.start_selection)
+          new_p2 = *fb.start_selection;
+        if (new_p2 < new_p1)
+          std::swap(new_p1, new_p2);
+        //prev_dot_end = new_p2;        
+        //prev_dot_end.col += sm.length(0);
+        position end = recompute_position_after_dot_change(fb, dot.second, old_dot_p1, old_dot_p2, new_p1, new_p2);
+        prev_dot_end = recompute_position_after_dot_change(fb, position(row, pos1 + sm.length(0)+offset), old_dot_p1, old_dot_p2, new_p1, new_p2);
+
+        dot.first = prev_dot_end;
+        dot.second = end;
+
+
+        row = dot.first.row - 1;
+        }
+
+      }
+
+    if (dot.second == prev_dot_end) {
+      fb.start_selection = std::nullopt;
+      fb.pos = prev_dot_end;
+      }
+    else {
+      fb.start_selection = prev_dot_end;
+      fb.pos = dot.second;
+      }
+    fb = std::visit(*this, cmd.cmd.front());
+
+    save_undo = save_undo_backup;
+    return fb;
+    }
   
   file_buffer operator() (const Cmd_null& cmd) {
     return fb;
