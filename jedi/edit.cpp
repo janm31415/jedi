@@ -839,8 +839,8 @@ struct simple_address_handler
     r.p1 = starting_pos;
     r.p2 = starting_pos;
     if (reverse) {
-      r.p1.row -= (ln.value-1);
-      r.p2.row -= (ln.value-1);
+      r.p1.row -= ln.value;
+      r.p2.row -= ln.value;
       if (r.p1.row < 0)
         throw_error(invalid_address);
     }

@@ -287,7 +287,7 @@ std::string get_command_text(const app_state& state, uint32_t buffer_id, const s
   bool undo = !textf.history.empty() && textf.undo_redo_index > 0;
   bool redo = !textf.history.empty() && textf.undo_redo_index < textf.history.size();
 
-  bool get = jtk::is_directory(f.name);
+  bool get = true;//jtk::is_directory(f.name);
   std::stringstream str;
   str << " Del";
   if (get)

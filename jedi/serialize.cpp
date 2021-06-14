@@ -35,7 +35,11 @@ namespace {
     j["command"] = (int)command;
     if (command) {
       std::string command_text = to_string(b.buffer.content);
-      j["command_text"] = command_text;
+      j["command_text"] = command_text;  
+      j["pos_col"] = b.buffer.pos.col;
+      j["pos_row"] = b.buffer.pos.row;
+      j["selection_col"] = b.buffer.start_selection != std::nullopt ? b.buffer.start_selection->col : b.buffer.pos.col;
+      j["selection_row"] = b.buffer.start_selection != std::nullopt ? b.buffer.start_selection->row : b.buffer.pos.row;
       }
     }
 
@@ -77,6 +81,22 @@ namespace {
       if (it.key() == std::string("command_text")) {
         std::string command_text = *it;
         bd.buffer = insert(bd.buffer, command_text, convert(s), false);
+        }
+      if (it.key() == std::string("pos_col")) {        
+        bd.buffer.pos.col = *it;
+      }
+      if (it.key() == std::string("pos_row")) {
+        bd.buffer.pos.row = *it;
+        }
+      if (it.key() == std::string("selection_col")) {
+        if (bd.buffer.start_selection == std::nullopt)
+          bd.buffer.start_selection = bd.buffer.pos;
+        bd.buffer.start_selection->col = *it;
+        }
+      if (it.key() == std::string("selection_row")) {
+        if (bd.buffer.start_selection == std::nullopt)
+          bd.buffer.start_selection = bd.buffer.pos;
+        bd.buffer.start_selection->row = *it;
         }
       }
     return bd;
