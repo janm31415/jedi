@@ -99,6 +99,9 @@ Cancel, ^x     : cancel the current operation
 Case					 : swap case sensitivity when searching
 Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
 Dump           : write the state of jedi to the current cursor position
+Edit <command> : Treat the argument as a text editing command in the style of sam
+                 (http://doc.cat-v.org/plan_9/4th_edition/papers/sam/)
+                 See below for an overview of valid commands
 Exit, ^x       : exit jedi
 Find , ^f      : find a word
 Get, F5        : refresh the current file or folder
@@ -149,9 +152,57 @@ Monaco         : change the font to Monaco (https://en.wikipedia.org/wiki/Monaco
 Noto           : change the font to Noto (https://www.google.com/get/noto/)
 Victor         : change the font to Victor-mono (https://rubjo.github.io/victor-mono/)
 
+Short overview of the Edit command functionality:
+  In the following, dot is shorthand for the selected text.
+  The value of dot may be changed by specifying an address.
+
+  Simple addresses:
+  #n                : The empty string after character n
+  n                 : Line n
+  /regexp/          : The first following match of the regular expression
+  -/regexp/         : The first previous match of the regular expression
+  $                 : The null string at the end of the file
+  .                 : Dot
+  
+  Compound addresses:
+  a1+a2             : The address a2 evaluated starting at right of a1
+  a1-a2             : a2 evaluated in the reverse direction starting at left of a1
+  a1,a2             : From the left of a1 to the right of a2 (default 0,$)
+  
+  Some examples:
+  Edit 3 refers to the third line of the file
+  Edit $-3 is the third line before the end of the file
+  Edit .+1 is the line after the current dot (selection)
+  Edit /x/ matches the next x character in the file
+  
+  Available Edit commands:
+  a/text/           : Append text after dot
+  c/text/           : Change text in dot
+  i/text/           : Insert text before dot
+  d                 : Delete text in dot
+  s/regexp/text/    : Substitute text for match of regular expression
+  m address         : Move text in dot after address
+  t address         : Copy text in dot after address
+  e filename        : Replace file with named disc file
+  r filename        : Replace dot by contents of named disc file
+  w filename        : Write file to named disc file
+  x/regexp/ command : For each match of regexp, set dot and run command
+  y/regexp/ command : Between adjacent matches of regexp, set dot and run command
+  g/regexp/ command : If dot contains a match of regexp, run command
+  v/regexp/ command : If dot does not contain a match of regexp, run command
+  u n               : Undo last n (default 1) changes
+  
+  Some examples:
+  Edit 3d deletes the third line of the file
+  Edit 0,$ x/Peter/ d searches the whole file for the occurence of Peter and runs the d command (which will thus delete each occurence of Peter). Note that 0,$ can be replaced by its shorthand ,
+  Edit , c/AAA/ will change the content of the file with AAA
+  Edit , g/Peter/ d deletes the whole file if Peter occurs anywhere in the text
+  
+   
 
 When Jedi is closed, it will save any user settings in a file 
 jedi_settings.json which lives next to the executable file Jedi. It is 
 possible to override certain settings. In the same folder, make a file 
 jedi_user_settings.json and put here the settings that you want to control. 
-You can, for instance, make your own color scheme here.
+You can, for instance, make your own color scheme here, or point to a custom
+font that you'd like to use.
