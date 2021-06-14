@@ -807,6 +807,8 @@ struct simple_address_handler
         }
       }
     }
+    if (v > 0)
+      throw_error(invalid_address);
     r.p1 = pos;
     r.p2 = pos;
     check_range(r);
