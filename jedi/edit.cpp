@@ -981,22 +981,20 @@ struct command_handler
   
   file_buffer operator() (const Cmd_g& cmd) {
     std::regex reg(cmd.regexp.regexp);
-    position p1 = fb.pos;
-    position p2 = p1;
-    if (fb.start_selection)
-      p2 = *fb.start_selection;
-    if (p2 < p1)
-      std::swap(p1, p2);
+    auto dot = get_dot();
         
-    for (int64_t row = p1.row; row <= p2.row; ++row) {
+    for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
       std::string line = to_string(fb.content[row]);
       int64_t offset = 0;
-      if (row == p1.row) {
-        line = line.substr(p1.col);
-        offset = p1.col;
+      if (row == dot.first.row) {
+        line = line.substr(dot.first.col);
+        offset = dot.first.col;
         }
-      if (row == p2.row) {
-        line = line.substr(0, p2.col - offset);
+      if (row == dot.second.row) {
+        const int64_t sz = dot.second.col - offset;
+        if (sz <= 0)
+          continue;
+        line = line.substr(0, sz);
       }
       std::smatch sm;
       if (std::regex_search(line, sm, reg)) {
@@ -1100,28 +1098,31 @@ struct command_handler
         offset = dot.first.col;
         }
       if (row == dot.second.row) {
-        line = line.substr(0, dot.second.col - offset);
+        const int64_t sz = dot.second.col - offset;
+        if (sz <= 0)
+          continue;
+        line = line.substr(0, sz);
       }
       std::smatch sm;
       if (std::regex_search(line, sm, reg)) {
-        for (int i = 0; i < (int)sm.size(); ++i) {
-          int64_t pos1 = sm.position(i);
-          int64_t pos2 = pos1 + sm.length(i);
-          if (pos2 > pos1)
-            pos2 -= 1;
-          fb.start_selection = position(row, pos1);
-          fb.pos = position(row, pos2);
-          auto init_pos = *fb.start_selection;
-          if (sm.length(i) == 1) {
-            fb = erase_right(fb, s, save_undo);
-            fb = insert(fb, cmd.txt.text, s, false);
-          } else {
-            fb = insert(fb, cmd.txt.text, s, save_undo);
-          }
-          fb.start_selection = init_pos;
-          fb.pos = get_previous_position(fb, fb.pos);
-          return fb;
+
+        int64_t pos1 = sm.position(0);
+        int64_t pos2 = pos1 + sm.length(0);
+        if (pos2 > pos1)
+          pos2 -= 1;
+        fb.start_selection = position(row, pos1+offset);
+        fb.pos = position(row, pos2+offset);
+        auto init_pos = *fb.start_selection;
+        if (sm.length(0) == 1) {
+          fb = erase_right(fb, s, save_undo);
+          fb = insert(fb, cmd.txt.text, s, false);
+        } else {
+          fb = insert(fb, cmd.txt.text, s, save_undo);
         }
+        fb.start_selection = init_pos;
+        fb.pos = get_previous_position(fb, fb.pos);
+        return fb;
+        
       }
     }
   
@@ -1146,22 +1147,20 @@ struct command_handler
   
   file_buffer operator() (const Cmd_v& cmd) {
     std::regex reg(cmd.regexp.regexp);
-    position p1 = fb.pos;
-    position p2 = p1;
-    if (fb.start_selection)
-      p2 = *fb.start_selection;
-    if (p2 < p1)
-      std::swap(p1, p2);
+    auto dot = get_dot();
         
-    for (int64_t row = p1.row; row <= p2.row; ++row) {
+    for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
       std::string line = to_string(fb.content[row]);
       int64_t offset = 0;
-      if (row == p1.row) {
-        line = line.substr(p1.col);
-        offset = p1.col;
+      if (row == dot.first.row) {
+        line = line.substr(dot.first.col);
+        offset = dot.first.col;
         }
-      if (row == p2.row) {
-        line = line.substr(0, p2.col - offset);
+      if (row == dot.second.row) {
+        const int64_t sz = dot.second.col - offset;
+        if (sz <= 0)
+          continue;
+        line = line.substr(0, sz);
       }
       std::smatch sm;
       if (std::regex_search(line, sm, reg)) {
@@ -1187,43 +1186,53 @@ struct command_handler
     save_undo = false;
     
     std::regex reg(cmd.regexp.regexp);
-    position p1 = fb.pos;
-    position p2 = p1;
-    if (fb.start_selection)
-      p2 = *fb.start_selection;
-    if (p2 < p1)
-      std::swap(p1, p2);
+    auto dot = get_dot();
         
-    for (int64_t row = p1.row; row <= p2.row; ++row) {
+        
+    for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
       std::string line = to_string(fb.content[row]);
       int64_t offset = 0;
-      if (row == p1.row) {
-        line = line.substr(p1.col);
-        offset = p1.col;
+      if (row == dot.first.row) {
+        line = line.substr(dot.first.col);
+        offset = dot.first.col;
         }
-      if (row == p2.row) {
-        line = line.substr(0, p2.col - offset);
+      if (row == dot.second.row) {
+        const int64_t sz = dot.second.col - offset;
+        if (sz <= 0)
+          continue;
+        line = line.substr(0, sz);
       }
+      if (line.empty())
+        continue;
       std::smatch sm;
       if (std::regex_search(line, sm, reg)) {
-        for (int i = 0; i < (int)sm.size(); ++i) {
-          int64_t pos1 = sm.position(i);
-          int64_t pos2 = pos1 + sm.length(i);
-          fb.start_selection = position(row, pos1);
-          fb.pos = position(row, pos2);
-          fb = std::visit(*this, cmd.cmd.front());
-          position new_p1 = fb.pos;
-          position new_p2 = fb.pos;
-          if (fb.start_selection)
-            new_p2 = *fb.start_selection;
-          if (new_p2 < new_p1)
-            std::swap(new_p1, new_p2);
-          position current = recompute_position_after_dot_change(fb, position(row, pos2), position(row, pos1), position(row, pos2), new_p1, new_p2);
-          position end = recompute_position_after_dot_change(fb, p2, position(row, pos1), position(row, pos2), new_p1, new_p2);
-          p1 = get_next_position(fb, current);
-          p2 = end;
-          row = p1.row-1;
-        }
+        int64_t pos1 = sm.position(0);
+        int64_t pos2 = pos1 + sm.length(0);
+        if (pos2 > pos1)
+          pos2 -= 1;
+        fb.start_selection = position(row, pos1+offset);
+        fb.pos = position(row, pos2+offset);
+        auto init_pos = *fb.start_selection;
+        if (sm.length(0) == 0)
+          fb.start_selection = std::nullopt;
+        
+        fb = std::visit(*this, cmd.cmd.front());
+
+        position new_p1 = fb.pos;
+        position new_p2 = fb.pos;
+        if (fb.start_selection)
+          new_p2 = *fb.start_selection;
+        if (new_p2 < new_p1)
+          std::swap(new_p1, new_p2);
+        position end = recompute_position_after_dot_change(fb, dot.second, position(row, pos1+offset), position(row, pos2+offset), new_p1, new_p2);
+        
+        dot.first = fb.pos;
+        dot.second = end;
+        
+        if (sm.length(0)==0)
+          dot.first = get_next_position(fb, dot.first);
+        
+        row = dot.first.row-1;
       }
     }
     

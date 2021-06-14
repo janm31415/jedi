@@ -159,7 +159,7 @@ void handle_command_test_5() {
   fb = insert(fb, "The quick brown fox jumps over the lazy dog", s);
   fb = handle_command(fb, ",c/AAA/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("AAA"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
   }
   
 void handle_command_test_6() {
@@ -170,7 +170,7 @@ void handle_command_test_6() {
   fb = handle_command(fb, "a/Peter/", s);
   fb = handle_command(fb, "s/t/st/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("Pester"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
   fb = handle_command(fb, "u", s);
   TEST_ASSERT(to_string(fb.content)==std::string("Peter"));
   }
@@ -184,7 +184,7 @@ void handle_command_test_7() {
   fb = handle_command(fb, "s/ck/cker/", s);
   fb = handle_command(fb, "m #15", s);
   TEST_ASSERT(to_string(fb.content)==std::string("The qui browckern fox jumps over the lazy dog"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
 }
 
 void handle_command_test_8() {
@@ -195,7 +195,7 @@ void handle_command_test_8() {
   fb = handle_command(fb, "a/The quick brown fox jumps over the lazy dog/", s);
   fb = handle_command(fb, "/b/ c/B/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("The quick Brown fox jumps over the lazy dog"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
 }
 
 void handle_command_test_9() {
@@ -206,7 +206,7 @@ void handle_command_test_9() {
   fb = handle_command(fb, "a/AAA/", s);
   fb = handle_command(fb, "s/B*/prr/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("prrAAA"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
 }
 
 void handle_command_test_10() {
@@ -217,10 +217,10 @@ void handle_command_test_10() {
   fb = handle_command(fb, "a/AA/", s);
   fb = handle_command(fb, "#1 i/B/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("ABA"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
   fb = handle_command(fb, "/C*/ i/C/", s);
   TEST_ASSERT(to_string(fb.content)==std::string("CABA"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
 }
 
 void handle_command_test_11() {
@@ -231,19 +231,32 @@ void handle_command_test_11() {
   fb = handle_command(fb, "a/ABCDE/", s);
   fb = handle_command(fb, "/B/ m #3", s);
   TEST_ASSERT(to_string(fb.content)==std::string("ACDBE"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
 }
 
-void handle_command_test___() {
+void handle_command_test_12() {
   env_settings s;
   s.show_all_characters = false;
   s.tab_space = 8;
   file_buffer fb = make_empty_buffer();
   fb = handle_command(fb, "a/The quick brown fox jumps over the lazy dog/", s);
   fb = handle_command(fb, ", c/AAA/", s);
-  //fb = handle_command(fb, "x/B*/ c/-/", s);
-  //TEST_ASSERT(to_string(fb.content)==std::string("-A-A-A"));
+  fb = handle_command(fb, "x/B*/ c/-/", s);
+  TEST_ASSERT(to_string(fb.content)==std::string("-A-A-A"));
+  //printf("%s\n", to_string(fb.content).c_str());
 }
+
+void handle_command_test_13() {
+  env_settings s;
+  s.show_all_characters = false;
+  s.tab_space = 8;
+  file_buffer fb = make_empty_buffer();
+  fb = handle_command(fb, "a/This text contains a newline\nYou see?\nWhat a text!/", s);
+  fb = handle_command(fb, ", x/text/ d", s); // delete all occurences of text
+  TEST_ASSERT(to_string(fb.content)==std::string("This  contains a newline\nYou see?\nWhat a !"));
+  //printf("%s\n", to_string(fb.content).c_str());
+}
+
 
 void run_all_edit_tests() {
   parse_test_1();
@@ -263,4 +276,6 @@ void run_all_edit_tests() {
   handle_command_test_9();
   handle_command_test_10();
   handle_command_test_11();
+  handle_command_test_12();
+  handle_command_test_13();
 }
