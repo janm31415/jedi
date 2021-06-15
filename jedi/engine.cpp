@@ -1409,6 +1409,22 @@ app_state clear_operation_buffer(app_state state)
   return state;
   }
 
+app_state edit(app_state state, settings& s)
+  {
+  uint32_t buffer_id = state.active_buffer;
+  std::string edit_command;
+  if (!state.operation_buffer.content.empty())
+    edit_command = jtk::convert_wstring_to_string(std::wstring(state.operation_buffer.content[0].begin(), state.operation_buffer.content[0].end()));
+  try {
+    state.buffers[buffer_id].buffer = handle_command(state.buffers[buffer_id].buffer, edit_command, convert(s));
+    }
+  catch (std::runtime_error e) {
+    state = add_error_text(state, e.what(), s);
+    }
+  state.operation = op_editing;
+  return check_scroll_position(state, buffer_id, s);
+  }
+
 app_state find(app_state state, settings& s)
   {
   uint32_t buffer_id = state.active_buffer;
@@ -1630,6 +1646,7 @@ std::optional<app_state> ret_operation(app_state state, settings& s) {
     {
     switch (state.operation)
       {
+      case op_edit: state = edit(state, s); break;
       case op_find: state = find(state, s); break;
       case op_goto: state = gotoline(state, s); break;
       case op_open: state = open_file(state, s); break;
@@ -2756,7 +2773,7 @@ std::optional<app_state> command_syntax_highlighting(app_state state, uint32_t b
   return state;
   }
   
-std::optional<app_state> command_edit(app_state state, uint32_t buffer_id, std::wstring& sz, settings& s)
+std::optional<app_state> command_edit_with_parameters(app_state state, uint32_t buffer_id, std::wstring& sz, settings& s)
   {
   buffer_id = get_editor_buffer_id(state, buffer_id);
   if (buffer_id == 0xffffffff)
@@ -2959,7 +2976,11 @@ app_state load_dump(app_state last_state, std::istream& str, settings& s) {
     if (state.buffers[state.windows[j].buffer_id].bt == e_buffer_type::bt_piped) {
       uint32_t buffer_id = state.windows[j].buffer_id;
       std::string pipe_command = state.buffers[buffer_id].buffer.name;
-      state = *execute(state, buffer_id, jtk::convert_string_to_wstring(pipe_command), s);
+      if (pipe_command != std::string("+Errors")) {
+        state = *execute(state, buffer_id, jtk::convert_string_to_wstring(pipe_command), s);
+        }
+      if (state.buffers[buffer_id].scroll_row > get_last_position(state.buffers[buffer_id].buffer).row)
+        state.buffers[buffer_id].scroll_row = get_last_position(state.buffers[buffer_id].buffer).row;
       }
     }
   state.active_buffer = active_buffer;
@@ -3029,6 +3050,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Del", command_delete_window},
     {L"DraculaTheme", command_dracula_theme},
     {L"Dump", command_dump},
+    {L"Edit", command_edit},
     {L"Execute", command_run},
     {L"Exit", command_exit},
     {L"Fantasque", command_fantasque},
@@ -3070,7 +3092,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
 
 const auto executable_commands_with_parameters = std::map<std::wstring, std::function<std::optional<app_state>(app_state, uint32_t, std::wstring&, settings&)>>
   {
-    {L"Edit", command_edit},
+    {L"Edit", command_edit_with_parameters},
     {L"Tab", command_tab},
     {L"Win", command_piped_win},
     {L"Hex", command_hex}
@@ -4408,6 +4430,17 @@ std::optional<app_state> make_goto_buffer(app_state state, uint32_t buffer_id, s
   return state;
   }
 
+std::optional<app_state> make_edit_buffer(app_state state, uint32_t buffer_id, settings& s)
+  {
+  state = clear_operation_buffer(state);
+  //std::stringstream str;
+  //str << state.buffers[buffer_id].buffer.pos.row + 1;
+  //state.operation_buffer = insert(state.operation_buffer, str.str(), convert(s), false);
+  state.operation_buffer.start_selection = position(0, 0);
+  state.operation_buffer = move_end(state.operation_buffer, convert(s));
+  return state;
+  }
+
 std::optional<app_state> make_find_buffer(app_state state, uint32_t buffer_id, settings& s)
   {
   auto senv = convert(s);
@@ -4456,6 +4489,12 @@ std::optional<app_state> command_goto(app_state state, uint32_t buffer_id, setti
   {
   state.operation = op_goto;
   return make_goto_buffer(state, buffer_id, s);
+  }
+
+std::optional<app_state> command_edit(app_state state, uint32_t buffer_id, settings& s)
+  {
+  state.operation = op_edit;
+  return make_edit_buffer(state, buffer_id, s);
   }
 
 std::optional<app_state> command_find(app_state state, uint32_t buffer_id, settings& s)
@@ -4647,6 +4686,14 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
             }
           break;
           }
+          case SDLK_e:
+          {
+          if (ctrl_pressed())
+            {
+            return command_edit(state, buffer_id, s);
+            }
+          break;
+          }
           case SDLK_f:
           {
           if (ctrl_pressed())
@@ -4662,7 +4709,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
             return command_goto(state, buffer_id, s);
             }
           break;
-          }
+          }          
           case SDLK_h:
           {
           if (ctrl_pressed())

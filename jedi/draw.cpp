@@ -660,6 +660,7 @@ std::string get_operation_text(e_operation op)
   {
   switch (op)
     {
+    case op_edit: return std::string("Edit: ");
     case op_find: return std::string("Find: ");
     case op_incremental_search: return std::string("Incremental search: ");
     case op_replace: return std::string("Replace: ");
@@ -703,12 +704,17 @@ void draw_help_text(const app_state& state)
   getmaxyx(stdscr, rows, cols);
   if (state.operation == op_editing)
     {
-    static std::string line1("^N New    ^O Open   ^S Put    ^C Copy   ^V Paste  ^Z Undo   ^Y Redo   F4 Get    ^W Del");
+    static std::string line1("^N New    ^O Open   ^S Put    ^C Copy   ^V Paste  ^Z Undo   ^Y Redo   F4 Get    ^W Del    ^E Edit");
     static std::string line2("F1 Help   ^X Exit   ^F Find   ^G Goto   ^H Replace^A Sel/all^I Incr   F3 FindNxtF5 Execute");
     draw_help_line(line1, rows - 2, cols);
     draw_help_line(line2, rows - 1, cols - 1); // cols - 1 because we need to avoid that the last character is drawn: pdcurses will do a \n, causing our layout to be messed up
     }
   if (state.operation == op_find)
+    {
+    static std::string line1("^X Cancel");
+    draw_help_line(line1, rows - 1, cols);
+    }
+  if (state.operation == op_edit)
     {
     static std::string line1("^X Cancel");
     draw_help_line(line1, rows - 1, cols);
