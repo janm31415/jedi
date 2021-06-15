@@ -711,42 +711,42 @@ void draw_help_text(const app_state& state)
   if (state.operation == op_find)
     {
     static std::string line1("^X Cancel");
-    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line1, rows - 1, cols);
     }
   if (state.operation == op_incremental_search)
     {
     static std::string line1("^X Cancel");
-    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line1, rows - 1, cols);
     }
   if (state.operation == op_replace_find)
     {
     static std::string line1("^X Cancel");
-    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line1, rows - 1, cols);
     }
   if (state.operation == op_replace)
     {
     static std::string line1("^X Cancel ^A All    ^S Select");
-    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line1, rows - 1, cols);
     }
   if (state.operation == op_goto)
     {
     static std::string line1("^X Cancel");
-    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line1, rows - 1, cols);
     }
   if (state.operation == op_open)
     {
     static std::string line1("^X Cancel");
-    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line1, rows - 1, cols);
     }
   if (state.operation == op_save)
     {
     static std::string line1("^X Cancel");
-    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line1, rows - 1, cols);
     }
   if (state.operation == op_query_save)
     {
     static std::string line1("^X Cancel ^Y Yes    ^N No");
-    draw_help_line(line1, rows - 2, cols);
+    draw_help_line(line1, rows - 1, cols);
     }
   }
 
@@ -761,7 +761,7 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
     current.col = 0;
     current.row = 0;
     std::string txt = get_operation_text(state.operation);
-    move((int)rows - 3, 0);
+    move((int)rows - 2, 0);
     attrset(DEFAULT_COLOR);
     for (auto ch : txt)
       {
@@ -779,11 +779,11 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
     bd.buffer.rectangular_selection, active, set_type, kd, s.wrap, s, senv, w.x, w.y);
 
      */
-      multiline_offset_x = draw_line(wide_characters_offset, state.operation_buffer, buffer_id, current, cursor, state.operation_buffer.pos, position(-1, -1), DEFAULT_COLOR, rows, - 3, multiline_offset_x, cols_available, 1, state.operation_buffer.start_selection, state.operation_buffer.rectangular_selection, true, SET_TEXT_OPERATION, e_window_type::wt_normal, kd, false, s, convert(s), 0, 0);
+      multiline_offset_x = draw_line(wide_characters_offset, state.operation_buffer, buffer_id, current, cursor, state.operation_buffer.pos, position(-1, -1), DEFAULT_COLOR, rows, - 2, multiline_offset_x, cols_available, 1, state.operation_buffer.start_selection, state.operation_buffer.rectangular_selection, true, SET_TEXT_OPERATION, e_window_type::wt_normal, kd, false, s, convert(s), 0, 0);
     int x = (int)current.col + multiline_offset_x + wide_characters_offset;
     if ((current == cursor))
       {
-      move((int)rows - 3, (int)x);
+      move((int)rows - 2, (int)x);
       attron(A_REVERSE);
       add_ex(current, buffer_id, SET_TEXT_OPERATION);
       addch(' ');
@@ -793,7 +793,7 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
     attroff(A_REVERSE);
     while (x < cols)
       {
-      move((int)rows - 3, (int)x);
+      move((int)rows - 2, (int)x);
       add_ex(current, buffer_id, SET_TEXT_OPERATION);
       addch(' ');
       ++current.col;
@@ -802,6 +802,7 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
     }
   else
     {
+    /*
     attrset(DEFAULT_COLOR);
     int rows, cols;
     getmaxyx(stdscr, rows, cols);
@@ -817,6 +818,7 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
         ++offset;
         }
       }
+    */
     }
 }
 

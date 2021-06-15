@@ -52,7 +52,6 @@ struct app_state
   std::vector<window> windows;
   grid g;
   text snarf_buffer;
-  line message;
   int w, h;
   uint32_t active_buffer;
   uint32_t last_active_editor_buffer;

@@ -215,7 +215,7 @@ std::optional<app_state> command_exit(app_state state, uint32_t, settings& s)
 app_state resize_windows(app_state state, const settings& s) {
   int rows, cols;
   getmaxyx(stdscr, rows, cols);
-  rows -= 3; // make room for bottom operation stuff
+  rows -= 2; // make room for bottom operation stuff
   state.windows[state.g.topline_window_id].x = 0;
   state.windows[state.g.topline_window_id].y = 0;
   state.windows[state.g.topline_window_id].cols = cols;
@@ -1412,7 +1412,7 @@ app_state clear_operation_buffer(app_state state)
 app_state find(app_state state, settings& s)
   {
   uint32_t buffer_id = state.active_buffer;
-  state.message = string_to_line("[Find]");
+  //state.message = string_to_line("[Find]");
   std::wstring search_string;
   if (!state.operation_buffer.content.empty())
     search_string = std::wstring(state.operation_buffer.content[0].begin(), state.operation_buffer.content[0].end());
@@ -1426,7 +1426,7 @@ app_state replace(app_state state, settings& s)
   {
   uint32_t buffer_id = state.active_buffer;
   auto senv = convert(s);
-  state.message = string_to_line("[Replace]");
+  //state.message = string_to_line("[Replace]");
   state.operation = op_editing;
   std::wstring replace_string;
   state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, s.last_find) : find_text_case_insensitive(state.buffers[buffer_id].buffer, s.last_find);
@@ -1442,7 +1442,7 @@ app_state replace(app_state state, settings& s)
 app_state replace_all(app_state state, settings& s)
   {
   uint32_t buffer_id = state.active_buffer;
-  state.message = string_to_line("[Replace all]");
+  //state.message = string_to_line("[Replace all]");
   state.operation = op_editing;
   std::wstring replace_string;
   if (!state.operation_buffer.content.empty())
@@ -1469,7 +1469,7 @@ app_state replace_all(app_state state, settings& s)
 app_state replace_selection(app_state state, settings& s)
   {
   uint32_t buffer_id = state.active_buffer;
-  state.message = string_to_line("[Replace selection]");
+  //state.message = string_to_line("[Replace selection]");
   state.operation = op_editing;
   std::wstring replace_string;
   if (!state.operation_buffer.content.empty())
@@ -1522,7 +1522,7 @@ app_state make_replace_buffer(app_state state, const settings& s)
 
 std::optional<app_state> command_find_next(app_state state, uint32_t buffer_id, settings& s)
   {
-  state.message = string_to_line("[Find next]");
+  //state.message = string_to_line("[Find next]");
   state.operation = op_editing;
   state.buffers[buffer_id].buffer = s.case_sensitive ? find_text(state.buffers[buffer_id].buffer, s.last_find) : find_text_case_insensitive(state.buffers[buffer_id].buffer, s.last_find);
   return check_scroll_position(state, buffer_id, s);
@@ -1563,7 +1563,7 @@ app_state gotoline(app_state state, const settings& s)
     }
   state.operation = op_editing;
 
-  state.message = string_to_line(messagestr.str());
+  //state.message = string_to_line(messagestr.str());
   return check_scroll_position(state, buffer_id, s);
   }
 
@@ -1608,7 +1608,8 @@ app_state open_file(app_state state, settings& s)
       filename.insert(filename.begin(), '"');
       }
     std::string message = "Opened file " + filename;
-    state.message = string_to_line(message);
+    //state.message = string_to_line(message);
+    state = add_error_text(state, message, s);
     }
   //state.buffer = set_multiline_comments(state.buffer);
   //state.buffer = init_lexer_status(state.buffer);
@@ -1619,7 +1620,7 @@ app_state open_file(app_state state, settings& s)
 app_state finish_incremental_search(app_state state)
   {
   state.operation = op_editing;
-  state.message = string_to_line("[Incremental search]");
+  //state.message = string_to_line("[Incremental search]");
   return state;
   }
 
@@ -2347,7 +2348,7 @@ std::optional<app_state> command_cancel(app_state state, uint32_t buffer_id, set
     }
   else
     {
-    state.message = string_to_line("[Cancelled]");
+    //state.message = string_to_line("[Cancelled]");
     state.operation = op_editing;
     state.operation_stack.clear();
     }
@@ -2830,7 +2831,8 @@ std::optional<app_state> command_put(app_state state, uint32_t buffer_id, settin
   if (success)
     {
     std::string message = "Saved file " + state.buffers[buffer_id].buffer.name;
-    state.message = string_to_line(message);
+    //state.message = string_to_line(message);
+    state = add_error_text(state, message, s);
     }
   else
     {
@@ -4294,7 +4296,7 @@ std::optional<app_state> right_mouse_button_up(app_state state, int x, int y, se
 
 std::optional<app_state> command_undo(app_state state, uint32_t buffer_id, settings& s)
   {
-  state.message = string_to_line("[Undo]");
+  //state.message = string_to_line("[Undo]");
   if (state.operation == op_editing)
     state.buffers[buffer_id].buffer = undo(state.buffers[buffer_id].buffer, convert(s));
   else
@@ -4304,7 +4306,7 @@ std::optional<app_state> command_undo(app_state state, uint32_t buffer_id, setti
 
 std::optional<app_state> command_redo(app_state state, uint32_t buffer_id, settings& s)
   {
-  state.message = string_to_line("[Redo]");
+  //state.message = string_to_line("[Redo]");
   if (state.operation == op_editing)
     state.buffers[buffer_id].buffer = redo(state.buffers[buffer_id].buffer, convert(s));
   else
@@ -4341,7 +4343,7 @@ std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t,
     state.snarf_buffer = get_selection(get_active_buffer(state), convert(s));
   else
     state.snarf_buffer = get_selection(state.operation_buffer, convert(s));
-  state.message = string_to_line("[Copy]");
+  //state.message = string_to_line("[Copy]");
 #ifdef _WIN32
   std::wstring txt = to_wstring(state.snarf_buffer);
   copy_to_windows_clipboard(jtk::convert_wstring_to_string(txt));
@@ -4372,7 +4374,7 @@ std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t,
 
 std::optional<app_state> command_paste_from_snarf_buffer(app_state state, uint32_t, settings& s)
   {
-  state.message = string_to_line("[Paste]");
+  //state.message = string_to_line("[Paste]");
 #if defined(_WIN32)
   auto txt = get_text_from_windows_clipboard();
   if (state.operation == op_editing)
@@ -4471,7 +4473,7 @@ std::optional<app_state> command_replace(app_state state, uint32_t buffer_id, se
 
 std::optional<app_state> command_select_all(app_state state, uint32_t buffer_id, settings& s)
   {
-  state.message = string_to_line("[Select all]");
+  //state.message = string_to_line("[Select all]");
   if (state.operation == op_editing)
     {
     state.buffers[buffer_id].buffer = select_all(state.buffers[buffer_id].buffer, convert(s));
