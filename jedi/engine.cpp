@@ -1794,7 +1794,7 @@ int compute_rows_necessary(const app_state& state, int number_of_column_cols, in
 int get_available_rows(const app_state& state, uint32_t target_column) {
   int rows, cols;
   getmaxyx(stdscr, rows, cols);
-  rows -= 3; // make room for bottom operation stuff
+  rows -= 2; // make room for bottom operation stuff
   rows -= state.windows[state.g.topline_window_id].rows; // subtract rows for topline window
   const auto& c = state.g.columns[target_column];
   rows -= state.windows[c.column_command_window_id].rows; // subtract rows for column command window
@@ -2447,6 +2447,76 @@ std::optional<app_state> command_solarized_dark_theme(app_state state, uint32_t,
   return state;
   }
 
+std::optional<app_state> command_tomorrow_night(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xffc6c8c5;
+  s.color_editor_background = 0xff211f1d;
+  s.color_editor_tag = 0xff68bdb5;
+
+  s.color_command_text = 0xffc6c8c5;
+  s.color_command_background = 0xff2e2a28;
+  s.color_command_tag = 0xff68bdb5;
+
+  s.color_column_command_text = 0xffc6c8c5;
+  s.color_column_command_background = 0xff413b37;
+  s.color_column_command_tag = 0xff68bdb5;
+
+  s.color_topline_command_text = 0xffc6c8c5;
+  s.color_topline_command_background = 0xff514b47;
+  s.color_topline_command_tag = 0xff68bdb5;
+
+  s.color_line_numbers = 0xff969896;
+  s.color_scrollbar = 0xffbb94b2;
+  s.color_scrollbar_background = 0xff2e2a28;
+  s.color_icon = 0xff68bdb5;
+  s.color_icon_modified = 0xff6666cc;
+  s.color_plus = 0xff68bdb5;
+
+  s.color_comment = 0xff969896;
+  s.color_string = 0xff5f93de;
+  s.color_keyword = 0xffbb94b2;
+  s.color_keyword_2 = 0xffb7be8a;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
+std::optional<app_state> command_tomorrow(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xff4c4d4d;
+  s.color_editor_background = 0xffffffff;
+  s.color_editor_tag = 0xff008c71;
+
+  s.color_command_text = 0xff4c4d4d;
+  s.color_command_background = 0xffefefef;
+  s.color_command_tag = 0xff008c71;
+
+  s.color_column_command_text = 0xff4c4d4d;
+  s.color_column_command_background = 0xffd6d6d6;
+  s.color_column_command_tag = 0xff008c71;
+
+  s.color_topline_command_text = 0xff4c4d4d;
+  s.color_topline_command_background = 0xffc6c6c6;
+  s.color_topline_command_tag = 0xff008c71;
+
+  s.color_line_numbers = 0xff8c908e;
+  s.color_scrollbar = 0xff8c908e;//0xffa85989;
+  s.color_scrollbar_background = 0xffefefef;
+  s.color_icon = 0xff008c71;
+  s.color_icon_modified = 0xff2928c8;
+  s.color_plus = 0xff008c71;
+
+  s.color_comment = 0xff8c908e;
+  s.color_string = 0xff1f87f5;
+  s.color_keyword = 0xffa85989;
+  s.color_keyword_2 = 0xffae7142;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
 std::optional<app_state> command_dracula_theme(app_state state, uint32_t, settings& s)
   {
   s.color_editor_text = 0xfff2f8f8;
@@ -2476,6 +2546,77 @@ std::optional<app_state> command_dracula_theme(app_state state, uint32_t, settin
   s.color_string = 0xff8cfaf1;
   s.color_keyword = 0xffc679ff;
   s.color_keyword_2 = 0xfff993bd;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
+std::optional<app_state> command_gruvbox_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xffb2dbeb;
+  s.color_editor_background = 0xff282828;
+  s.color_editor_tag = 0xff2fbdfa;
+
+  s.color_command_text = 0xffb2dbeb;
+  s.color_command_background = 0xff36383c;
+  s.color_command_tag = 0xff2fbdfa;
+
+  s.color_column_command_text = 0xffb2dbeb;
+  s.color_column_command_background = 0xff454950;
+  s.color_column_command_tag = 0xff2fbdfa;
+
+  s.color_topline_command_text = 0xffb2dbeb;
+  s.color_topline_command_background = 0xff545c66;
+  s.color_topline_command_tag = 0xff2fbdfa;
+
+  s.color_line_numbers = 0xff748392;
+  s.color_scrollbar = 0xff748392;
+  s.color_scrollbar_background = 0xff36383c;
+  s.color_icon = 0xff2fbdfa;
+  s.color_icon_modified = 0xff3449fb;
+  s.color_plus = 0xff2fbdfa;
+
+  s.color_comment = 0xff748392;
+  s.color_string = 0xff26bbb8;
+  s.color_keyword = 0xff3449fb;
+  s.color_keyword_2 = 0xff7cc08e;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
+
+std::optional<app_state> command_gruvbox_light_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xff36383c;
+  s.color_editor_background = 0xffc7f1fb;
+  s.color_editor_tag = 0xff2166d7;//0xff1476b5;
+
+  s.color_command_text = 0xff36383c;
+  s.color_command_background = 0xffb2dbeb;
+  s.color_command_tag = 0xff2166d7;
+
+  s.color_column_command_text = 0xff36383c;
+  s.color_column_command_background = 0xffa1c4d5;
+  s.color_column_command_tag = 0xff2166d7;
+
+  s.color_topline_command_text = 0xff36383c;
+  s.color_topline_command_background = 0xff93aebd;
+  s.color_topline_command_tag = 0xff2166d7;
+
+  s.color_line_numbers = 0xff748392;
+  s.color_scrollbar = 0xff748392;
+  s.color_scrollbar_background = 0xffb2dbeb;
+  s.color_icon = 0xff2166d7;
+  s.color_icon_modified = 0xff1d24cc;
+  s.color_plus = 0xff2166d7;
+
+  s.color_comment = 0xff748392;
+  s.color_string = 0xff0e7479;
+  s.color_keyword = 0xff06009d;//0xff1d24cc;
+  s.color_keyword_2 = 0xff587b42;
 
   init_colors(s);
   stdscr->_clear = TRUE;
@@ -3095,6 +3236,8 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"FiraCode", command_firacode},
     {L"Get", command_get},
     {L"Goto", command_goto},
+    {L"GruvboxTheme", command_gruvbox_theme},
+    {L"GruvboxLight", command_gruvbox_light_theme},
     {L"Hack", command_hack},
     {L"Help", command_help},
     {L"Inconsolata", command_inconsolata},
@@ -3121,6 +3264,8 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"SolDarkTheme", command_solarized_dark_theme},
     {L"Syntax", command_syntax_highlighting},
     {L"TabSpaces", command_tab_spaces},
+    {L"TomorrowDark", command_tomorrow_night},
+    {L"TomorrowTheme", command_tomorrow},
     {L"Undo", command_undo_mouseclick},
     {L"Victor", command_victor},
     {L"Wrap", command_wrap}
