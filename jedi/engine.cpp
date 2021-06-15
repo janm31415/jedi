@@ -3021,6 +3021,32 @@ std::optional<app_state> command_load(app_state state, uint32_t, settings& s)
   return state;
   }
 
+std::optional<app_state> command_complete(app_state state, uint32_t buffer_id, settings& s)
+  {
+  std::wstring command = to_wstring(get_selection(state.buffers[buffer_id].buffer, convert(s)));  
+  remove_whitespace(command);
+  if (command.empty()) {
+    auto command_end_pos = get_previous_position(state.buffers[buffer_id].buffer, state.buffers[buffer_id].buffer.pos);
+    command = find_command(state.buffers[buffer_id].buffer, command_end_pos, s);
+    if (command.empty())
+      return state;
+    auto command_begin_pos = command_end_pos;
+    command_begin_pos.col -= (int64_t)(command.length() - 1);
+    std::string suggestion = complete_file_path(jtk::convert_wstring_to_string(command), state.buffers[buffer_id].buffer.name);
+    if (!suggestion.empty()) {
+      state.buffers[buffer_id].buffer.start_selection = command_begin_pos;
+      state.buffers[buffer_id].buffer.pos = command_end_pos;
+      state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, suggestion, convert(s));
+      }
+    return state;
+    } 
+  std::string suggestion = complete_file_path(jtk::convert_wstring_to_string(command), state.buffers[buffer_id].buffer.name);
+  if (!suggestion.empty()) {
+    state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, suggestion, convert(s));
+    }
+  return state;
+  }
+
 std::optional<app_state> command_undo_mouseclick(app_state state, uint32_t buffer_id, settings& s)
   {
   buffer_id = get_editor_buffer_id(state, buffer_id);
@@ -3042,6 +3068,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Cancel", command_cancel},
     {L"Case", command_case_sensitive},
     {L"Comic", command_comic},
+    {L"Complet", command_complete},
     {L"Consolas", command_consolas},
     {L"Copy", command_copy_to_snarf_buffer},
     {L"DarkTheme", command_dark_theme},
@@ -3115,6 +3142,8 @@ std::wstring clean_command(std::wstring command)
 
 std::wstring find_command(file_buffer fb, position pos, const settings& s)
   {
+  if (pos.col < 0 || pos.row < 0)
+    return std::wstring();
   auto senv = convert(s);
   auto cursor = get_actual_position(fb);
   if (has_nontrivial_selection(fb, senv) && in_selection(fb, pos, cursor, fb.pos, fb.start_selection, fb.rectangular_selection, senv))
@@ -4645,6 +4674,10 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           case SDLK_F1:
           {
           return command_help(state, buffer_id, s);
+          }
+          case SDLK_F2:
+          {
+          return command_complete(state, buffer_id, s);
           }
           case SDLK_F3:
           {

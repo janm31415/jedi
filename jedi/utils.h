@@ -23,3 +23,5 @@ void remove_whitespace(std::string& cmd);
 void remove_whitespace(std::wstring& cmd);
 
 std::vector<std::wstring> break_string(std::string in);
+
+std::string complete_file_path(const std::string& incomplete_path, const std::string& buffer_filename);

@@ -14,6 +14,8 @@ std::string get_file_in_executable_path(const std::string& filename)
 
 namespace
 {
+
+
 std::vector<uint16_t> build_ascii_to_utf16_vector()
 {
   std::vector<uint16_t> vec(256, 0);
@@ -397,3 +399,35 @@ std::vector<std::wstring> break_string(std::string in)
   }
   return out;
 }
+
+std::string complete_file_path(const std::string& incomplete_path, const std::string& buffer_filename)
+  {
+  if (jtk::file_exists(incomplete_path) || jtk::is_directory(incomplete_path))
+    {
+    auto folder = jtk::get_folder(incomplete_path);
+    auto filename = jtk::get_filename(incomplete_path);
+    auto possible_completions = jtk::get_list_from_directory(folder, false);
+    if (!possible_completions.empty())
+      {
+      auto it = std::find_if(possible_completions.begin(), possible_completions.end(), [&](const std::string fn) {
+        return jtk::get_filename(fn) == filename;
+        });
+      if (it == possible_completions.end())
+        {
+        return possible_completions.front();
+        }
+      ++it;
+      if (it == possible_completions.end())
+        it = possible_completions.begin();
+      return *it;
+      }
+    }
+  auto folder = jtk::get_folder(incomplete_path);
+  auto filename = jtk::get_filename(incomplete_path);
+  auto possible_completions = jtk::get_list_from_directory(folder, false);  
+  for (const auto& c : possible_completions) {
+    if (c.substr(0, incomplete_path.length()) == incomplete_path)
+      return c;
+    }  
+  return incomplete_path;
+  }

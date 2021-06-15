@@ -78,6 +78,7 @@ std::optional<app_state> command_select_all(app_state state, uint32_t buffer_id,
 std::optional<app_state> command_run(app_state state, uint32_t buffer_id, settings& s);
 std::optional<app_state> command_edit(app_state state, uint32_t buffer_id, settings& s);
 std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const std::string& filename, settings& s);
+std::wstring find_command(file_buffer fb, position pos, const settings& s);
 app_state add_error_text(app_state state, const std::string& errortext, settings& s);
 app_state replace_all(app_state state, settings& s);
 app_state replace_selection(app_state state, settings& s);
