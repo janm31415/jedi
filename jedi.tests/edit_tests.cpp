@@ -305,7 +305,7 @@ void handle_command_test_15() {
   fb = handle_command(fb, ", c/AAA/", s);
   fb = handle_command(fb, "y/A/ c/-/", s);
   TEST_ASSERT(to_string(fb.content) == std::string("-A-A-A-"));
-  printf("%s\n", to_string(fb.content).c_str());
+  //printf("%s\n", to_string(fb.content).c_str());
   }
 
 void run_all_edit_tests() {

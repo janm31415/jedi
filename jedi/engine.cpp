@@ -4422,6 +4422,32 @@ std::optional<app_state> make_find_buffer(app_state state, uint32_t buffer_id, s
   state.operation_buffer = move_end(state.operation_buffer, convert(s));
   return state;
   }
+  
+uint32_t get_command_buffer_id(app_state state, uint32_t buffer_id) {
+  const auto& w = state.windows[state.buffer_id_to_window_id[buffer_id]];
+  if (w.wt != e_window_type::wt_normal) {
+    if (w.wt != e_window_type::wt_command) {
+      if (state.last_active_editor_buffer != 0xffffffff) {
+        buffer_id = state.last_active_editor_buffer-1;
+        }
+      else {
+        buffer_id = state.active_buffer;
+      }
+    }
+  } else {
+    buffer_id = buffer_id-1;
+  }
+  return buffer_id;
+}
+
+std::optional<app_state> command_run(app_state state, uint32_t buffer_id, settings& s)
+  {
+  buffer_id = get_command_buffer_id(state, buffer_id);
+  if (buffer_id == 0xffffffff)
+    return state;
+  auto command = get_selection(state.buffers[buffer_id].buffer, convert(s));
+  return execute(state, buffer_id, to_wstring(command), s);
+  }
 
 std::optional<app_state> command_goto(app_state state, uint32_t buffer_id, settings& s)
   {
@@ -4590,9 +4616,13 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
             }
           return command_find_next(state, buffer_id, s);
           }
-          case SDLK_F5:
+          case SDLK_F4:
           {
           return command_get(state, buffer_id, s);
+          }
+          case SDLK_F5:
+          {
+          return command_run(state, buffer_id, s);
           }
           case SDLK_a:
           {
@@ -4679,6 +4709,14 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           if (ctrl_pressed())
             {
             return command_paste_from_snarf_buffer(state, buffer_id, s);
+            }
+          break;
+          }
+          case SDLK_w:
+          {
+          if (ctrl_pressed())
+            {
+            return command_delete_window(state, buffer_id, s);
             }
           break;
           }
