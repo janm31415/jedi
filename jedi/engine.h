@@ -75,6 +75,7 @@ std::optional<app_state> command_goto(app_state state, uint32_t buffer_id, setti
 std::optional<app_state> command_find(app_state state, uint32_t buffer_id, settings& s);
 std::optional<app_state> command_replace(app_state state, uint32_t buffer_id, settings& s);
 std::optional<app_state> command_select_all(app_state state, uint32_t buffer_id, settings& s);
+std::optional<app_state> command_run(app_state state, uint32_t buffer_id, settings& s);
 std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const std::string& filename, settings& s);
 app_state add_error_text(app_state state, const std::string& errortext, settings& s);
 app_state replace_all(app_state state, settings& s);

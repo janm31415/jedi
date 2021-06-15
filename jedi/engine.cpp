@@ -3027,6 +3027,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Del", command_delete_window},
     {L"DraculaTheme", command_dracula_theme},
     {L"Dump", command_dump},
+    {L"Execute", command_run},
     {L"Exit", command_exit},
     {L"Fantasque", command_fantasque},
     {L"Find", command_find},
