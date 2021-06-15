@@ -61,8 +61,11 @@ file_buffer set_multiline_comments(file_buffer fb)
   }
 
 
-const keyword_data& get_keywords(const std::string& name)
+const keyword_data& get_keywords(const std::string& name, const env_settings& senv)
   {
+  static keyword_data empty;
+  if (!senv.perform_syntax_highlighting)
+    return empty;
   auto ext = jtk::get_extension(name);
   auto filename = jtk::get_filename(name);
   std::transform(ext.begin(), ext.end(), ext.begin(), [](unsigned char c) { return (unsigned char)std::tolower(c); });
@@ -72,7 +75,6 @@ const keyword_data& get_keywords(const std::string& name)
     return shl.get_keywords(ext);
   if (shl.extension_or_filename_has_keywords(filename))
     return shl.get_keywords(filename);
-  static keyword_data empty;
   return empty;
   }
 
@@ -179,7 +181,7 @@ This makes it possible to further fill the line with spaces after calling "draw_
 int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, position& current, position cursor, position buffer_pos, position underline, chtype base_color, int& r, int yoffset, int xoffset, int maxcol, int maxrow, std::optional<position> start_selection, bool rectangular, bool active, screen_ex_type set_type, e_window_type wt, const keyword_data& kd, bool wrap, const settings& s, const env_settings& senv, int wx, int wy)
   {
   int MULTILINEOFFSET = 10;
-  auto tt = get_text_type(fb, current.row);
+  auto tt = get_text_type(fb, current.row, senv);
 
   line ln = fb.content[current.row];
   int multiline_tag = (int)multiline_tag_editor;
@@ -504,7 +506,7 @@ void draw_window(const app_state& state, const window& w, const buffer_data& bd,
     underline = find_corresponding_token(bd.buffer, cursor, current.row, current.row + maxrow - 1);
     }
 
-  const keyword_data& kd = get_keywords(bd.buffer.name);
+  const keyword_data& kd = get_keywords(bd.buffer.name, senv);
   
   screen_ex_type set_type = SET_TEXT_EDITOR;
   if (is_command_window(w.wt))

@@ -51,6 +51,7 @@ env_settings convert(const settings& s)
   env_settings out;
   out.tab_space = s.tab_space;
   out.show_all_characters = s.show_all_characters;
+  out.perform_syntax_highlighting = s.syntax;
   return out;
   }
 
@@ -415,7 +416,7 @@ app_state update_filename(app_state state, uint32_t buffer_id, const settings& s
   if (state.buffers[buffer_id + 1].buffer.name != name) { // this is costly, so avoid if possible
     state.buffers[buffer_id + 1].buffer.name = name;
     state.buffers[buffer_id + 1].buffer = set_multiline_comments(state.buffers[buffer_id + 1].buffer);
-    state.buffers[buffer_id + 1].buffer = init_lexer_status(state.buffers[buffer_id + 1].buffer);
+    state.buffers[buffer_id + 1].buffer = init_lexer_status(state.buffers[buffer_id + 1].buffer, convert(s));
   }
   return state;
   }
@@ -1898,7 +1899,7 @@ std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const st
     int64_t command_id = state.active_buffer - 1;
     state.buffers[command_id].buffer.name = get_active_buffer(state).name;
     get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
-    get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
+    get_active_buffer(state) = init_lexer_status(get_active_buffer(state), convert(s));
     state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
     return check_scroll_position(state, s);
     }
@@ -1909,7 +1910,7 @@ std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const st
     int64_t command_id = state.active_buffer - 1;
     state.buffers[command_id].buffer.name = get_active_buffer(state).name;
     get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
-    get_active_buffer(state) = init_lexer_status(get_active_buffer(state));
+    get_active_buffer(state) = init_lexer_status(get_active_buffer(state), convert(s));
     state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
     return check_scroll_position(state, s);
     }
@@ -2000,7 +2001,7 @@ std::optional<app_state> load_folder(app_state state, uint32_t buffer_id, const 
     int64_t command_id = buffer_id - 1;
     state.buffers[buffer_id].buffer = read_from_file(simplified_folder_name);
     state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
-    state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+    state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer, convert(s));
     state.buffers[buffer_id].buffer.pos = position(0, 0);
     state.buffers[buffer_id].scroll_row = 0;
     auto original_position = state.buffers[command_id].buffer.pos;
@@ -2688,11 +2689,11 @@ std::optional<app_state> command_inconsolata(app_state state, uint32_t, settings
   return resize_windows(state, s);
 }
 
-app_state get(app_state state, uint32_t buffer_id)
+app_state get(app_state state, uint32_t buffer_id, const settings& s)
   {
   state.buffers[buffer_id].buffer = read_from_file(state.buffers[buffer_id].buffer.name);
   state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
-  state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+  state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer, convert(s));
   state.operation = op_editing;
   return state;
   }
@@ -2723,7 +2724,7 @@ std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settin
     str << (f.buffer.name.empty() ? std::string("<unsaved file>") : f.buffer.name) << " modified\n";
     return add_error_text(state, str.str(), s);
     }
-  return get(state, buffer_id);
+  return get(state, buffer_id, s);
   }
 
 std::optional<app_state> command_show_all_characters(app_state state, uint32_t, settings& s)
@@ -2752,13 +2753,14 @@ std::optional<app_state> command_case_sensitive(app_state state, uint32_t, setti
   
 std::optional<app_state> command_syntax_highlighting(app_state state, uint32_t buffer_id, settings& s)
   {
+  /*
   buffer_id = get_editor_buffer_id(state, buffer_id);
   if (buffer_id == 0xffffffff)
     return state;
   auto& f = state.buffers[buffer_id];
   if (f.buffer.syntax.should_highlight) {
     f.buffer.syntax.should_highlight = false;
-    f.buffer = init_lexer_status(f.buffer);
+    f.buffer = init_lexer_status(f.buffer, convert(s));
   } else {
     auto ext = jtk::get_extension(f.buffer.name);
     auto filename = jtk::get_filename(f.buffer.name);
@@ -2767,9 +2769,16 @@ std::optional<app_state> command_syntax_highlighting(app_state state, uint32_t b
     const syntax_highlighter& shl = get_syntax_highlighter();
     if (shl.extension_or_filename_has_syntax_highlighter(ext) || shl.extension_or_filename_has_syntax_highlighter(filename)) {
       f.buffer.syntax.should_highlight = true;
-      f.buffer = init_lexer_status(f.buffer);
+      f.buffer = init_lexer_status(f.buffer, convert(s));
     }
   }
+  */
+  s.syntax = !s.syntax;
+  if (s.syntax) {
+    for (auto& b : state.buffers) {
+      b.buffer = init_lexer_status(b.buffer, convert(s));        
+      }
+    }
   return state;
   }
   
@@ -2926,7 +2935,7 @@ std::optional<app_state> command_hex(app_state state, uint32_t buffer_id, std::w
     parameters = jtk::convert_string_to_wstring(file_path);
   state.buffers[buffer_id].buffer.content = to_text(to_hex(jtk::convert_wstring_to_string(parameters)));//read_from_file(jtk::convert_wstring_to_string(parameters));
   state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
-  state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+  state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer, convert(s));
   int64_t command_id = state.active_buffer - 1;
   //state.buffers[command_id].buffer.name = state.buffers[buffer_id].buffer.name;
   state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
@@ -2963,12 +2972,12 @@ app_state load_dump(app_state last_state, std::istream& str, settings& s) {
       if (jtk::file_exists(filename)) {
         state.buffers[buffer_id].buffer = read_from_file(filename);
         state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
-        state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+        state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer, convert(s));
         }
       else if (jtk::is_directory(filename)) {
         state.buffers[buffer_id].buffer = read_from_file(filename);
         state.buffers[buffer_id].buffer = set_multiline_comments(state.buffers[buffer_id].buffer);
-        state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer);
+        state.buffers[buffer_id].buffer = init_lexer_status(state.buffers[buffer_id].buffer, convert(s));
         }
       if (state.buffers[buffer_id].scroll_row > get_last_position(state.buffers[buffer_id].buffer).row)
         state.buffers[buffer_id].scroll_row = get_last_position(state.buffers[buffer_id].buffer).row;

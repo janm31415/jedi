@@ -90,6 +90,7 @@ struct env_settings
   {
   int tab_space;
   bool show_all_characters;
+  bool perform_syntax_highlighting;
   };
 
 uint32_t character_width(uint32_t character, int64_t x_pos, const env_settings& s);
@@ -218,11 +219,11 @@ bool valid_position(file_buffer fb, position pos);
 
 uint8_t get_end_of_line_lexer_status(file_buffer fb, int64_t row);
 
-file_buffer init_lexer_status(file_buffer fb);
+file_buffer init_lexer_status(file_buffer fb, const env_settings& s);
 
-file_buffer update_lexer_status(file_buffer fb, int64_t row);
+file_buffer update_lexer_status(file_buffer fb, int64_t row, const env_settings& s);
 
-file_buffer update_lexer_status(file_buffer fb, int64_t from_row, int64_t to_row);
+file_buffer update_lexer_status(file_buffer fb, int64_t from_row, int64_t to_row, const env_settings& s);
 
 enum text_type
   {
@@ -235,7 +236,7 @@ enum text_type
 first index in pair equals the column where the text type (second index in pair) starts.
 The text type is valid till the next index or the end of the line.
 */
-std::vector<std::pair<int64_t, text_type>> get_text_type(file_buffer fb, int64_t row);
+std::vector<std::pair<int64_t, text_type>> get_text_type(file_buffer fb, int64_t row, const env_settings& s);
 
 /*
 When selecting ( you want to find the corresponding ).

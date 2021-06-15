@@ -432,7 +432,7 @@ namespace
       fb.pos.row = minrow;
       fb.pos.col = get_col_from_line_length(fb.content[fb.pos.row], minx, s);
       }
-    fb = update_lexer_status(fb, minrow, maxrow);
+    fb = update_lexer_status(fb, minrow, maxrow, s);
     return fb;
     }
 
@@ -500,7 +500,7 @@ namespace
       fb.pos.row = minrow;
       fb.pos.col = get_col_from_line_length(fb.content[fb.pos.row], minx, s);
       }
-    fb = update_lexer_status(fb, minrow, maxrow);
+    fb = update_lexer_status(fb, minrow, maxrow, s);
     return fb;
     */
     }
@@ -579,7 +579,7 @@ file_buffer insert(file_buffer fb, std::wstring wtxt, const env_settings& s, boo
       fb.pos.col += input.size();
       }
     }
-  fb = update_lexer_status(fb, first_insertion_row, first_insertion_row + nr_of_lines_inserted);
+  fb = update_lexer_status(fb, first_insertion_row, first_insertion_row + nr_of_lines_inserted, s);
   fb.xpos = get_x_position(fb, s);
   return fb;
   }
@@ -614,7 +614,7 @@ file_buffer erase(file_buffer fb, const env_settings& s, bool save_undo)
       {
       fb.content = fb.content.set(pos.row, fb.content[pos.row].erase(pos.col - 1));
       --fb.pos.col;
-      fb = update_lexer_status(fb, pos.row);
+      fb = update_lexer_status(fb, pos.row, s);
       }
     else if (pos.row > 0)
       {
@@ -623,7 +623,7 @@ file_buffer erase(file_buffer fb, const env_settings& s, bool save_undo)
       fb.content = fb.content.erase(pos.row).set(pos.row - 1, l);
       fb.lex = fb.lex.erase(pos.row);
       --fb.pos.row;
-      fb = update_lexer_status(fb, pos.row-1, pos.row);
+      fb = update_lexer_status(fb, pos.row-1, pos.row, s);
       }
     fb.xpos = get_x_position(fb, s);
     }
@@ -677,7 +677,7 @@ file_buffer erase(file_buffer fb, const env_settings& s, bool save_undo)
         fb.content = fb.content.erase(p1.row + 1, remove_line ? p2.row + 1 : p2.row);
         fb.lex = fb.lex.erase(p1.row + 1, remove_line ? p2.row + 1 : p2.row);
         fb.content = fb.content.set(p1.row, fb.content[p1.row].erase(p1.col, fb.content[p1.row].size() - 1));
-        //fb = update_lexer_status(fb, p1.row, p2.row);  << don't think it's necessary, but maybe...
+        //fb = update_lexer_status(fb, p1.row, p2.row, s);  << don't think it's necessary, but maybe...
         fb.pos.col = p1.col;
         fb.pos.row = p1.row;
         fb = erase_right(fb, s, false);
@@ -717,7 +717,7 @@ file_buffer erase(file_buffer fb, const env_settings& s, bool save_undo)
           fb.start_selection->col = get_col_from_line_length(fb.content[fb.start_selection->row], minx, s);
           fb.pos.col = get_col_from_line_length(fb.content[fb.pos.row], minx, s);
           }
-        fb = update_lexer_status(fb, minrow, maxrow);
+        fb = update_lexer_status(fb, minrow, maxrow, s);
         fb.xpos = get_x_position(fb, s);
         }
       }
@@ -742,7 +742,7 @@ file_buffer erase_right(file_buffer fb, const env_settings& s, bool save_undo)
     if (pos.col < (int64_t)fb.content[pos.row].size() - 1)
       {
       fb.content = fb.content.set(pos.row, fb.content[pos.row].erase(pos.col));
-      fb = update_lexer_status(fb, pos.row);
+      fb = update_lexer_status(fb, pos.row, s);
       }
     else if (fb.content[pos.row].empty())
       {
@@ -750,7 +750,7 @@ file_buffer erase_right(file_buffer fb, const env_settings& s, bool save_undo)
         {
         fb.content = fb.content.erase(pos.row);
         fb.lex = fb.lex.erase(pos.row);
-        fb = update_lexer_status(fb, pos.row);
+        fb = update_lexer_status(fb, pos.row, s);
         }
       }
     else if (pos.row < (int64_t)fb.content.size() - 1)
@@ -758,7 +758,7 @@ file_buffer erase_right(file_buffer fb, const env_settings& s, bool save_undo)
       auto l = fb.content[pos.row].pop_back() + fb.content[pos.row + 1];
       fb.content = fb.content.erase(pos.row + 1).set(pos.row, l);
       fb.lex = fb.lex.erase(pos.row + 1);
-      fb = update_lexer_status(fb, pos.row, pos.row+1);
+      fb = update_lexer_status(fb, pos.row, pos.row+1, s);
       }
     else if (pos.col == (int64_t)fb.content[pos.row].size() - 1)// last line, last item
       {
@@ -782,7 +782,7 @@ file_buffer erase_right(file_buffer fb, const env_settings& s, bool save_undo)
         if (len == minx && (current_col < fb.content[r].size() - 1 || (current_col == fb.content[r].size() - 1 && r == fb.content.size() - 1)))
           fb.content = fb.content.set(r, fb.content[r].take(current_col) + fb.content[r].drop(current_col + 1));
         }
-      fb = update_lexer_status(fb, minrow, maxrow);
+      fb = update_lexer_status(fb, minrow, maxrow, s);
       fb.start_selection->col = get_col_from_line_length(fb.content[fb.start_selection->row], minx, s);
       fb.pos.col = get_col_from_line_length(fb.content[fb.pos.row], minx, s);
       fb.xpos = get_x_position(fb, s);
@@ -1454,8 +1454,10 @@ uint8_t get_end_of_line_lexer_status(file_buffer fb, int64_t row)
   return _get_end_of_line_lexer_status(fb, row, fb.lex[row]);
   }
 
-file_buffer init_lexer_status(file_buffer fb)
+file_buffer init_lexer_status(file_buffer fb, const env_settings& s)
   {
+  if (!s.perform_syntax_highlighting)
+    return fb;
   if (fb.content.empty())
     return fb;
   lexer_status ls;
@@ -1471,9 +1473,11 @@ file_buffer init_lexer_status(file_buffer fb)
   return fb;
   }
 
-file_buffer update_lexer_status(file_buffer fb, int64_t row)
+file_buffer update_lexer_status(file_buffer fb, int64_t row, const env_settings& s)
   {
   assert(!fb.content.empty());
+  if (!s.perform_syntax_highlighting)
+    return fb;
   if (fb.syntax.single_line.empty() && fb.syntax.multiline_begin.empty() && fb.syntax.multistring_begin.empty())
     return fb;
 
@@ -1499,9 +1503,11 @@ file_buffer update_lexer_status(file_buffer fb, int64_t row)
   return fb;
   }
 
-file_buffer update_lexer_status(file_buffer fb, int64_t from_row, int64_t to_row)
+file_buffer update_lexer_status(file_buffer fb, int64_t from_row, int64_t to_row, const env_settings& s)
   {
   assert(!fb.content.empty());
+  if (!s.perform_syntax_highlighting)
+    return fb;
   if (fb.syntax.single_line.empty() && fb.syntax.multiline_begin.empty() && fb.syntax.multistring_begin.empty())
     return fb;
 
@@ -1534,9 +1540,14 @@ file_buffer update_lexer_status(file_buffer fb, int64_t from_row, int64_t to_row
   return fb;
   }
 
-std::vector<std::pair<int64_t, text_type>> get_text_type(file_buffer fb, int64_t row)
+std::vector<std::pair<int64_t, text_type>> get_text_type(file_buffer fb, int64_t row, const env_settings& s)
   {
   std::vector<std::pair<int64_t, text_type>> out;
+  if (!s.perform_syntax_highlighting) {
+    out.emplace_back((int64_t)0, tt_normal);
+    return out;
+    }
+
   out.emplace_back((int64_t)0, (text_type)fb.lex[row]);
   //if (fb.syntax.single_line.empty() && fb.syntax.multiline_begin.empty() && fb.syntax.multistring_begin.empty())
   //  return out;

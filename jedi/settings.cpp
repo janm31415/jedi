@@ -11,6 +11,7 @@ settings::settings()
   use_spaces_for_tab = true;
   show_line_numbers = true;
   wrap = false;
+  syntax = true;
   case_sensitive = false;
   w = 80;
   h = 25;
@@ -74,6 +75,9 @@ void update_settings_if_different(settings& s, const settings& new_settings, con
 
   if (new_settings.wrap != old_settings.wrap)
     s.wrap = new_settings.wrap;
+
+  if (new_settings.syntax != old_settings.syntax)
+    s.syntax = new_settings.syntax;
 
   if (new_settings.x != old_settings.x)
     s.x = new_settings.x;
@@ -180,6 +184,7 @@ void update_settings(settings& s, const char* filename)
   f["last_replace"] >> s.last_replace;
   f["show_line_numbers"] >> s.show_line_numbers;
   f["wrap"] >> s.wrap;
+  f["syntax"] >> s.syntax;
   f["case_sensitive"] >> s.case_sensitive;
 
   f["color_editor_text"] >> s.color_editor_text;
@@ -232,6 +237,7 @@ void write_settings(const settings& s, const char* filename)
   f << "last_replace" << s.last_replace;
   f << "show_line_numbers" << s.show_line_numbers;
   f << "wrap" << s.wrap;
+  f << "syntax" << s.syntax;
   f << "case_sensitive" << s.case_sensitive;
 
   f << "color_editor_text" << s.color_editor_text;

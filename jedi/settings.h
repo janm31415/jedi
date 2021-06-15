@@ -12,6 +12,7 @@ struct settings
   bool show_line_numbers;
   bool case_sensitive;
   bool wrap;
+  bool syntax;
   int w, h, x, y;
   int font_size;
   std::string font;
