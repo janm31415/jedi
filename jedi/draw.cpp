@@ -178,7 +178,7 @@ Returns an x offset (let's call it multiline_offset_x) such that
 equals the x position in the screen of where the next character should come.
 This makes it possible to further fill the line with spaces after calling "draw_line".
  */
-int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, position& current, position cursor, position buffer_pos, position underline, chtype base_color, int& r, int yoffset, int xoffset, int maxcol, int maxrow, std::optional<position> start_selection, bool rectangular, bool active, screen_ex_type set_type, e_window_type wt, const keyword_data& kd, bool wrap, const settings& s, const env_settings& senv, int wx, int wy)
+int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, position& current, position cursor, position buffer_pos, position underline, chtype base_color, int& r, int yoffset, int xoffset, int maxcol, int maxrow, std::optional<position> start_selection, bool rectangular, int active, screen_ex_type set_type, e_window_type wt, const keyword_data& kd, bool wrap, const settings& s, const env_settings& senv, int wx, int wy)
   {
   int MULTILINEOFFSET = 10;
   auto tt = get_text_type(fb, current.row, senv);
@@ -417,7 +417,7 @@ int draw_line(int& wide_characters_offset, file_buffer fb, uint32_t buffer_id, p
   return xoffset;
   }
   
-void draw_scroll_bars(const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, bool active) {
+void draw_scroll_bars(const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, int active) {
   const unsigned char scrollbar_ascii_sign = 219;
   int maxrow = w.rows;
   int maxcol = w.cols;
@@ -479,7 +479,7 @@ void get_window_edit_range(int& offset_x, int& offset_y, int& maxcol, int& maxro
   maxrow = w.rows;
 }
   
-void draw_window(const app_state& state, const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, bool active) {
+void draw_window(const app_state& state, const window& w, const buffer_data& bd, const settings& s, const env_settings& senv, int active) {
   //int reserved = w.wt == e_window_type::wt_normal ? columns_reserved_for_line_numbers(bd.scroll_row, s) : 0;
   //int offset_x = reserved + 2;
   //int offset_y = 0;
@@ -787,7 +787,7 @@ void draw_operation_buffer(const app_state& state, const settings& s) {
     bd.buffer.rectangular_selection, active, set_type, kd, s.wrap, s, senv, w.x, w.y);
 
      */
-      multiline_offset_x = draw_line(wide_characters_offset, state.operation_buffer, buffer_id, current, cursor, state.operation_buffer.pos, position(-1, -1), DEFAULT_COLOR, rows, - 2, multiline_offset_x, cols_available, 1, state.operation_buffer.start_selection, state.operation_buffer.rectangular_selection, true, SET_TEXT_OPERATION, e_window_type::wt_normal, kd, false, s, convert(s), 0, 0);
+      multiline_offset_x = draw_line(wide_characters_offset, state.operation_buffer, buffer_id, current, cursor, state.operation_buffer.pos, position(-1, -1), DEFAULT_COLOR, rows, - 2, multiline_offset_x, cols_available, 1, state.operation_buffer.start_selection, state.operation_buffer.rectangular_selection, true, SET_TEXT_OPERATION, e_window_type::wt_normal, kd, 0, s, convert(s), 0, 0);
     int x = (int)current.col + multiline_offset_x + wide_characters_offset;
     if ((current == cursor))
       {
@@ -838,7 +838,16 @@ void draw(const app_state& state, const settings& s) {
   auto senv = convert(s);
   
   for (const auto& w : state.windows) {
-    bool active = w.buffer_id == state.active_buffer || w.buffer_id == state.last_active_editor_buffer;
+    //bool active = w.buffer_id == state.active_buffer || w.buffer_id == state.last_active_editor_buffer || w.buffer_id == state.mouse_pointing_buffer;
+    //bool active = w.buffer_id == state.active_buffer || w.buffer_id == state.mouse_pointing_buffer;
+    int active = 0;
+    if (w.buffer_id == state.active_buffer)
+      active = 1;
+    else if (w.buffer_id == state.mouse_pointing_buffer) {
+      if (has_nontrivial_selection(state.buffers[w.buffer_id].buffer, senv))
+        active = 2;
+      }
+
     draw_window(state, w, state.buffers[w.buffer_id], s, senv, active);
   }
   

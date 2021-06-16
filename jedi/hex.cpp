@@ -130,7 +130,7 @@ void dump(std::fstream& _file, std::streampos pos, std::wostream& ostr)
 void dump_full(std::fstream& _file, std::wostream& ostr)
   {
   _file.seekg(0);
-  while (_file)
+  while (!_file.eof())
     dump(_file, ostr);
   }
 } // namespace

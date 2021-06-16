@@ -181,6 +181,13 @@ file_buffer& get_last_active_editor_buffer(app_state& state) {
     return state.buffers[state.active_buffer].buffer;
   }
 
+file_buffer& get_mouse_pointing_buffer(app_state& state) {
+  if (state.mouse_pointing_buffer != 0xffffffff)
+    return state.buffers[state.mouse_pointing_buffer].buffer;
+  else
+    return state.buffers[state.active_buffer].buffer;
+  }
+
 int64_t& get_active_scroll_row(app_state& state) {
   return state.buffers[state.active_buffer].scroll_row;
   }
@@ -628,6 +635,24 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
             if (state.last_active_editor_buffer > f1)
               --state.last_active_editor_buffer;
             }
+          if (state.mouse_pointing_buffer == f1 || state.mouse_pointing_buffer == f2)
+            {
+            if (c.items.empty())
+              state.mouse_pointing_buffer = 0;
+            else
+              {
+              if (j >= c.items.size())
+                j = c.items.size() - 1;
+              state.mouse_pointing_buffer = state.windows[state.window_pairs[c.items[j].window_pair_id].window_id].buffer_id;
+              }
+            }
+          else
+            {
+            if (state.mouse_pointing_buffer > f2)
+              --state.mouse_pointing_buffer;
+            if (state.mouse_pointing_buffer > f1)
+              --state.mouse_pointing_buffer;
+            }
           if (state.g.columns[i].items.empty())
             return state;
           return optimize_column(state, state.windows[state.window_pairs[state.g.columns[i].items.back().window_pair_id].window_id].buffer_id, s);
@@ -741,6 +766,15 @@ std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_
           {
           if (state.last_active_editor_buffer > window_id)
             --state.last_active_editor_buffer;
+          }
+        if (state.mouse_pointing_buffer == window_id)
+          {
+          state.mouse_pointing_buffer = 0;
+          }
+        else
+          {
+          if (state.mouse_pointing_buffer > window_id)
+            --state.mouse_pointing_buffer;
           }
 
         state.g.columns.erase(state.g.columns.begin() + i);
@@ -2241,6 +2275,7 @@ std::optional<app_state> mouse_motion(app_state state, int x, int y, settings& s
   else { // not dragging
     auto p = get_ex(y, x);
     if (p.buffer_id != 0xffffffff) {
+      /*
       auto& w = state.windows[state.buffer_id_to_window_id[p.buffer_id]];
       if (w.wt == e_window_type::wt_normal) {
         if (state.last_active_editor_buffer != 0xffffffff)
@@ -2248,6 +2283,8 @@ std::optional<app_state> mouse_motion(app_state state, int x, int y, settings& s
         } else {
         state.active_buffer = p.buffer_id;
         }
+        */
+      state.mouse_pointing_buffer = p.buffer_id;
       }
     }
   return state;
@@ -3720,6 +3757,7 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
 
   std::wstring cmd_id, cmd_remainder;
   split_command(cmd_id, cmd_remainder, command);
+
   char pipe_cmd = cmd_id[0];
   if (pipe_cmd == '!' || pipe_cmd == '<' || pipe_cmd == '>' || pipe_cmd == '|' || pipe_cmd == '=')
     {
@@ -4412,6 +4450,7 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
     if (p.type == SET_NONE)
       {
       std::wstring command = find_bottom_line_help_command(x, y);
+
       return execute(state, state.active_buffer, command, s);
       }
 
@@ -4440,6 +4479,12 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
     {
     // to add when implementing commands
     std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
+    //if (state.last_active_editor_buffer != 0xffffffff) {
+    //  std::wstring sel = to_wstring(get_selection(state.buffers[state.last_active_editor_buffer].buffer, convert(s)));
+    //  remove_whitespace(sel);
+    //  if (!sel.empty())
+    //    command += L" " + sel;
+    //  }
     return execute(state, p.buffer_id, command, s);
     }
 
@@ -5149,6 +5194,7 @@ app_state make_empty_state(settings& s) {
   app_state state;
   state.active_buffer = 0;
   state.last_active_editor_buffer = 0;
+  state.mouse_pointing_buffer = 0;
   state.operation = e_operation::op_editing;
   state = make_topline(state, s);
   state = *command_new_column(state, 0, s);

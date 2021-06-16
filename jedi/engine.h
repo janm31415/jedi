@@ -56,6 +56,7 @@ struct app_state
   int w, h;
   uint32_t active_buffer;
   uint32_t last_active_editor_buffer;
+  uint32_t mouse_pointing_buffer;
   e_operation operation;
   std::vector<e_operation> operation_stack;
   file_buffer operation_buffer;
