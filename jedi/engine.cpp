@@ -3747,7 +3747,7 @@ app_state start_pipe(app_state state, uint32_t buffer_id, const std::string& inp
   return start_pipe(state, buffer_id, inputfile, parameters, s);
   }
 
-std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std::wstring& command, settings& s)
+std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std::wstring& command, const std::wstring& optional_parameters, settings& s)
   {
   auto it = executable_commands.find(command);
   if (it != executable_commands.end())
@@ -3757,6 +3757,13 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
 
   std::wstring cmd_id, cmd_remainder;
   split_command(cmd_id, cmd_remainder, command);
+
+  if (!optional_parameters.empty()) {
+    if (cmd_remainder.empty())
+      cmd_remainder = optional_parameters;
+    else
+      cmd_remainder += L" " + optional_parameters;
+    }
 
   char pipe_cmd = cmd_id[0];
   if (pipe_cmd == '!' || pipe_cmd == '<' || pipe_cmd == '>' || pipe_cmd == '|' || pipe_cmd == '=')
@@ -3822,6 +3829,12 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
   return state;
   }
 
+
+std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std::wstring& command, settings& s)
+  {
+  std::wstring optional_parameters;
+  return execute(state, buffer_id, command, optional_parameters, s);
+  }
 
 app_state move_column(app_state state, uint64_t c, int x, int y, const settings& s)
   {
@@ -4479,13 +4492,12 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
     {
     // to add when implementing commands
     std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
-    //if (state.last_active_editor_buffer != 0xffffffff) {
-    //  std::wstring sel = to_wstring(get_selection(state.buffers[state.last_active_editor_buffer].buffer, convert(s)));
-    //  remove_whitespace(sel);
-    //  if (!sel.empty())
-    //    command += L" " + sel;
-    //  }
-    return execute(state, p.buffer_id, command, s);
+    std::wstring optional_parameters;
+    if (state.active_buffer != 0xffffffff) {
+      optional_parameters = to_wstring(get_selection(state.buffers[state.last_active_editor_buffer].buffer, convert(s)));
+      remove_whitespace(optional_parameters);
+      }
+    return execute(state, p.buffer_id, command, optional_parameters, s);
     }
 
   if (p.type == SET_COMMAND_ICON)

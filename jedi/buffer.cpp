@@ -804,6 +804,8 @@ text get_selection(file_buffer fb, const env_settings& s)
     return text().push_back(line().push_back(fb.content[p2.row][p2.col]));
     }
   auto p1 = *fb.start_selection;
+  if (p1 > get_last_position(fb))
+    p1 = get_last_position(fb);
   if (p2 < p1)
     {
     std::swap(p1, p2);
