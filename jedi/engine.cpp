@@ -461,7 +461,7 @@ app_state set_filename(app_state state, uint32_t buffer_id, const settings& s) {
 
 app_state add_error_window(app_state state, settings& s)
   {
-  state = *command_new_window(state, 0, s);
+  state = *command_new_window(state, 0xffffffff, s);
   uint32_t buffer_id = state.buffers.size() - 1;
   uint32_t command_id = state.buffers.size() - 2;
   state.buffers[buffer_id].buffer.name = "+Errors";
@@ -830,16 +830,41 @@ std::optional<app_state> command_new_column(app_state state, uint32_t, settings&
   return resize_windows(state, s);
   }
 
+/*
+if buffer_id == 0 then will be added as first item
+if buffer_id == 0xffffffff then will be added as last item
+*/
 std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id, settings& s) {
   if (state.g.columns.empty())
     state = *command_new_column(state, buffer_id, s);
 
-  uint32_t column_id = get_column_id(state, buffer_id);
+  uint32_t column_id;
 
-  if (column_id == get_column_id(state, state.active_buffer)) // if the active file is in the column where we clicked on "New", then make new window below active window
+  if (buffer_id == 0 || buffer_id == 0xffffffff) 
     {
-    buffer_id = state.active_buffer;
+    if (buffer_id == 0)
+      column_id = 0;
+    if (buffer_id == 0xffffffff)
+      column_id = state.g.columns.size()-1;
     }
+  else
+    {
+    column_id = get_column_id(state, buffer_id);
+    if (column_id == get_column_id(state, state.active_buffer)) // if the active file is in the column where we clicked on "New", then make new window above active window
+      {
+      buffer_id = state.active_buffer;
+      }
+    }
+
+  // if there is an empty column, then fill that column
+  for (uint32_t c_id = 0; c_id < state.g.columns.size(); ++c_id) 
+    {
+    if (state.g.columns[c_id].items.empty()) {
+      column_id = c_id;
+      break;
+      }
+    }
+
   assert(column_id != 0xffffffff);
   assert(!state.g.columns.empty());
 
@@ -886,11 +911,12 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
         {
         state.g.columns[column_id].items[k].bottom_layer = (state.g.columns[column_id].items[k].bottom_layer + state.g.columns[column_id].items[k].top_layer) * 0.5;
         ci.top_layer = state.g.columns[column_id].items[k].bottom_layer;
-        pos = k + 1;
+        pos = k;
         break;
         }
       }
-
+    if (buffer_id == 0) // for buffer_id == 0, insert at the top
+      pos = 0;
     state.g.columns[column_id].items.insert(state.g.columns[column_id].items.begin() + pos, ci);
     }
   else
@@ -1928,7 +1954,7 @@ app_state optimize_column(app_state state, uint32_t buffer_id, settings& s)
 std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const std::string& filename, settings& s)
   {
   if (jtk::is_directory(filename)) {
-    state = *command_new_window(state, buffer_id, s);
+    state = *command_new_window(state, 0xffffffff, s);
     get_active_buffer(state) = read_from_file(filename);
     int64_t command_id = state.active_buffer - 1;
     state.buffers[command_id].buffer.name = get_active_buffer(state).name;
@@ -1939,7 +1965,7 @@ std::optional<app_state> load_file(app_state state, uint32_t buffer_id, const st
     }
   else if (jtk::file_exists(filename))
     {
-    state = *command_new_window(state, buffer_id, s);
+    state = *command_new_window(state, state.active_buffer, s);
     get_active_buffer(state) = read_from_file(filename);
     int64_t command_id = state.active_buffer - 1;
     state.buffers[command_id].buffer.name = get_active_buffer(state).name;
@@ -5222,6 +5248,16 @@ app_state make_empty_state(settings& s) {
   return state;
   }
 
+bool file_already_opened(const app_state& state, const std::string& filename)
+  {
+  for (const auto& b : state.buffers)
+    {
+    if (b.buffer.name == filename)
+      return true;
+    }
+  return false;
+  }
+
 engine::engine(int argc, char** argv, const settings& input_settings) : s(input_settings)
   {
   set_font(s.font_size, s);
@@ -5267,6 +5303,10 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
   resize_term(state.h / font_height, state.w / font_width);
   resize_term_ex(state.h / font_height, state.w / font_width);
 
+  uint32_t active_buffer = state.active_buffer;
+  state.active_buffer = 0;
+  // put active buffer to 0 so that new folders are added at the top left
+
   for (int j = 1; j < argc; ++j) {
     std::string input(argv[j]);
     bool piped = input[0] == '=';
@@ -5285,7 +5325,8 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
       if (jtk::is_directory(inputfolder))
         input.swap(inputfolder);
       input = simplify_folder(input);
-      state = *load_file(state, 0, input, s);
+      if (!file_already_opened(state, input))
+        state = *load_file(state, 0, input, s);
       }
     else
       {
@@ -5309,11 +5350,15 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
         state = *execute(state, buffer_id, parameters, s);
         }
       else {
-        state = *load_file(state, 0, input, s);
+        if (!file_already_opened(state, input))
+          state = *load_file(state, 0, input, s);
         }
       }
     }
 
+  // restore active_buffer
+  if (state.active_buffer == 0)
+    state.active_buffer = active_buffer;
   }
 
 engine::~engine()
