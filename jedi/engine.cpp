@@ -4528,6 +4528,8 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
     if (state.active_buffer != 0xffffffff) {
       optional_parameters = to_wstring(get_selection(state.buffers[state.active_buffer].buffer, convert(s)));
       remove_whitespace(optional_parameters);
+      if (optional_parameters == command)
+        optional_parameters.clear();
       }
     return execute(state, p.buffer_id, command, optional_parameters, s);
     }
