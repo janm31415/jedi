@@ -3842,6 +3842,12 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
     cmd_remainder = clean_command(rest);
     }
 
+  std::stringstream error_text;
+  error_text << "executing " << pipe_cmd << file_path;
+  for (const auto& p : parameters)
+    error_text << " " << p;
+  error_text << "\n";
+  state = add_error_text(state, error_text.str(), s);
   if (pipe_cmd == '!')
     return execute_external(state, file_path, parameters, s);
   else if (pipe_cmd == '|')
@@ -4520,7 +4526,7 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
     std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
     std::wstring optional_parameters;
     if (state.active_buffer != 0xffffffff) {
-      optional_parameters = to_wstring(get_selection(state.buffers[state.last_active_editor_buffer].buffer, convert(s)));
+      optional_parameters = to_wstring(get_selection(state.buffers[state.active_buffer].buffer, convert(s)));
       remove_whitespace(optional_parameters);
       }
     return execute(state, p.buffer_id, command, optional_parameters, s);
