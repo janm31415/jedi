@@ -4526,7 +4526,8 @@ std::optional<app_state> middle_mouse_button_up(app_state state, int x, int y, s
     std::wstring command = find_command(state.buffers[p.buffer_id].buffer, p.pos, s);
     std::wstring optional_parameters;
     if (state.active_buffer != 0xffffffff) {
-      optional_parameters = to_wstring(get_selection(state.buffers[state.active_buffer].buffer, convert(s)));
+      if (has_nontrivial_selection(state.buffers[state.active_buffer].buffer, convert(s)))
+        optional_parameters = to_wstring(get_selection(state.buffers[state.active_buffer].buffer, convert(s)));
       remove_whitespace(optional_parameters);
       if (optional_parameters == command)
         optional_parameters.clear();
