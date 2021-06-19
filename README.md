@@ -110,7 +110,7 @@ The following commands/shortcuts are currently available in Jedi
     F5             : refresh active file or folder
     AllChars       : toggle printing of all characters
     Cancel, ^x     : cancel the current operation
-    Case					 : swap case sensitivity when searching
+    Case           : swap case sensitivity when searching
     Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
     Dump           : write the state of jedi to the current cursor position
     Edit <command> : Treat the argument as a text editing command in the style of sam
