@@ -88,7 +88,8 @@ two buttons, then the middle button is replaced by Ctrl + the left button.
   The other windows will be hidden. Simply click again on '>' to make the
   other windows appear again.
 
-The following commands/shortcuts are currently available in Jedi:
+The following commands/shortcuts are currently available in Jedi
+(^ stands for Ctrl):
 
 F1             : show this help text
 ^F3            : find the current selection
@@ -96,7 +97,7 @@ F3             : find next occurence
 F5             : refresh active file or folder
 AllChars       : toggle printing of all characters
 Cancel, ^x     : cancel the current operation
-Case					 : swap case sensitivity when searching
+Case           : swap case sensitivity when searching
 Copy, ^c       : copy to the clipboard (pbcopy on MacOs, xclip on Linux)
 Dump           : write the state of jedi to the current cursor position
 Edit <command> : Treat the argument as a text editing command in the style of sam
