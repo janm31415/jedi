@@ -3810,7 +3810,12 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
   auto file_path = get_file_path(jtk::convert_wstring_to_string(cmd_id), get_active_buffer(state).name);
 
   if (file_path.empty())
+    {
+    std::stringstream error_text;
+    error_text << "invalid path: " << jtk::convert_wstring_to_string(cmd_id) << "\n";    
+    state = add_error_text(state, error_text.str(), s);
     return state;
+    }
 
   std::vector<std::string> parameters;
   while (!cmd_remainder.empty())
