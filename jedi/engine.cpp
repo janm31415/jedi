@@ -4671,25 +4671,72 @@ std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t,
 
 std::optional<app_state> command_paste_from_snarf_buffer(app_state state, uint32_t, settings& s)
   {
-  //state.message = string_to_line("[Paste]");
 #if defined(_WIN32)
   auto txt = get_text_from_windows_clipboard();
   if (state.operation == op_editing)
     {
+    bool has_non_trivial_selection = has_nontrivial_selection(get_active_buffer(state), convert(s));
+    auto init_pos = get_active_buffer(state).pos;
+    if (get_active_buffer(state).start_selection != std::nullopt) {
+      if (*get_active_buffer(state).start_selection < init_pos)
+        init_pos = *get_active_buffer(state).start_selection;
+      }
     get_active_buffer(state) = insert(get_active_buffer(state), txt, convert(s));
+    if (has_non_trivial_selection)
+      {
+      get_active_buffer(state).start_selection = init_pos;
+      get_active_buffer(state).pos = get_previous_position(get_active_buffer(state), get_active_buffer(state).pos);
+      }
     return check_scroll_position(state, s);
     }
   else
+    {
+    bool has_non_trivial_selection = has_nontrivial_selection(state.operation_buffer, convert(s));
+    auto init_pos = state.operation_buffer.pos;
+    if (state.operation_buffer.start_selection != std::nullopt) {
+      if (*state.operation_buffer.start_selection < init_pos)
+        init_pos = *state.operation_buffer.start_selection;
+      }
     state.operation_buffer = insert(state.operation_buffer, txt, convert(s));
+    if (has_non_trivial_selection)
+      {
+      state.operation_buffer.start_selection = init_pos;
+      state.operation_buffer.pos = get_previous_position(state.operation_buffer, state.operation_buffer.pos);
+      }
+    }
 #else
   std::string txt = pbpaste();
   if (state.operation == op_editing)
     {
+    bool has_non_trivial_selection = has_nontrivial_selection(get_active_buffer(state), convert(s));
+    auto init_pos = get_active_buffer(state).pos;
+    if (get_active_buffer(state).start_selection != std::nullopt) {
+      if (*get_active_buffer(state).start_selection < init_pos)
+        init_pos = *get_active_buffer(state).start_selection;
+      }
     get_active_buffer(state) = insert(get_active_buffer(state), txt, convert(s));
+    if (has_non_trivial_selection)
+      {
+      get_active_buffer(state).start_selection = init_pos;
+      get_active_buffer(state).pos = get_previous_position(get_active_buffer(state), get_active_buffer(state).pos);
+      }
     return check_scroll_position(state, s);
     }
   else
+    {
+    bool has_non_trivial_selection = has_nontrivial_selection(state.operation_buffer, convert(s));
+    auto init_pos = state.operation_buffer.pos;
+    if (state.operation_buffer.start_selection != std::nullopt) {
+      if (*state.operation_buffer.start_selection < init_pos)
+        init_pos = *state.operation_buffer.start_selection;
+      }
     state.operation_buffer = insert(state.operation_buffer, txt, convert(s));
+    if (has_non_trivial_selection)
+      {
+      state.operation_buffer.start_selection = init_pos;
+      state.operation_buffer.pos = get_previous_position(state.operation_buffer, state.operation_buffer.pos);
+      }
+    }
 #endif
   return state;
   }
@@ -4961,7 +5008,16 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           {
           if (ctrl_pressed())
             {
-            return command_copy_to_snarf_buffer(state, buffer_id, s);
+            if (state.mouse_pointing_buffer != 0xffffffff && has_nontrivial_selection(state.buffers[state.mouse_pointing_buffer].buffer, convert(s)))
+              {
+              uint32_t active_buffer = state.active_buffer;
+              state.active_buffer = state.mouse_pointing_buffer;
+              state = *command_copy_to_snarf_buffer(state, buffer_id, s);
+              state.active_buffer = active_buffer;
+              return state;
+              }
+            else
+              return command_copy_to_snarf_buffer(state, buffer_id, s);
             }
           break;
           }
@@ -5037,7 +5093,18 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           {
           if (ctrl_pressed())
             {
-            return command_paste_from_snarf_buffer(state, buffer_id, s);
+            if (state.mouse_pointing_buffer != 0xffffffff 
+              && has_nontrivial_selection(state.buffers[state.mouse_pointing_buffer].buffer, convert(s))
+              && !has_nontrivial_selection(state.buffers[state.active_buffer].buffer, convert(s)))
+              {
+              //uint32_t active_buffer = state.active_buffer;
+              state.active_buffer = state.mouse_pointing_buffer;
+              state = *command_paste_from_snarf_buffer(state, buffer_id, s);
+              //state.active_buffer = active_buffer;
+              return state;
+              }
+            else
+              return command_paste_from_snarf_buffer(state, buffer_id, s);
             }
           break;
           }
