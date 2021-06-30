@@ -4380,6 +4380,7 @@ std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, b
     return state;
 
   //bool swap_window = state.active_buffer != p.buffer_id;
+  const bool new_active_buffer = state.active_buffer != p.buffer_id;
   state.active_buffer = p.buffer_id;
   auto& w = state.windows[state.buffer_id_to_window_id[p.buffer_id]];
   if (w.wt == e_window_type::wt_normal) {
@@ -4407,6 +4408,8 @@ std::optional<app_state> left_mouse_button_down(app_state state, int x, int y, b
     return select_word(state, x, y, s);
     }
 
+  if (new_active_buffer && has_nontrivial_selection(get_active_buffer(state), convert(s)))
+    return state;
   mouse.left_drag_start = find_mouse_text_pick(x, y);
   if (mouse.left_drag_start.type == SET_TEXT_EDITOR || mouse.left_drag_start.type == SET_TEXT_COMMAND)
     {
@@ -5013,6 +5016,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           {
           if (ctrl_pressed())
             {
+            /*
             if (state.mouse_pointing_buffer != 0xffffffff && has_nontrivial_selection(state.buffers[state.mouse_pointing_buffer].buffer, convert(s)))
               {
               uint32_t active_buffer = state.active_buffer;
@@ -5023,6 +5027,8 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
               }
             else
               return command_copy_to_snarf_buffer(state, buffer_id, s);
+            */
+            return command_copy_to_snarf_buffer(state, buffer_id, s);
             }
           break;
           }
@@ -5098,6 +5104,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           {
           if (ctrl_pressed())
             {
+            /*
             if (state.mouse_pointing_buffer != 0xffffffff 
               && has_nontrivial_selection(state.buffers[state.mouse_pointing_buffer].buffer, convert(s))
               && !has_nontrivial_selection(state.buffers[state.active_buffer].buffer, convert(s)))
@@ -5110,6 +5117,8 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
               }
             else
               return command_paste_from_snarf_buffer(state, buffer_id, s);
+            */
+            return command_paste_from_snarf_buffer(state, buffer_id, s);
             }
           break;
           }
