@@ -104,32 +104,32 @@ bool shift_pressed()
   {
   return (keyb.is_down(SDLK_LSHIFT) || keyb.is_down(SDLK_RSHIFT));
   }
-  
+
 void set_font(int font_size, settings& s) {
   pdc_font_size = font_size;
   s.font_size = font_size;
-  
+
   TTF_CloseFont(pdc_ttffont);
   pdc_ttffont = TTF_OpenFont(s.font.c_str(), pdc_font_size);
-  
+
   if (!pdc_ttffont) {
 #ifdef _WIN32
-  TTF_CloseFont(pdc_ttffont);
-  pdc_ttffont = TTF_OpenFont("C:/Windows/Fonts/consola.ttf", pdc_font_size);
+    TTF_CloseFont(pdc_ttffont);
+    pdc_ttffont = TTF_OpenFont("C:/Windows/Fonts/consola.ttf", pdc_font_size);
 #elif defined(unix)
-  TTF_CloseFont(pdc_ttffont);
-  pdc_ttffont = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", pdc_font_size);
+    TTF_CloseFont(pdc_ttffont);
+    pdc_ttffont = TTF_OpenFont("/usr/share/fonts/truetype/dejavu/DejaVuSansMono.ttf", pdc_font_size);
 #elif defined(__APPLE__)
-  TTF_CloseFont(pdc_ttffont);
-  pdc_ttffont = TTF_OpenFont("/System/Library/Fonts/Menlo.ttc", pdc_font_size);
+    TTF_CloseFont(pdc_ttffont);
+    pdc_ttffont = TTF_OpenFont("/System/Library/Fonts/Menlo.ttc", pdc_font_size);
 #endif
-}
+    }
 
   TTF_SizeText(pdc_ttffont, "W", &font_width, &font_height);
   pdc_fheight = font_height;
   pdc_fwidth = font_width;
   pdc_fthick = pdc_font_size / 20 + 1;
-}
+  }
 
 app_state resize_font(app_state state, int font_size, settings& s)
   {
@@ -341,9 +341,9 @@ void set_updated_command_text_position(file_buffer& fb,
     if (original_start_selection) {
       if (*fb.start_selection > get_last_position(fb))
         fb.start_selection = get_last_position(fb);
-    }
+      }
     return;
-  }
+    }
   uint32_t current_first_row_length = fb.content.empty() ? 0 : fb.content.front().size();
   if (original_start_selection) {
     position sel = *original_start_selection;
@@ -381,12 +381,12 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
       fb.pos = get_last_position(fb);
       text.push_back(L'|');
       fb = insert(fb, text, convert(s), false);
-      set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer==buffer_id);
+      set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer == buffer_id);
       return state;
       }
     fb.pos = pos_bar;
     fb = insert(fb, text, convert(s), false);
-    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer==buffer_id);
+    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer == buffer_id);
     return state;
     }
   auto pos_bar = find_next_occurence(fb.content, pos_del, L'|');
@@ -394,7 +394,7 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
     fb.pos = get_last_position(fb);
     text.push_back(L'|');
     fb = insert(fb, text, convert(s), false);
-    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer==buffer_id);
+    set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer == buffer_id);
     return state;
     }
   pos_del = find_next_occurence_reverse(fb.content, pos_bar, L" Del ");
@@ -404,7 +404,7 @@ app_state update_command_text(app_state state, uint32_t buffer_id, const setting
   fb = erase(fb, convert(s), false);
   text.push_back(L'|');
   fb = insert(fb, text, convert(s), false);
-  set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer==buffer_id);
+  set_updated_command_text_position(fb, original_position, original_start_selection, original_first_row_length, state.active_buffer == buffer_id);
   return state;
   }
 
@@ -424,7 +424,7 @@ app_state update_filename(app_state state, uint32_t buffer_id, const settings& s
     state.buffers[buffer_id + 1].buffer.name = name;
     state.buffers[buffer_id + 1].buffer = set_multiline_comments(state.buffers[buffer_id + 1].buffer);
     state.buffers[buffer_id + 1].buffer = init_lexer_status(state.buffers[buffer_id + 1].buffer, convert(s));
-  }
+    }
   return state;
   }
 
@@ -666,7 +666,7 @@ std::optional<app_state> command_delete_window(app_state state, uint32_t buffer_
     auto& w = state.windows[state.buffer_id_to_window_id[state.last_active_editor_buffer]];
     if (w.wt == e_window_type::wt_normal)
       return command_delete_window(state, state.last_active_editor_buffer, s);
-  }
+    }
   return state;
   }
 
@@ -789,7 +789,7 @@ std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_
       auto& c = state.g.columns[get_column_id(state, buffer_id)];
       return command_delete_column(state, c.column_command_window_id, s);
       }
-  }
+    }
   // no column found to delete, try the last active editor buffer
   if (state.last_active_editor_buffer != 0xffffffff) {
     auto& w = state.windows[state.buffer_id_to_window_id[state.last_active_editor_buffer]];
@@ -797,7 +797,7 @@ std::optional<app_state> command_delete_column(app_state state, uint32_t buffer_
       auto& c = state.g.columns[get_column_id(state, state.last_active_editor_buffer)];
       return command_delete_column(state, c.column_command_window_id, s);
       }
-  }
+    }
   return state;
   }
 
@@ -840,12 +840,12 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
 
   uint32_t column_id;
 
-  if (buffer_id == 0 || buffer_id == 0xffffffff) 
+  if (buffer_id == 0 || buffer_id == 0xffffffff)
     {
     if (buffer_id == 0)
       column_id = 0;
     if (buffer_id == 0xffffffff)
-      column_id = state.g.columns.size()-1;
+      column_id = state.g.columns.size() - 1;
     }
   else
     {
@@ -857,7 +857,7 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
     }
 
   // if there is an empty column, then fill that column
-  for (uint32_t c_id = 0; c_id < state.g.columns.size(); ++c_id) 
+  for (uint32_t c_id = 0; c_id < state.g.columns.size(); ++c_id)
     {
     if (state.g.columns[c_id].items.empty()) {
       column_id = c_id;
@@ -911,12 +911,13 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
         {
         state.g.columns[column_id].items[k].bottom_layer = (state.g.columns[column_id].items[k].bottom_layer + state.g.columns[column_id].items[k].top_layer) * 0.5;
         ci.top_layer = state.g.columns[column_id].items[k].bottom_layer;
-        pos = k;
+        pos = k + 1; // change to k if you want to insert before existing
         break;
         }
       }
-    if (buffer_id == 0) // for buffer_id == 0, insert at the top
-      pos = 0;
+    //add the next lines if you want to insert before existing
+    //if (buffer_id == 0) // for buffer_id == 0, insert at the top
+    //  pos = 0;
     state.g.columns[column_id].items.insert(state.g.columns[column_id].items.begin() + pos, ci);
     }
   else
@@ -955,7 +956,7 @@ void get_active_window_size_for_editing(int& rows, int& cols, const app_state& s
 app_state check_scroll_position(app_state state, uint32_t buffer_id, const settings& s)
   {
   if (buffer_id == 0xffffffff)
-      buffer_id = state.active_buffer;
+    buffer_id = state.active_buffer;
   int rows, cols;
   get_window_size_for_editing(rows, cols, buffer_id, state, s);
   if (state.buffers[buffer_id].scroll_row > state.buffers[buffer_id].buffer.pos.row)
@@ -1349,56 +1350,161 @@ app_state backspace(app_state state, const settings& s)
     return backspace_operation(state, s);
   }
 
-app_state tab_editor(app_state state, const settings& s)
+app_state tab_editor(app_state state, int tab_width, std::string t, const settings& s)
   {
-  std::string t("\t");
-  get_active_buffer(state) = insert(get_active_buffer(state), t, convert(s));
-  return check_scroll_position(state, s);
-  }
+  auto s_env = convert(s);
+  file_buffer& fb = get_active_buffer(state);
+  if (has_multiline_selection(fb))
+    {
+    if (has_rectangular_selection(fb))
+      {
+      int64_t minrow, maxrow, minx, maxx;
+      get_rectangular_selection(minrow, maxrow, minx, maxx, fb, *fb.start_selection, fb.pos, s_env);
 
-app_state tab_operation(app_state state, const settings& s)
-  {
-  std::string t("\t");
-  state.operation_buffer = insert(state.operation_buffer, t, convert(s));
-  return state;
-  }
-
-app_state tab(app_state state, const settings& s)
-  {
-  if (state.operation == op_editing)
-    return tab_editor(state, s);
+      auto pos = get_actual_position(fb);
+      auto pos2 = *fb.start_selection;      
+      if (t.empty())
+        {
+        int nr_of_spaces = tab_width - (minx % tab_width);
+        for (int i = 0; i < nr_of_spaces; ++i)
+          t.push_back(' ');
+        }
+      fb = push_undo(fb);
+      for (int r = minrow; r <= maxrow; ++r)
+        {
+        fb.pos.row = r;
+        fb.pos.col = minx;
+        fb.start_selection = std::nullopt;
+        fb = insert(fb, t, s_env, false);
+        }
+      fb.pos = pos;
+      fb.start_selection = pos2;
+      fb.pos.col += t.length();
+      fb.start_selection->col += t.length();
+      }
+    else
+      {
+      if (t.empty())
+        {
+        for (int i = 0; i < tab_width; ++i)
+          t.push_back(' ');
+        }
+      auto pos = get_actual_position(fb);
+      auto pos2 = *fb.start_selection;
+      int r1 = pos.row;
+      int r2 = pos2.row;
+      if (r2 < r1)
+        std::swap(r1, r2);
+      fb = push_undo(fb);
+      for (int r = r1; r <= r2; ++r)
+        {
+        fb.pos.row = r;
+        fb.pos.col = 0;
+        fb.start_selection = std::nullopt;
+        fb = insert(fb, t, s_env, false);
+        }
+      fb.pos = pos;
+      fb.start_selection = pos2;
+      fb.pos.col += t.length();
+      fb.start_selection->col += t.length();
+      }
+    }
   else
-    return tab_operation(state, s);
-  }
-
-app_state spaced_tab_editor(app_state state, int tab_width, const settings& s)
-  {
-  std::string t;
-  auto pos = get_actual_position(get_active_buffer(state));
-  int nr_of_spaces = tab_width - (pos.col % tab_width);
-  for (int i = 0; i < nr_of_spaces; ++i)
-    t.push_back(' ');
-  get_active_buffer(state) = insert(get_active_buffer(state), t, convert(s));
+    {
+    auto pos = get_actual_position(fb);
+    if (t.empty())
+      {
+      int nr_of_spaces = tab_width - (pos.col % tab_width);
+      for (int i = 0; i < nr_of_spaces; ++i)
+        t.push_back(' ');
+      }
+    fb = insert(fb, t, s_env);
+    }
   return check_scroll_position(state, s);
   }
 
-app_state spaced_tab_operation(app_state state, int tab_width, const settings& s)
+app_state tab_operation(app_state state, int tab_width, std::string t, const settings& s)
   {
-  std::string t;
   auto pos = get_actual_position(state.operation_buffer);
   int nr_of_spaces = tab_width - (pos.col % tab_width);
-  for (int i = 0; i < nr_of_spaces; ++i)
-    t.push_back(' ');
+  if (t.empty())
+    {
+    for (int i = 0; i < nr_of_spaces; ++i)
+      t.push_back(' ');
+    }
   state.operation_buffer = insert(state.operation_buffer, t, convert(s));
   return state;
   }
 
-app_state spaced_tab(app_state state, int tab_width, const settings& s)
+app_state tab(app_state state, int tab_width, std::string t, const settings& s)
   {
   if (state.operation == op_editing)
-    return spaced_tab_editor(state, tab_width, s);
+    return tab_editor(state, tab_width, t, s);
   else
-    return spaced_tab_operation(state, tab_width, s);
+    return tab_operation(state, tab_width, t, s);
+  }
+
+app_state inverse_tab_editor(app_state state, int tab_width, const settings& s)
+  {
+  auto s_env = convert(s);
+  file_buffer& fb = get_active_buffer(state);
+  auto pos = get_actual_position(fb);
+  if (pos.col <= 0)
+    return state;
+  int64_t depth = line_length_up_to_column(fb.content[pos.row], pos.col-1, s_env);
+  int64_t target_removals = depth % tab_width;
+  if (target_removals == 0)
+    target_removals = tab_width;
+  fb = push_undo(fb);
+  if (fb.content[pos.row][pos.col-1] == L'\t')
+    {
+    fb = erase(fb, s_env, false);
+    }
+  else
+    {
+    while (target_removals && fb.content[fb.pos.row][fb.pos.col - 1] == L' ')
+      {
+      fb = erase(fb, s_env, false);
+      --target_removals;
+      }
+    }
+
+  return check_scroll_position(state, s);
+  }
+
+app_state inverse_tab_operation(app_state state, int tab_width, const settings& s)
+  {
+  auto s_env = convert(s);
+  file_buffer& fb = state.operation_buffer;
+  auto pos = get_actual_position(fb);
+  if (pos.col <= 0)
+    return state;
+  int64_t depth = line_length_up_to_column(fb.content[pos.row], pos.col - 1, s_env);
+  int64_t target_removals = depth % tab_width;
+  if (target_removals == 0)
+    target_removals = tab_width;
+  fb = push_undo(fb);
+  if (fb.content[pos.row][pos.col - 1] == L'\t')
+    {
+    fb = erase(fb, s_env, false);
+    }
+  else
+    {
+    while (target_removals && fb.content[fb.pos.row][fb.pos.col - 1] == L' ')
+      {
+      fb = erase(fb, s_env, false);
+      --target_removals;
+      }
+    }
+  return state;
+  }
+
+app_state inverse_tab(app_state state, int tab_width, const settings& s)
+  {
+  if (state.operation == op_editing)
+    return inverse_tab_editor(state, tab_width, s);
+  else
+    return inverse_tab_operation(state, tab_width, s);
   }
 
 app_state del_editor(app_state state, const settings& s)
@@ -1447,14 +1553,14 @@ app_state ret_editor(app_state state, settings& s)
     bool modifications;
     state = check_pipes(modifications, state.active_buffer, state, s);
     return check_scroll_position(state, s);
-    }
+      }
   else
     {
     std::string indentation("\n");
     indentation.append(get_row_indentation_pattern(get_active_buffer(state), get_active_buffer(state).pos));
     return text_input(state, indentation.c_str(), s);
     }
-  }
+    }
 
 app_state clear_operation_buffer(app_state state)
   {
@@ -2220,16 +2326,18 @@ std::optional<app_state> mouse_motion(app_state state, int x, int y, settings& s
       auto pn = PAIR_NUMBER(mouse.rwd.current_sign_left);
       short fg, bg;
       PDC_pair_content(pn, &fg, &bg);
-      bool modified = (state.buffers[mouse.rwd.rearranging_file_id+1].buffer.modification_mask&1) != 0 && can_be_saved(state.buffers[mouse.rwd.rearranging_file_id].buffer.name); // +1 because we want to check the editor window, not the command window for modification
+      bool modified = (state.buffers[mouse.rwd.rearranging_file_id + 1].buffer.modification_mask & 1) != 0 && can_be_saved(state.buffers[mouse.rwd.rearranging_file_id].buffer.name); // +1 because we want to check the editor window, not the command window for modification
       unsigned int color_pair = modified ? COLOR_PAIR(command_icon_modified) : COLOR_PAIR(command_icon);
       if (bg == jedi_colors::jedi_editor_bg) {
         color_pair = modified ? COLOR_PAIR(editor_icon_modified) : COLOR_PAIR(editor_icon);
-      } else if (bg == jedi_colors::jedi_column_command_bg) {
+        }
+      else if (bg == jedi_colors::jedi_column_command_bg) {
         color_pair = modified ? COLOR_PAIR(column_command_icon_modified) : COLOR_PAIR(column_command_icon);
-      } else if (bg == jedi_colors::jedi_topline_command_bg) {
+        }
+      else if (bg == jedi_colors::jedi_topline_command_bg) {
         color_pair = modified ? COLOR_PAIR(topline_command_icon_modified) : COLOR_PAIR(topline_command_icon);
-      }
-      
+        }
+
 
       move(y, x - 1);
       if (mouse.rwd.x - 1 > 0)
@@ -2435,7 +2543,7 @@ std::optional<app_state> command_cancel(app_state state, uint32_t buffer_id, set
     }
   return state;
   }
-  
+
 std::optional<app_state> command_solarized_theme(app_state state, uint32_t, settings& s)
   {
   s.color_editor_text = 0xff625b47;
@@ -2445,15 +2553,15 @@ std::optional<app_state> command_solarized_theme(app_state state, uint32_t, sett
   s.color_command_text = 0xff625b47;
   s.color_command_background = 0xffcce3ea;
   s.color_command_tag = 0xff869226;
-  
+
   s.color_column_command_text = 0xff625b47;
   s.color_column_command_background = 0xffbcd3da;
   s.color_column_command_tag = 0xff869226;
-  
+
   s.color_topline_command_text = 0xff625b47;
   s.color_topline_command_background = 0xffacc3ca;
   s.color_topline_command_tag = 0xff869226;
-  
+
   s.color_line_numbers = 0xff909081;
   s.color_scrollbar = 0xff909081;//0xffb85959;//0xff0577a5;
   s.color_scrollbar_background = 0xffcce3ea;
@@ -2462,8 +2570,8 @@ std::optional<app_state> command_solarized_theme(app_state state, uint32_t, sett
   s.color_plus = 0xff869226;
 
   s.color_comment = 0xff058a72;//0xff869226
-  
-  
+
+
   s.color_string = 0xff1237bd;
   s.color_keyword = 0xffc77621;
   s.color_keyword_2 = 0xff6f1bc6;
@@ -2472,7 +2580,7 @@ std::optional<app_state> command_solarized_theme(app_state state, uint32_t, sett
   stdscr->_clear = TRUE;
   return state;
   }
-  
+
 std::optional<app_state> command_solarized_dark_theme(app_state state, uint32_t, settings& s)
   {
   s.color_editor_text = 0xff909081;
@@ -2482,15 +2590,15 @@ std::optional<app_state> command_solarized_dark_theme(app_state state, uint32_t,
   s.color_command_text = 0xff909081;
   s.color_command_background = 0xff32290a;
   s.color_command_tag = 0xff869226;
-  
+
   s.color_column_command_text = 0xff909081;
   s.color_column_command_background = 0xff42391a;
   s.color_column_command_tag = 0xff869226;
-  
+
   s.color_topline_command_text = 0xff909081;
   s.color_topline_command_background = 0xff52492a;
   s.color_topline_command_tag = 0xff869226;
-  
+
   s.color_line_numbers = 0xff625b47;
   s.color_scrollbar = 0xff625b47;//0xffb85959;//0xff0577a5;
   s.color_scrollbar_background = 0xff32290a;
@@ -2499,8 +2607,8 @@ std::optional<app_state> command_solarized_dark_theme(app_state state, uint32_t,
   s.color_plus = 0xff869226;
 
   s.color_comment = 0xff058a72;//0xff869226
-  
-  
+
+
   s.color_string = 0xff1237bd;
   s.color_keyword = 0xffc77621;
   s.color_keyword_2 = 0xff6f1bc6;
@@ -2589,15 +2697,15 @@ std::optional<app_state> command_dracula_theme(app_state state, uint32_t, settin
   s.color_command_text = 0xfff2f8f8;
   s.color_command_background = 0xff5a4744;
   s.color_command_tag = 0xfffde98b;
-  
+
   s.color_column_command_text = 0xfff2f8f8;
   s.color_column_command_background = 0xff6a5754;
   s.color_column_command_tag = 0xfffde98b;
-  
+
   s.color_topline_command_text = 0xfff2f8f8;
   s.color_topline_command_background = 0xff7a6764;
   s.color_topline_command_tag = 0xfffde98b;
-  
+
   s.color_line_numbers = 0xff5a4744;
   s.color_scrollbar = 0xffc679ff;
   s.color_scrollbar_background = 0xffa47262;
@@ -2695,15 +2803,15 @@ std::optional<app_state> command_acme_theme(app_state state, uint32_t, settings&
   s.color_command_text = 0xff000000;
   s.color_command_background = 0xffffffe5;
   s.color_command_tag = 0xff94933a;
-  
+
   s.color_column_command_text = 0xff000000;
   s.color_column_command_background = 0xffefefd5;
   s.color_column_command_tag = 0xff94933a;
-  
+
   s.color_topline_command_text = 0xff000000;
   s.color_topline_command_background = 0xffdfdfc5;
   s.color_topline_command_tag = 0xff94933a;
-  
+
   s.color_line_numbers = 0xff4c9999;
   s.color_scrollbar = 0xff4c9999;
   s.color_scrollbar_background = 0xffa5dddd;
@@ -2726,19 +2834,19 @@ std::optional<app_state> command_dark_theme(app_state state, uint32_t, settings&
   s.color_editor_text = 0xffc0c0c0;
   s.color_editor_background = 0xff000000;
   s.color_editor_tag = 0xfff18255;
-  
+
   s.color_command_text = 0xffc0c0c0;
   s.color_command_background = 0xff282828;
   s.color_command_tag = 0xfff18255;
-  
+
   s.color_column_command_text = 0xffc0c0c0;
   s.color_column_command_background = 0xff383838;
   s.color_column_command_tag = 0xfff18255;
-  
+
   s.color_topline_command_text = 0xffc0c0c0;
   s.color_topline_command_background = 0xff484848;
   s.color_topline_command_tag = 0xfff18255;
-  
+
   s.color_line_numbers = 0xff505050;
   s.color_scrollbar = 0xfff18255;
   s.color_scrollbar_background = 0xff282828;
@@ -2766,11 +2874,11 @@ std::optional<app_state> command_matrix_theme(app_state state, uint32_t, setting
   s.color_command_text = 0xff83ff83;
   s.color_command_background = 0xff002000;
   s.color_command_tag = 0xff00ff00;
-  
+
   s.color_column_command_text = 0xff83ff83;
   s.color_column_command_background = 0xff103010;
   s.color_column_command_tag = 0xff00ff00;
-  
+
   s.color_topline_command_text = 0xff83ff83;
   s.color_topline_command_background = 0xff204020;
   s.color_topline_command_tag = 0xff00ff00;
@@ -2801,15 +2909,15 @@ std::optional<app_state> command_light_theme(app_state state, uint32_t, settings
   s.color_command_text = 0xff5e5146;
   s.color_command_background = 0xffe4dad4;
   s.color_command_tag = 0xff89733b;
-  
+
   s.color_column_command_text = 0xff5e5146;
   s.color_column_command_background = 0xffd4cac4;
   s.color_column_command_tag = 0xff89733b;
-  
+
   s.color_topline_command_text = 0xff5e5146;
   s.color_topline_command_background = 0xffc4bab4;
   s.color_topline_command_tag = 0xff89733b;
-  
+
   s.color_line_numbers = 0xffb3ada6;
   s.color_scrollbar = 0xff89733b;
   s.color_scrollbar_background = 0xffe4dad4;
@@ -2826,72 +2934,72 @@ std::optional<app_state> command_light_theme(app_state state, uint32_t, settings
   stdscr->_clear = TRUE;
   return state;
   }
-  
+
 std::optional<app_state> command_consolas(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/consola.ttf";
   state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
-  
+  }
+
 std::optional<app_state> command_hack(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Hack-Regular.ttf";
   state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_menlo(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Menlo-Regular.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_comic(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/ComicMono.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_fantasque(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/FantasqueSansMono-Regular.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_victor(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/VictorMono-Regular.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_dejavusansmono(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/DejaVuSansMono.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_firacode(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/FiraCode-Regular.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_monaco(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Monaco-Linux.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_noto(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/NotoMono-Regular.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 std::optional<app_state> command_inconsolata(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/Inconsolata-Regular.ttf";
-  state =  resize_font(state, s.font_size, s);
+  state = resize_font(state, s.font_size, s);
   return resize_windows(state, s);
-}
+  }
 
 app_state get(app_state state, uint32_t buffer_id, const settings& s)
   {
@@ -2948,13 +3056,13 @@ std::optional<app_state> command_wrap(app_state state, uint32_t, settings& s)
   s.wrap = !s.wrap;
   return state;
   }
-  
+
 std::optional<app_state> command_case_sensitive(app_state state, uint32_t, settings& s)
   {
   s.case_sensitive = !s.case_sensitive;
   return state;
   }
-  
+
 std::optional<app_state> command_syntax_highlighting(app_state state, uint32_t buffer_id, settings& s)
   {
   /*
@@ -2980,12 +3088,12 @@ std::optional<app_state> command_syntax_highlighting(app_state state, uint32_t b
   s.syntax = !s.syntax;
   if (s.syntax) {
     for (auto& b : state.buffers) {
-      b.buffer = init_lexer_status(b.buffer, convert(s));        
+      b.buffer = init_lexer_status(b.buffer, convert(s));
       }
     }
   return state;
   }
-  
+
 std::optional<app_state> command_edit_with_parameters(app_state state, uint32_t buffer_id, std::wstring& sz, settings& s)
   {
   buffer_id = get_editor_buffer_id(state, buffer_id);
@@ -2994,9 +3102,10 @@ std::optional<app_state> command_edit_with_parameters(app_state state, uint32_t 
   std::string edit_command = jtk::convert_wstring_to_string(sz);
   try {
     state.buffers[buffer_id].buffer = handle_command(state.buffers[buffer_id].buffer, edit_command, convert(s));
-  } catch (std::runtime_error e) {
+    }
+  catch (std::runtime_error e) {
     state = add_error_text(state, e.what(), s);
-  }
+    }
   return check_scroll_position(state, buffer_id, s);
   }
 
@@ -3236,7 +3345,7 @@ std::optional<app_state> command_load(app_state state, uint32_t, settings& s)
 
 std::optional<app_state> command_complete(app_state state, uint32_t buffer_id, settings& s)
   {
-  std::wstring command = to_wstring(get_selection(state.buffers[buffer_id].buffer, convert(s)));  
+  std::wstring command = to_wstring(get_selection(state.buffers[buffer_id].buffer, convert(s)));
   remove_whitespace(command);
   if (command.empty()) {
     auto command_end_pos = get_previous_position(state.buffers[buffer_id].buffer, state.buffers[buffer_id].buffer.pos);
@@ -3252,7 +3361,7 @@ std::optional<app_state> command_complete(app_state state, uint32_t buffer_id, s
       state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, suggestion, convert(s));
       }
     return state;
-    } 
+    }
   std::string suggestion = complete_file_path(jtk::convert_wstring_to_string(command), state.buffers[buffer_id].buffer.name);
   if (!suggestion.empty()) {
     state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, suggestion, convert(s));
@@ -3812,7 +3921,7 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
   if (file_path.empty())
     {
     std::stringstream error_text;
-    error_text << "invalid path: " << jtk::convert_wstring_to_string(cmd_id) << "\n";    
+    error_text << "invalid path: " << jtk::convert_wstring_to_string(cmd_id) << "\n";
     state = add_error_text(state, error_text.str(), s);
     return state;
     }
@@ -3830,7 +3939,7 @@ std::optional<app_state> execute(app_state state, uint32_t buffer_id, const std:
     else {
       parameters.push_back(par_path);
 #ifdef _WIN32
-      if (parameters.back().find(' ')!=std::string::npos) {
+      if (parameters.back().find(' ') != std::string::npos) {
         parameters.back().insert(parameters.back().begin(), '"');
         parameters.back().push_back('"');
         has_quotes = false; // set to false as we've already added quotes
@@ -3994,7 +4103,7 @@ app_state move_window_to_other_column(app_state state, uint64_t c, uint64_t ci, 
     target_column.items[new_pos].top_layer = 0.0;
     target_column.items[new_pos].bottom_layer = 1.0;
     }
-    
+
   double last_top_layer = target_column.items[new_pos].top_layer;
   for (int other_ci = new_pos - 1; other_ci >= 0; --other_ci)
     {
@@ -4635,11 +4744,11 @@ std::string pbpaste()
     if (fgets(buffer, 128, pipe) != NULL)
       {
       result += buffer;
-      }
+  }
     }
   pclose(pipe);
   return result;
-}
+  }
 #endif
 
 std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t, settings& s)
@@ -4667,7 +4776,7 @@ std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t,
     {
     std::string error_message = "Could not create child process\n";
     state = add_error_text(state, error_message, s);
-    }
+  }
   if (jtk::send_to_pipe(pipefd, txt.c_str()) != 0) {
     std::string error_message = "Could not send copy buffer to pipe\n";
     state = add_error_text(state, error_message, s);
@@ -4788,23 +4897,24 @@ std::optional<app_state> make_find_buffer(app_state state, uint32_t buffer_id, s
   state.operation_buffer = move_end(state.operation_buffer, convert(s));
   return state;
   }
-  
+
 uint32_t get_command_buffer_id(app_state state, uint32_t buffer_id) {
   const auto& w = state.windows[state.buffer_id_to_window_id[buffer_id]];
   if (w.wt != e_window_type::wt_normal) {
     if (w.wt != e_window_type::wt_command) {
       if (state.last_active_editor_buffer != 0xffffffff) {
-        buffer_id = state.last_active_editor_buffer-1;
+        buffer_id = state.last_active_editor_buffer - 1;
         }
       else {
         buffer_id = state.active_buffer;
+        }
       }
     }
-  } else {
-    buffer_id = buffer_id-1;
-  }
+  else {
+    buffer_id = buffer_id - 1;
+    }
   return buffer_id;
-}
+  }
 
 std::optional<app_state> command_run(app_state state, uint32_t buffer_id, settings& s)
   {
@@ -4931,7 +5041,13 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           case SDLK_PAGEDOWN: return move_page_down(state, s);
           case SDLK_HOME: return move_home(state, s);
           case SDLK_END: return move_end(state, s);
-          case SDLK_TAB: return s.use_spaces_for_tab ? spaced_tab(state, s.tab_space, s) : tab(state, s);
+          case SDLK_TAB: 
+          {
+          if (shift_pressed())
+            return inverse_tab(state, s.tab_space, s);
+          else
+            return s.use_spaces_for_tab ? tab(state, s.tab_space, std::string(""), s) : tab(state, s.tab_space, std::string("\t"), s); 
+          }
           case SDLK_KP_ENTER:
           case SDLK_RETURN: return ret(state, s);
           case SDLK_BACKSPACE: return backspace(state, s);
@@ -5055,7 +5171,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
             return command_goto(state, buffer_id, s);
             }
           break;
-          }          
+          }
           case SDLK_h:
           {
           if (ctrl_pressed())
@@ -5105,7 +5221,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           if (ctrl_pressed())
             {
             /*
-            if (state.mouse_pointing_buffer != 0xffffffff 
+            if (state.mouse_pointing_buffer != 0xffffffff
               && has_nontrivial_selection(state.buffers[state.mouse_pointing_buffer].buffer, convert(s))
               && !has_nontrivial_selection(state.buffers[state.active_buffer].buffer, convert(s)))
               {
@@ -5142,7 +5258,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           {
           if (ctrl_pressed())
             {
-            return command_redo(state, buffer_id, s);              
+            return command_redo(state, buffer_id, s);
             }
           break;
           }
@@ -5326,7 +5442,7 @@ app_state make_empty_state(settings& s) {
   state.operation = e_operation::op_editing;
   state = make_topline(state, s);
   state = *command_new_column(state, 0, s);
-      
+
   s.w = 80;
   s.h = 25;
   s.x = 100;

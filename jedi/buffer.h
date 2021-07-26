@@ -105,6 +105,8 @@ bool in_selection(file_buffer fb, position current, position cursor, position bu
 
 bool has_selection(file_buffer fb);
 
+bool has_multiline_selection(file_buffer fb);
+
 bool has_rectangular_selection(file_buffer fb);
 
 bool has_trivial_rectangular_selection(file_buffer fb, const env_settings& s);
