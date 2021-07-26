@@ -1459,12 +1459,21 @@ app_state inverse_tab_editor(app_state state, int tab_width, const settings& s)
     if (has_rectangular_selection(fb))
       {
       int64_t minrow, maxrow, minx, maxx;
-      get_rectangular_selection(minrow, maxrow, minx, maxx, fb, *fb.start_selection, fb.pos, s_env);
+      //get_rectangular_selection(minrow, maxrow, minx, maxx, fb, *fb.start_selection, fb.pos, s_env);
+      minx = fb.pos.col;
+      maxx = fb.start_selection->col;
+      minrow = fb.pos.row;
+      maxrow = fb.start_selection->row;
+      if (maxx < minx)
+        std::swap(maxx, minx);
+      if (maxrow < minrow)
+        std::swap(maxrow, minrow);
       auto pos = get_actual_position(fb);
       auto pos2 = *fb.start_selection;
       if (minx <= 0)
         return state;
       fb = push_undo(fb);
+      fb.start_selection = std::nullopt;
       std::vector<int> removals(maxrow - minrow + 1, 0);
       for (int r = minrow; r <= maxrow; ++r)
         {        
@@ -1474,8 +1483,8 @@ app_state inverse_tab_editor(app_state state, int tab_width, const settings& s)
         int64_t target_removals = depth % tab_width;
         if (target_removals == 0)
           target_removals = tab_width;
-        int64_t target_depth = depth - target_removals;  
-        if (fb.content[r][fb.pos.col - 1] == L'\t')
+        int64_t target_depth = depth - target_removals;          
+        if ((fb.content[r].size() >= fb.pos.col) &&fb.content[r][fb.pos.col - 1] == L'\t')
           {
           fb = erase(fb, s_env, false);
           ++removals[r - minrow];
