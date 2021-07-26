@@ -354,10 +354,10 @@ file_buffer push_undo(file_buffer fb)
 
 void get_rectangular_selection(int64_t& min_row, int64_t& max_row, int64_t& min_x, int64_t& max_x, file_buffer fb, position p1, position p2, const env_settings& s)
   {
-  //min_x = line_length_up_to_column(fb.content[p1.row], p1.col - 1, s);
-  //max_x = line_length_up_to_column(fb.content[p2.row], p2.col - 1, s);
-  min_x = p1.col;
-  max_x = p2.col;
+  min_x = line_length_up_to_column(fb.content[p1.row], p1.col - 1, s);
+  max_x = line_length_up_to_column(fb.content[p2.row], p2.col - 1, s);
+  //min_x = p1.col;
+  //max_x = p2.col;
   min_row = p1.row;
   max_row = p2.row;
   if (max_x < min_x)

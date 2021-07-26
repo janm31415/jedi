@@ -1358,11 +1358,17 @@ app_state tab_editor(app_state state, int tab_width, std::string t, const settin
     {
     if (has_rectangular_selection(fb))
       {
-      int64_t minrow, maxrow, minx, maxx;
-      get_rectangular_selection(minrow, maxrow, minx, maxx, fb, *fb.start_selection, fb.pos, s_env);
-
+      int64_t minrow, maxrow, minx, maxx;      
+      minx = fb.pos.col;
+      maxx = fb.start_selection->col;
+      minrow = fb.pos.row;
+      maxrow = fb.start_selection->row;
+      if (maxx < minx)
+        std::swap(maxx, minx);
+      if (maxrow < minrow)
+        std::swap(maxrow, minrow);
       auto pos = get_actual_position(fb);
-      auto pos2 = *fb.start_selection;      
+      auto pos2 = *fb.start_selection;
       if (t.empty())
         {
         int nr_of_spaces = tab_width - (minx % tab_width);
@@ -1448,27 +1454,138 @@ app_state inverse_tab_editor(app_state state, int tab_width, const settings& s)
   {
   auto s_env = convert(s);
   file_buffer& fb = get_active_buffer(state);
-  auto pos = get_actual_position(fb);
-  if (pos.col <= 0)
-    return state;
-  int64_t depth = line_length_up_to_column(fb.content[pos.row], pos.col-1, s_env);
-  int64_t target_removals = depth % tab_width;
-  if (target_removals == 0)
-    target_removals = tab_width;
-  fb = push_undo(fb);
-  if (fb.content[pos.row][pos.col-1] == L'\t')
+  if (has_multiline_selection(fb))
     {
-    fb = erase(fb, s_env, false);
+    if (has_rectangular_selection(fb))
+      {
+      int64_t minrow, maxrow, minx, maxx;
+      get_rectangular_selection(minrow, maxrow, minx, maxx, fb, *fb.start_selection, fb.pos, s_env);
+      auto pos = get_actual_position(fb);
+      auto pos2 = *fb.start_selection;
+      if (minx <= 0)
+        return state;
+      fb = push_undo(fb);
+      std::vector<int> removals(maxrow - minrow + 1, 0);
+      for (int r = minrow; r <= maxrow; ++r)
+        {        
+        fb.pos.row = r;
+        fb.pos.col = minx;        
+        int64_t depth = line_length_up_to_column(fb.content[r], minx - 1, s_env);
+        int64_t target_removals = depth % tab_width;
+        if (target_removals == 0)
+          target_removals = tab_width;
+        int64_t target_depth = depth - target_removals;  
+        if (fb.content[r][fb.pos.col - 1] == L'\t')
+          {
+          fb = erase(fb, s_env, false);
+          ++removals[r - minrow];
+          if (fb.pos.col > 0)
+            {
+            depth = line_length_up_to_column(fb.content[r], fb.pos.col - 1, s_env);
+            if (depth > target_depth)
+              {
+              target_removals = depth % tab_width;
+              while (target_removals && fb.pos.col > 0 && fb.content[fb.pos.row][fb.pos.col - 1] == L' ')
+                {
+                fb = erase(fb, s_env, false);
+                ++removals[r - minrow];
+                --target_removals;
+                }
+              }
+            }
+          }
+        else
+          {
+          while (target_removals && fb.content[fb.pos.row][fb.pos.col - 1] == L' ')
+            {
+            fb = erase(fb, s_env, false);
+            ++removals[r - minrow];
+            --target_removals;
+            }
+          }
+        } // for (int r = minrow; r <= maxrow; ++r)
+      fb.pos = pos;
+      fb.start_selection = pos2;
+      fb.pos.col -= removals[pos.row - minrow];
+      fb.start_selection->col -= removals[pos2.row - minrow];
+      }
+    else
+      {
+      auto pos = get_actual_position(fb);
+      auto pos2 = *fb.start_selection;
+      int r1 = pos.row;
+      int r2 = pos2.row;
+      if (r2 < r1)
+        std::swap(r1, r2);
+      fb = push_undo(fb);
+      std::vector<int> removals(r2 - r1 + 1, 0);
+      for (int r = r1; r <= r2; ++r)
+        {
+        fb.pos.row = r;
+        fb.pos.col = 0;
+        fb.start_selection = std::nullopt;
+        if (fb.content[r].empty())
+          continue;
+        if (fb.content[r][0] == L'\t')
+          {
+          fb = erase_right(fb, s_env, false);
+          removals[r - r1] = 1;
+          }
+        else
+          {
+          int cnt = tab_width;
+          while (cnt && !fb.content[r].empty() && (fb.content[r][0] == L' ' || fb.content[r][0] == L'\t'))
+            {
+            fb = erase_right(fb, s_env, false);
+            ++removals[r - r1];
+            --cnt;
+            }
+          }
+        }
+      fb.pos = pos;
+      fb.pos.col -= removals[pos.row - r1];
+      fb.start_selection = pos2;
+      fb.start_selection->col -= removals[pos2.row - r1];
+      }
     }
   else
     {
-    while (target_removals && fb.content[fb.pos.row][fb.pos.col - 1] == L' ')
+    auto pos = get_actual_position(fb);
+    if (pos.col <= 0)
+      return state;
+    int64_t depth = line_length_up_to_column(fb.content[pos.row], pos.col - 1, s_env);
+    int64_t target_removals = depth % tab_width;
+    if (target_removals == 0)
+      target_removals = tab_width;
+    int64_t target_depth = depth - target_removals;
+    fb = push_undo(fb);
+    if (fb.content[pos.row][pos.col - 1] == L'\t')
       {
       fb = erase(fb, s_env, false);
-      --target_removals;
+      if (fb.pos.col > 0)
+        {
+        depth = line_length_up_to_column(fb.content[pos.row], fb.pos.col - 1, s_env);
+        if (depth > target_depth)
+          {
+          target_removals = depth % tab_width;
+          while (target_removals && fb.pos.col > 0 && fb.content[fb.pos.row][fb.pos.col - 1] == L' ')
+            {
+            fb = erase(fb, s_env, false);
+            --target_removals;
+            }
+          }
+        }
+      }
+    else
+      {
+      while (target_removals && fb.content[fb.pos.row][pos.col - 1] == L' ')
+        {
+        fb = erase(fb, s_env, false);
+        --target_removals;
+        pos = fb.pos;
+        }
       }
     }
-
   return check_scroll_position(state, s);
   }
 
@@ -1483,17 +1600,32 @@ app_state inverse_tab_operation(app_state state, int tab_width, const settings& 
   int64_t target_removals = depth % tab_width;
   if (target_removals == 0)
     target_removals = tab_width;
+  int64_t target_depth = depth - target_removals;
   fb = push_undo(fb);
   if (fb.content[pos.row][pos.col - 1] == L'\t')
     {
     fb = erase(fb, s_env, false);
+    if (fb.pos.col > 0)
+      {
+      depth = line_length_up_to_column(fb.content[pos.row], fb.pos.col - 1, s_env);
+      if (depth > target_depth)
+        {
+        target_removals = depth % tab_width;
+        while (target_removals && fb.pos.col > 0 && fb.content[fb.pos.row][fb.pos.col - 1] == L' ')
+          {
+          fb = erase(fb, s_env, false);
+          --target_removals;
+          }
+        }
+      }
     }
   else
     {
-    while (target_removals && fb.content[fb.pos.row][fb.pos.col - 1] == L' ')
+    while (target_removals && fb.content[fb.pos.row][pos.col - 1] == L' ')
       {
       fb = erase(fb, s_env, false);
       --target_removals;
+      pos = fb.pos;
       }
     }
   return state;
@@ -1553,14 +1685,14 @@ app_state ret_editor(app_state state, settings& s)
     bool modifications;
     state = check_pipes(modifications, state.active_buffer, state, s);
     return check_scroll_position(state, s);
-      }
+    }
   else
     {
     std::string indentation("\n");
     indentation.append(get_row_indentation_pattern(get_active_buffer(state), get_active_buffer(state).pos));
     return text_input(state, indentation.c_str(), s);
     }
-    }
+  }
 
 app_state clear_operation_buffer(app_state state)
   {
@@ -4744,7 +4876,7 @@ std::string pbpaste()
     if (fgets(buffer, 128, pipe) != NULL)
       {
       result += buffer;
-  }
+      }
     }
   pclose(pipe);
   return result;
@@ -4776,7 +4908,7 @@ std::optional<app_state> command_copy_to_snarf_buffer(app_state state, uint32_t,
     {
     std::string error_message = "Could not create child process\n";
     state = add_error_text(state, error_message, s);
-  }
+    }
   if (jtk::send_to_pipe(pipefd, txt.c_str()) != 0) {
     std::string error_message = "Could not send copy buffer to pipe\n";
     state = add_error_text(state, error_message, s);
@@ -5041,12 +5173,12 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
           case SDLK_PAGEDOWN: return move_page_down(state, s);
           case SDLK_HOME: return move_home(state, s);
           case SDLK_END: return move_end(state, s);
-          case SDLK_TAB: 
+          case SDLK_TAB:
           {
           if (shift_pressed())
             return inverse_tab(state, s.tab_space, s);
           else
-            return s.use_spaces_for_tab ? tab(state, s.tab_space, std::string(""), s) : tab(state, s.tab_space, std::string("\t"), s); 
+            return s.use_spaces_for_tab ? tab(state, s.tab_space, std::string(""), s) : tab(state, s.tab_space, std::string("\t"), s);
           }
           case SDLK_KP_ENTER:
           case SDLK_RETURN: return ret(state, s);
