@@ -21,6 +21,7 @@ bool prune = false;
 bool inverse_regex_match = false;
 
 std::string pattern;
+std::regex reg;
 
 enum e_type
   {
@@ -52,15 +53,22 @@ void visit(file_tree& tree, const std::string& directory, int depth)
     fileslist = jtk::get_files_from_directory(directory, false);
   if (!pattern.empty())
     {
-    std::regex reg(pattern);
-    std::vector<std::string> retained_files;
-    std::smatch sm;
-    for (const auto& f : fileslist)
+    try
       {
-      if (std::regex_search(f, sm, reg) != inverse_regex_match)
-        retained_files.push_back(f);
+      std::vector<std::string> retained_files;
+      std::smatch sm;
+      for (const auto& f : fileslist)
+        {
+        if (std::regex_search(f, sm, reg) != inverse_regex_match)
+          retained_files.push_back(f);
+        }
+      fileslist.swap(retained_files);
       }
-    fileslist.swap(retained_files);
+    catch (const std::regex_error& e)
+      {
+      std::cout << "tree: regex error caught: " << e.what() << std::endl;
+      exit(1);
+      }
     }
   std::vector<std::pair<std::string, e_type>> items;
   items.reserve(subdirectories.size() + fileslist.size());
@@ -196,6 +204,19 @@ int main(int argc, char** argv)
     else
       {
       directory = argv[j];
+      }
+    }
+    
+  if (!pattern.empty())
+    {
+    try
+      {
+      reg = std::regex(pattern);
+      }
+    catch (const std::regex_error& e)
+      {
+      std::cout << "tree: regex error caught: " << e.what() << std::endl;
+      exit(1);
       }
     }
   
