@@ -17,6 +17,7 @@ add_subdirectory(jtk)
 add_subdirectory(jedi)
 add_subdirectory(jedi.tests)
 add_subdirectory(pdcurses)
+add_subdirectory(tree)
 
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
