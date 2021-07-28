@@ -5698,7 +5698,21 @@ engine::engine(int argc, char** argv, const settings& input_settings) : s(input_
         }
       else {
         if (!file_already_opened(state, input))
-          state = *load_file(state, 0, input, s);
+          {
+          if (jtk::file_exists(input))
+            state = *load_file(state, 0, input, s);
+          else
+            {
+            state = *command_new_window(state, 0, s);
+            uint32_t buffer_id = (uint32_t)(state.buffers.size() - 1);
+            int64_t command_id = buffer_id - 1;
+            state.buffers[buffer_id].buffer.name = input;
+            state.buffers[command_id].buffer.name = get_active_buffer(state).name;
+            get_active_buffer(state) = set_multiline_comments(get_active_buffer(state));
+            get_active_buffer(state) = init_lexer_status(get_active_buffer(state), convert(s));
+            state.buffers[command_id].buffer.content = to_text(make_command_text(state, command_id, s));
+            }
+          }
         }
       }
     }
