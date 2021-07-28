@@ -1,5 +1,6 @@
 #include <array>
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -11,6 +12,8 @@
 uint64_t directories = 0;
 uint64_t files = 0;
 
+int max_depth = -1;
+
 bool full_paths = false;
 bool directories_only = false;
 
@@ -20,8 +23,10 @@ enum e_type
   T_FILE=1
   };
 
-void visit(const std::string& directory, const std::string& prefix)
+void visit(const std::string& directory, const std::string& prefix, int depth)
   {
+  if (depth == max_depth)
+    return;
   static std::array<std::string, 2> tags = {{"├── ", "│   " }};
   static std::array<std::string, 2> end_tags = {{"└── ", "    "}};
     
@@ -54,7 +59,7 @@ void visit(const std::string& directory, const std::string& prefix)
     else
       {
       ++directories;
-      visit(item.first, prefix + (i == number_of_items-1 ? end_tags[1] : tags[1]));
+      visit(item.first, prefix + (i == number_of_items-1 ? end_tags[1] : tags[1]), depth+1);
       }
     }
   }
@@ -66,9 +71,10 @@ void print_help()
   std::cout << "current working directory if no directory is provided." << std::endl;
   std::cout << std::endl;
   std::cout << "Options:" << std::endl;
-  std::cout << "  -? : Prints this help text" << std::endl;
-  std::cout << "  -f : Display full file paths" << std::endl;
-  std::cout << "  -d : Only list directories" << std::endl;
+  std::cout << "  -?       : Prints this help text" << std::endl;
+  std::cout << "  -f       : Display full file paths" << std::endl;
+  std::cout << "  -d       : Only list directories" << std::endl;
+  std::cout << "  -L <int> : Restrict the display depth" << std::endl;
   std::cout << std::endl;
   exit(0);
   }
@@ -90,6 +96,16 @@ int main(int argc, char** argv)
           directories_only = true;
         if (ch == '?')
           print_help();
+        if (ch == 'L')
+          {
+          ++j;
+          if (j < argc)
+            {
+            std::stringstream ss;
+            ss << argv[j];
+            ss >> max_depth;
+            }
+          }
         }
       }
     else
@@ -101,7 +117,7 @@ int main(int argc, char** argv)
   std::cout << directory << std::endl;
   
   std::string prefix;
-  visit(directory, prefix);
+  visit(directory, prefix, 0);
   std::cout << std::endl;
   std::cout << directories << " directories, " << files << " files" << std::endl;
   return 0;
