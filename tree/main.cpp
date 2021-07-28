@@ -11,6 +11,9 @@
 uint64_t directories = 0;
 uint64_t files = 0;
 
+bool full_paths = false;
+bool directories_only = false;
+
 enum e_type
   {
   T_DIR=0,
@@ -23,7 +26,9 @@ void visit(const std::string& directory, const std::string& prefix)
   static std::array<std::string, 2> end_tags = {{"└── ", "    "}};
     
   auto subdirectories = jtk::get_subdirectories_from_directory(directory, false);
-  auto fileslist = jtk::get_files_from_directory(directory, false);
+  std::vector<std::string> fileslist;
+  if (!directories_only)
+    fileslist = jtk::get_files_from_directory(directory, false);
   std::vector<std::pair<std::string, e_type>> items;
   items.reserve(subdirectories.size() + fileslist.size());
   for (const auto& s : subdirectories)
@@ -41,7 +46,7 @@ void visit(const std::string& directory, const std::string& prefix)
     {
     const auto& item = items[i];
     std::cout << prefix;
-    std::cout << (i == number_of_items-1 ? end_tags[0] : tags[0]) << jtk::get_filename(item.first) << std::endl;
+    std::cout << (i == number_of_items-1 ? end_tags[0] : tags[0]) << (full_paths ? item.first : jtk::get_filename(item.first)) << std::endl;
     if (item.second == T_FILE)
       {
       ++files;
@@ -53,10 +58,45 @@ void visit(const std::string& directory, const std::string& prefix)
       }
     }
   }
+  
+void print_help()
+  {
+  std::cout << "Usage: tree <directory> <options>" << std::endl;
+  std::cout << "Recursively lists the content of a given directory or the" << std::endl;
+  std::cout << "current working directory if no directory is provided." << std::endl;
+  std::cout << std::endl;
+  std::cout << "Options:" << std::endl;
+  std::cout << "  -? : Prints this help text" << std::endl;
+  std::cout << "  -f : Display full file paths" << std::endl;
+  std::cout << "  -d : Only list directories" << std::endl;
+  std::cout << std::endl;
+  exit(0);
+  }
 
 int main(int argc, char** argv)
   {
-  std::string directory = argc == 1 ? std::string(".") : std::string(argv[1]);
+  std::string directory = jtk::get_cwd();
+  
+  for (int j = 1; j < argc; ++j)
+    {
+    if (argv[j][0] == '-')
+      {
+      std::string options(argv[j]+1);
+      for (const auto ch : options)
+        {
+        if (ch == 'f')
+          full_paths = true;
+        if (ch == 'd')
+          directories_only = true;
+        if (ch == '?')
+          print_help();
+        }
+      }
+    else
+      {
+      directory = argv[j];
+      }
+    }
   
   std::cout << directory << std::endl;
   
