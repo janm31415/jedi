@@ -62,7 +62,7 @@ int main(int argc, char** argv)
   
   std::string prefix;
   visit(directory, prefix);
-  
+  std::cout << std::endl;
   std::cout << directories << " directories, " << files << " files" << std::endl;
   return 0;
   }
