@@ -1,5 +1,6 @@
 #include <array>
 #include <iostream>
+#include <regex>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -16,6 +17,8 @@ int max_depth = -1;
 
 bool full_paths = false;
 bool directories_only = false;
+
+std::string pattern;
 
 enum e_type
   {
@@ -34,6 +37,18 @@ void visit(const std::string& directory, const std::string& prefix, int depth)
   std::vector<std::string> fileslist;
   if (!directories_only)
     fileslist = jtk::get_files_from_directory(directory, false);
+  if (!pattern.empty())
+    {
+    std::regex reg(pattern);
+    std::vector<std::string> retained_files;
+    std::smatch sm;
+    for (const auto& f : fileslist)
+      {
+      if (std::regex_search(f, sm, reg))
+        retained_files.push_back(f);
+      }
+    fileslist.swap(retained_files);
+    }
   std::vector<std::pair<std::string, e_type>> items;
   items.reserve(subdirectories.size() + fileslist.size());
   for (const auto& s : subdirectories)
@@ -52,6 +67,7 @@ void visit(const std::string& directory, const std::string& prefix, int depth)
     const auto& item = items[i];
     std::cout << prefix;
     std::cout << (i == number_of_items-1 ? end_tags[0] : tags[0]) << (full_paths ? item.first : jtk::get_filename(item.first)) << std::endl;
+      
     if (item.second == T_FILE)
       {
       ++files;
@@ -71,10 +87,11 @@ void print_help()
   std::cout << "current working directory if no directory is provided." << std::endl;
   std::cout << std::endl;
   std::cout << "Options:" << std::endl;
-  std::cout << "  -?       : Prints this help text" << std::endl;
-  std::cout << "  -f       : Display full file paths" << std::endl;
-  std::cout << "  -d       : Only list directories" << std::endl;
-  std::cout << "  -L <int> : Restrict the display depth" << std::endl;
+  std::cout << "  -?         : Prints this help text" << std::endl;
+  std::cout << "  -f         : Display full file paths" << std::endl;
+  std::cout << "  -d         : Only list directories" << std::endl;
+  std::cout << "  -L <int>   : Restrict the display depth" << std::endl;
+  std::cout << "  -P <regex> : Only list files that match the regex" << std::endl;
   std::cout << std::endl;
   exit(0);
   }
@@ -105,6 +122,12 @@ int main(int argc, char** argv)
             ss << argv[j];
             ss >> max_depth;
             }
+          }
+        if (ch == 'P')
+          {
+          ++j;
+          if (j < argc)
+            pattern = std::string(argv[j]);
           }
         }
       }
