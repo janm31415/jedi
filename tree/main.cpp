@@ -17,6 +17,8 @@ int max_depth = -1;
 
 bool full_paths = false;
 bool directories_only = false;
+bool prune = false;
+bool inverse_regex_match = false;
 
 std::string pattern;
 
@@ -25,14 +27,25 @@ enum e_type
   T_DIR=0,
   T_FILE=1
   };
+  
+  
+struct tree_node
+  {
+  std::string path;
+  uint64_t number_of_children = 0;
+  e_type type;
+  };
+  
+struct file_tree
+  {
+  std::vector<tree_node> nodes;
+  };
 
-void visit(const std::string& directory, const std::string& prefix, int depth)
+
+void visit(file_tree& tree, const std::string& directory, int depth)
   {
   if (depth == max_depth)
     return;
-  static std::array<std::string, 2> tags = {{"├── ", "│   " }};
-  static std::array<std::string, 2> end_tags = {{"└── ", "    "}};
-    
   auto subdirectories = jtk::get_subdirectories_from_directory(directory, false);
   std::vector<std::string> fileslist;
   if (!directories_only)
@@ -44,7 +57,7 @@ void visit(const std::string& directory, const std::string& prefix, int depth)
     std::smatch sm;
     for (const auto& f : fileslist)
       {
-      if (std::regex_search(f, sm, reg))
+      if (std::regex_search(f, sm, reg) != inverse_regex_match)
         retained_files.push_back(f);
       }
     fileslist.swap(retained_files);
@@ -61,23 +74,54 @@ void visit(const std::string& directory, const std::string& prefix, int depth)
     return result.second != rhs.first.cend() && (result.first == lhs.first.cend() || tolower(*result.first) < tolower(*result.second));
     });
     
+  uint64_t current_id = tree.nodes.size();
+  tree.nodes.emplace_back();
+  tree.nodes.back().path = directory;
+  uint64_t current_number_of_files = files;
   const size_t number_of_items = items.size();
   for (size_t i = 0; i < number_of_items; ++i)
     {
     const auto& item = items[i];
-    std::cout << prefix;
-    std::cout << (i == number_of_items-1 ? end_tags[0] : tags[0]) << (full_paths ? item.first : jtk::get_filename(item.first)) << std::endl;
-      
     if (item.second == T_FILE)
       {
+      tree.nodes.emplace_back();
+      tree.nodes.back().path = item.first;
+      tree.nodes.back().type = T_FILE;
       ++files;
       }
     else
       {
+      visit(tree, item.first, depth+1);
       ++directories;
-      visit(item.first, prefix + (i == number_of_items-1 ? end_tags[1] : tags[1]), depth+1);
       }
     }
+  tree.nodes[current_id].number_of_children = tree.nodes.size() - 1 - current_id;
+  if (prune && (files == current_number_of_files))
+    {
+    tree.nodes.erase(tree.nodes.begin() + current_id, tree.nodes.end());
+    }
+  }
+
+void print(const file_tree& tree, uint64_t start_node, uint64_t end_node, std::string prefix)
+  {
+  static std::array<std::string, 2> tags = {{"├── ", "│   " }};
+  static std::array<std::string, 2> end_tags = {{"└── ", "    "}};
+  for (uint64_t i = start_node; i < end_node; ++i)
+    {
+    bool last_item = (i+tree.nodes[i].number_of_children)>=(end_node-1);
+    std::cout << prefix << (last_item ? end_tags[0] : tags[0]) << (full_paths ? tree.nodes[i].path : jtk::get_filename(tree.nodes[i].path)) << std::endl;
+    if (tree.nodes[i].number_of_children > 0)
+      {
+      print(tree, i+1, i+tree.nodes[i].number_of_children, prefix + (last_item ? end_tags[1] : tags[1]));
+      i += tree.nodes[i].number_of_children;
+      }
+    }
+  }
+  
+void print(const file_tree& tree)
+  {
+  std::cout << (full_paths ? tree.nodes[0].path : jtk::get_filename(tree.nodes[0].path)) << std::endl;
+  print(tree, 1, tree.nodes.size(), "");
   }
   
 void print_help()
@@ -92,6 +136,8 @@ void print_help()
   std::cout << "  -d         : Only list directories" << std::endl;
   std::cout << "  -L <int>   : Restrict the display depth" << std::endl;
   std::cout << "  -P <regex> : Only list files that match the regex" << std::endl;
+  std::cout << "  -I <regex> : Only list files that don't match the regex" << std::endl;
+  std::cout << "  -prune     : Don't list empty directories" << std::endl;
   std::cout << std::endl;
   exit(0);
   }
@@ -105,29 +151,45 @@ int main(int argc, char** argv)
     if (argv[j][0] == '-')
       {
       std::string options(argv[j]+1);
-      for (const auto ch : options)
+      if (options == std::string("prune"))
         {
-        if (ch == 'f')
-          full_paths = true;
-        if (ch == 'd')
-          directories_only = true;
-        if (ch == '?')
-          print_help();
-        if (ch == 'L')
+        prune = true;
+        }
+      else
+        {
+        for (const auto ch : options)
           {
-          ++j;
-          if (j < argc)
+          if (ch == 'f')
+            full_paths = true;
+          if (ch == 'd')
+            directories_only = true;
+          if (ch == '?')
+            print_help();
+          if (ch == 'L')
             {
-            std::stringstream ss;
-            ss << argv[j];
-            ss >> max_depth;
+            ++j;
+            if (j < argc)
+              {
+              std::stringstream ss;
+              ss << argv[j];
+              ss >> max_depth;
+              }
             }
-          }
-        if (ch == 'P')
-          {
-          ++j;
-          if (j < argc)
-            pattern = std::string(argv[j]);
+          if (ch == 'P')
+            {
+            ++j;
+            if (j < argc)
+              pattern = std::string(argv[j]);
+            }
+          if (ch == 'I')
+            {
+            ++j;
+            if (j < argc)
+              {
+              pattern = std::string(argv[j]);
+              inverse_regex_match = true;
+              }
+            }
           }
         }
       }
@@ -137,11 +199,11 @@ int main(int argc, char** argv)
       }
     }
   
-  std::cout << directory << std::endl;
-  
-  std::string prefix;
-  visit(directory, prefix, 0);
+  file_tree tree;
+  visit(tree, directory, 0);
+  print(tree);
   std::cout << std::endl;
   std::cout << directories << " directories, " << files << " files" << std::endl;
+  
   return 0;
   }
