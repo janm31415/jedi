@@ -1,0 +1,9 @@
+[Desktop Entry]
+Encoding=UTF-8
+Version=1.0
+Type=Application
+Terminal=false
+Exec=/home/janm31415/Dev/jedi/build/bin/jedi
+Path=/home/janm31415/Dev/jedi/build/bin/
+Name=Jedi
+Icon=/home/janm31415/Dev/jedi/jedi/icon/icon.png
