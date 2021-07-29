@@ -1,5 +1,5 @@
 #pragma once
-
+#include <stdexcept>
 #include <immutable/vector.h>
 #include <vector>
 #include <string>
