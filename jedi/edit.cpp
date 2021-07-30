@@ -1019,6 +1019,8 @@ struct command_handler
     auto dot = get_dot();
         
     for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
+      if (row >= fb.content.size())
+        break;
       std::string line = to_string(fb.content[row]);
       int64_t offset = 0;
       if (row == dot.first.row) {
@@ -1118,13 +1120,15 @@ struct command_handler
     auto dot = get_dot();
         
     for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
+      if (row >= fb.content.size())
+        break;
       std::string line = to_string(fb.content[row]);
       int64_t offset = 0;
       if (row == dot.first.row) {
         line = line.substr(dot.first.col);
         offset = dot.first.col;
         }
-      if (row == dot.second.row) {
+      else if (row == dot.second.row) {
         const int64_t sz = dot.second.col - offset;
         if (sz <= 0)
           continue;
@@ -1177,6 +1181,8 @@ struct command_handler
     auto dot = get_dot();
         
     for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
+      if (row >= fb.content.size())
+        break;
       std::string line = to_string(fb.content[row]);
       int64_t offset = 0;
       if (row == dot.first.row) {
@@ -1217,6 +1223,8 @@ struct command_handler
         
         
     for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
+      if (row >= fb.content.size())
+        break;
       std::string line = to_string(fb.content[row]);
       int64_t offset = 0;
       if (row == dot.first.row) {
@@ -1279,6 +1287,8 @@ struct command_handler
     position prev_dot_end = position(0, 0);
 
     for (int64_t row = dot.first.row; row <= dot.second.row; ++row) {
+      if (row >= fb.content.size())
+        break;
       std::string line = to_string(fb.content[row]);
       int64_t offset = 0;
       if (row == dot.first.row) {
