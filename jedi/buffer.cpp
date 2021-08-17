@@ -184,13 +184,13 @@ position get_actual_position(file_buffer fb, position pos)
   position out = pos;
   if (out.row < 0 || out.col < 0)
     return out;
-  if (fb.pos.row >= fb.content.size())
+  if (out.row >= fb.content.size())
     {
     assert(fb.content.empty());
     out.col = out.row = 0;
     return out;
     }
-  if (out.col >= fb.content[fb.pos.row].size())
+  if (out.col >= fb.content[out.row].size())
     {
     if (out.row == fb.content.size() - 1) // last row
       {
@@ -1316,7 +1316,7 @@ file_buffer find_text_case_insensitive(file_buffer fb, text txt)
     return fb;
   fb.rectangular_selection = false;
   position lastpos = get_last_position(fb);
-  position pos = fb.pos;
+  position pos = txt[0].size() == 1 ? get_next_position(fb, fb.pos) : fb.pos;
   position text_pos(0, 0);
   position lasttext = get_last_position(txt);
   position first_encounter;
