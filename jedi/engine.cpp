@@ -25,6 +25,11 @@
 #include <SDL_syswm.h>
 #include <curses.h>
 
+//uncomment both if you want to add new windows at the end of the column
+//#define ADD_NEW_WINDOWS_ABOVE_ACTIVE
+//#define ADD_NEW_WINDOWS_BELOW_ACTIVE
+#define MAKE_LAST_WINDOW_LARGEST
+
 extern "C"
   {
 #include <sdl2/pdcsdl.h>
@@ -905,16 +910,31 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
   if (!state.g.columns[column_id].items.empty())
     {
     auto pos = state.g.columns[column_id].items.size();
+#if defined(ADD_NEW_WINDOWS_ABOVE_ACTIVE)
     for (size_t k = 0; k < state.g.columns[column_id].items.size(); ++k) // look for window with file_id == id == active_file
       {
       if (state.windows[state.window_pairs[state.g.columns[column_id].items[k].window_pair_id].window_id].buffer_id == buffer_id)
         {
         state.g.columns[column_id].items[k].bottom_layer = (state.g.columns[column_id].items[k].bottom_layer + state.g.columns[column_id].items[k].top_layer) * 0.5;
         ci.top_layer = state.g.columns[column_id].items[k].bottom_layer;
-        pos = k + 1; // change to k if you want to insert before existing
+        pos = k; // change to k if you want to insert before existing
         break;
         }
       }
+#elif defined(ADD_NEW_WINDOWS_BELOW_ACTIVE)
+    for (size_t k = 1; k < state.g.columns[column_id].items.size(); ++k) // look for window with file_id == id == active_file
+      {
+      if (state.windows[state.window_pairs[state.g.columns[column_id].items[k].window_pair_id].window_id].buffer_id == buffer_id)
+        {
+        state.g.columns[column_id].items[k].bottom_layer = (state.g.columns[column_id].items[k].bottom_layer + state.g.columns[column_id].items[k].top_layer) * 0.5;
+        ci.top_layer = state.g.columns[column_id].items[k].bottom_layer;
+        pos = k+1; // change to k if you want to insert before existing
+        break;
+        }
+      }
+#else
+    pos = state.g.columns[column_id].items.size();
+#endif
     //add the next lines if you want to insert before existing
     //if (buffer_id == 0) // for buffer_id == 0, insert at the top
     //  pos = 0;
@@ -2160,6 +2180,17 @@ app_state optimize_column(app_state state, uint32_t buffer_id, settings& s)
           }
         else // all windows can be visualized
           {
+#if defined(MAKE_LAST_WINDOW_LARGEST)
+          int extra_per_item = (rows - total_rows) / (c.items.size()+2);
+          int remainder = (rows - total_rows) % (c.items.size()+2);
+          for (int j = 0; j < nr_of_rows_necessary.size(); ++j)
+            {
+            nr_of_rows_necessary[j] += extra_per_item;
+            if (j < remainder)
+              nr_of_rows_necessary[nr_of_rows_necessary.size() - j - 1] += 1;
+            }
+          nr_of_rows_necessary[nr_of_rows_necessary.size()-1] += 2*extra_per_item;
+#else
           int extra_per_item = (rows - total_rows) / c.items.size();
           int remainder = (rows - total_rows) % c.items.size();
           for (int j = 0; j < nr_of_rows_necessary.size(); ++j)
@@ -2168,6 +2199,7 @@ app_state optimize_column(app_state state, uint32_t buffer_id, settings& s)
             if (j < remainder)
               nr_of_rows_necessary[nr_of_rows_necessary.size() - j - 1] += 1;
             }
+#endif
           for (int j = 0; j < c.items.size(); ++j)
             {
             auto wp = c.items[j].window_pair_id;
