@@ -202,7 +202,7 @@ Short overview of the Edit command functionality:
   Edit 0,$ x/Peter/ d searches the whole file for the occurence of Peter and runs the d command (which will thus delete each occurence of Peter). Note that 0,$ can be replaced by its shorthand ,
   Edit , c/AAA/ will change the content of the file with AAA
   Edit , g/Peter/ d deletes the whole file if Peter occurs anywhere in the text
-  
+  Edit , x/\n/c/;\n/ adds a semicolon at the end of each line in the text
    
 
 When Jedi is closed, it will save any user settings in a file 
