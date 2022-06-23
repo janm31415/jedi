@@ -9,6 +9,7 @@ grid.h
 engine.h
 hex.h
 keyboard.h
+mario.h
 mouse.h
 pdcex.h
 plumber.h
@@ -31,6 +32,7 @@ engine.cpp
 hex.cpp
 keyboard.cpp
 main.cpp
+mario.cpp
 mouse.cpp
 pdcex.cpp
 plumber.cpp

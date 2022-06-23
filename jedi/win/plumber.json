@@ -11,8 +11,8 @@
     {"extensions": "html",
 	   "regex": "^(https?:\\/\\/).*"
 	  },
-	"C:/Program Files/VCG/MeshLab/meshlab.exe":
-	  {"extensions": "ply obj stl off",
+	"C:/_Dev/j3d/build/bin/Release/j3d.exe":
+	  {"extensions": "ply obj stl off vox gltf glb trc",
 	   "regex": ""
 	  }
 }
