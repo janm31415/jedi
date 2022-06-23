@@ -135,6 +135,7 @@ Undo, ^z       : undo
 Available themes:
 AcmeTheme      : change the color code to the color scheme of Acme
 DarkTheme      : change the color code to dark
+DosTheme      : change the color code to dos colors
 DraculaTheme   : change the color code to dracula (https://draculatheme.com)
 GruvboxLight   : change the color code to gruvbox light (https://github.com/morhetz/gruvbox)
 GruvboxTheme   : change the color code to gruvbox (https://github.com/morhetz/gruvbox)

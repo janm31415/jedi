@@ -3074,6 +3074,41 @@ std::optional<app_state> command_matrix_theme(app_state state, uint32_t, setting
   return state;
   }
 
+std::optional<app_state> command_dos_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xffc0c0c0;
+  s.color_editor_background = 0xff000000;
+  s.color_editor_tag = 0xffc0c0c0;
+
+  s.color_command_text = 0xff000000;
+  s.color_command_background = 0xffffffff;
+  s.color_command_tag = 0xff000000;
+
+  s.color_column_command_text = 0xff000000;
+  s.color_column_command_background = 0xffc0c0c0;
+  s.color_column_command_tag = 0xff000000;
+
+  s.color_topline_command_text = 0xff000000;
+  s.color_topline_command_background = 0xff808080;
+  s.color_topline_command_tag = 0xff000000;
+
+  s.color_line_numbers = 0xff808000;
+  s.color_scrollbar = 0xffffff00;
+  s.color_scrollbar_background = 0xff808000;
+  s.color_icon = 0xff008000;
+  s.color_icon_modified = 0xff0000ff;
+  s.color_plus = 0xffff0000;
+
+  s.color_comment = 0xff0000ff;
+  s.color_string = 0xff00ff00;
+  s.color_keyword = 0xffffffff;
+  s.color_keyword_2 = 0xffff00ff;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
 std::optional<app_state> command_light_theme(app_state state, uint32_t, settings& s)
   {
   s.color_editor_text = 0xff5e5146;
@@ -3577,6 +3612,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"DejaVu", command_dejavusansmono},
     {L"Delcol", command_delete_column},
     {L"Del", command_delete_window},
+    {L"DosTheme", command_dos_theme},
     {L"DraculaTheme", command_dracula_theme},
     {L"Dump", command_dump},
     {L"Edit", command_edit},
