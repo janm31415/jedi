@@ -13,6 +13,7 @@ struct settings
   bool case_sensitive;
   bool wrap;
   bool syntax;
+  bool mario;
   int w, h, x, y;
   int font_size;
   std::string font;

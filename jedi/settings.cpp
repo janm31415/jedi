@@ -13,6 +13,7 @@ settings::settings()
   wrap = false;
   syntax = true;
   case_sensitive = false;
+  mario = true;
   w = 80;
   h = 25;
   x = 100;
@@ -60,6 +61,9 @@ void update_settings_if_different(settings& s, const settings& new_settings, con
 
   if (new_settings.show_all_characters != old_settings.show_all_characters)
     s.show_all_characters = new_settings.show_all_characters;
+
+  if (new_settings.mario != old_settings.mario)
+    s.mario = new_settings.mario;
     
   if (new_settings.case_sensitive != old_settings.case_sensitive)
     s.case_sensitive = new_settings.case_sensitive;
@@ -173,6 +177,7 @@ void update_settings(settings& s, const char* filename)
   f["use_spaces_for_tab"] >> s.use_spaces_for_tab;
   f["tab_space"] >> s.tab_space;
   f["show_all_characters"] >> s.show_all_characters;
+  f["mario"] >> s.mario;
   f["width"] >> s.w;
   f["height"] >> s.h;
   f["x"] >> s.x;
@@ -226,6 +231,7 @@ void write_settings(const settings& s, const char* filename)
   f << "use_spaces_for_tab" << s.use_spaces_for_tab;
   f << "tab_space" << s.tab_space;
   f << "show_all_characters" << s.show_all_characters;
+  f << "mario" << s.mario;
   f << "width" << s.w;
   f << "height" << s.h;
   f << "x" << s.x;

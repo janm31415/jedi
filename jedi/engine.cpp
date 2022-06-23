@@ -3213,6 +3213,12 @@ std::optional<app_state> command_get(app_state state, uint32_t buffer_id, settin
   return get(state, buffer_id, s);
   }
 
+std::optional<app_state> command_mario(app_state state, uint32_t, settings& s)
+  {
+  s.mario = !s.mario;
+  return state;
+  }
+
 std::optional<app_state> command_show_all_characters(app_state state, uint32_t, settings& s)
   {
   s.show_all_characters = !s.show_all_characters;
@@ -3592,6 +3598,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"LightTheme", command_light_theme},
     {L"LineNumbers", command_line_numbers},
     {L"Load", command_load},
+    {L"Mario", command_mario},
     {L"MatrixTheme", command_matrix_theme},
     {L"Menlo", command_menlo},
     {L"Monaco", command_monaco},
@@ -5574,7 +5581,7 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
       tic = std::chrono::steady_clock::now();
       }
 
-    if (draw_mario())
+    if (s.mario && draw_mario())
       SDL_UpdateWindowSurface(pdc_window);
     }
   }
@@ -5768,7 +5775,8 @@ engine::~engine()
 void engine::run()
   {
   draw(state, s);
-  draw_mario();
+  if (s.mario)
+    draw_mario();
   SDL_UpdateWindowSurface(pdc_window);
 
   while (auto new_state = process_input(state, state.active_buffer, s))
@@ -5784,7 +5792,8 @@ void engine::run()
     state = check_update_active_command_text(*new_state, s);
     if (!mouse.rearranging_windows)
       draw(state, s);
-    draw_mario();
+    if (s.mario)
+      draw_mario();
     SDL_UpdateWindowSurface(pdc_window);
     }
 

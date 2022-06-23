@@ -114,6 +114,7 @@ Kill           : kill the current running piped process if any
                  (cfr. Win command)
 LineNumbers    : toggle visualization of line numbers
 Load           : restore the state of jedi from a selection representing a file or a dump
+Mario          : show or hide Mario
 New, ^n        : make an empty buffer
 Open, ^o       : open a new file or folder
 Paste, ^v      : paste from the clipboard (pbpaste on MacOs, xclip on Linux)
