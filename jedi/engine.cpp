@@ -11,6 +11,7 @@
 #include "plumber.h"
 #include "hex.h"
 #include "edit.h"
+#include "mario.h"
 
 #include <jtk/file_utils.h>
 #include <jtk/pipe.h>
@@ -928,7 +929,7 @@ std::optional<app_state> command_new_window(app_state state, uint32_t buffer_id,
         {
         state.g.columns[column_id].items[k].bottom_layer = (state.g.columns[column_id].items[k].bottom_layer + state.g.columns[column_id].items[k].top_layer) * 0.5;
         ci.top_layer = state.g.columns[column_id].items[k].bottom_layer;
-        pos = k+1; // change to k if you want to insert before existing
+        pos = k + 1; // change to k if you want to insert before existing
         break;
         }
       }
@@ -1378,7 +1379,7 @@ app_state tab_editor(app_state state, int tab_width, std::string t, const settin
     {
     if (has_rectangular_selection(fb))
       {
-      int64_t minrow, maxrow, minx, maxx;      
+      int64_t minrow, maxrow, minx, maxx;
       minx = fb.pos.col;
       maxx = fb.start_selection->col;
       minrow = fb.pos.row;
@@ -1496,15 +1497,15 @@ app_state inverse_tab_editor(app_state state, int tab_width, const settings& s)
       fb.start_selection = std::nullopt;
       std::vector<int> removals(maxrow - minrow + 1, 0);
       for (int r = minrow; r <= maxrow; ++r)
-        {        
+        {
         fb.pos.row = r;
-        fb.pos.col = minx;        
+        fb.pos.col = minx;
         int64_t depth = line_length_up_to_column(fb.content[r], minx - 1, s_env);
         int64_t target_removals = depth % tab_width;
         if (target_removals == 0)
           target_removals = tab_width;
-        int64_t target_depth = depth - target_removals;          
-        if ((fb.content[r].size() >= fb.pos.col) &&fb.content[r][fb.pos.col - 1] == L'\t')
+        int64_t target_depth = depth - target_removals;
+        if ((fb.content[r].size() >= fb.pos.col) && fb.content[r][fb.pos.col - 1] == L'\t')
           {
           fb = erase(fb, s_env, false);
           ++removals[r - minrow];
@@ -2181,15 +2182,15 @@ app_state optimize_column(app_state state, uint32_t buffer_id, settings& s)
         else // all windows can be visualized
           {
 #if defined(MAKE_LAST_WINDOW_LARGEST)
-          int extra_per_item = (rows - total_rows) / (c.items.size()+2);
-          int remainder = (rows - total_rows) % (c.items.size()+2);
+          int extra_per_item = (rows - total_rows) / (c.items.size() + 2);
+          int remainder = (rows - total_rows) % (c.items.size() + 2);
           for (int j = 0; j < nr_of_rows_necessary.size(); ++j)
             {
             nr_of_rows_necessary[j] += extra_per_item;
             if (j < remainder)
               nr_of_rows_necessary[nr_of_rows_necessary.size() - j - 1] += 1;
             }
-          nr_of_rows_necessary[nr_of_rows_necessary.size()-1] += 2*extra_per_item;
+          nr_of_rows_necessary[nr_of_rows_necessary.size() - 1] += 2 * extra_per_item;
 #else
           int extra_per_item = (rows - total_rows) / c.items.size();
           int remainder = (rows - total_rows) % c.items.size();
@@ -5572,6 +5573,9 @@ std::optional<app_state> process_input(app_state state, uint32_t buffer_id, sett
         return state;
       tic = std::chrono::steady_clock::now();
       }
+
+    if (draw_mario())
+      SDL_UpdateWindowSurface(pdc_window);
     }
   }
 
@@ -5764,6 +5768,7 @@ engine::~engine()
 void engine::run()
   {
   draw(state, s);
+  draw_mario();
   SDL_UpdateWindowSurface(pdc_window);
 
   while (auto new_state = process_input(state, state.active_buffer, s))
@@ -5779,7 +5784,7 @@ void engine::run()
     state = check_update_active_command_text(*new_state, s);
     if (!mouse.rearranging_windows)
       draw(state, s);
-
+    draw_mario();
     SDL_UpdateWindowSurface(pdc_window);
     }
 

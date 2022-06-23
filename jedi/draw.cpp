@@ -9,7 +9,6 @@
 #include <sstream>
 
 #include "jtk/file_utils.h"
-#include "mario.h"
 
 extern "C"
   {
@@ -858,6 +857,4 @@ void draw(const app_state& state, const settings& s) {
   
   curs_set(0);
   refresh();
-
-  draw_mario();
 }

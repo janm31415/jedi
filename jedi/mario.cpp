@@ -3,6 +3,7 @@
 #include <SDL.h>
 #include <SDL_syswm.h>
 #include <curses.h>
+#include <chrono>
 
 extern "C"
   {
@@ -53,10 +54,23 @@ namespace
   uint32_t clr_hashtag = 0xff0000ff;
   uint32_t clr_dot = 0xffffdd00;
   uint32_t clr_quote = 0xffff0000;
+  uint32_t mario_speed = 3;
+
+  std::chrono::steady_clock::time_point last_tic;
   }
 
-void draw_mario()
+bool draw_mario()
   {
+  auto tic = std::chrono::steady_clock::now();
+  if (init)
+    {
+    auto time_elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(tic - last_tic).count();
+    if (time_elapsed < 50)
+      return false;
+    last_tic = tic;
+    }
+
+
   if (init)
     {
     for (int y = 0; y < 16; ++y)
@@ -71,9 +85,9 @@ void draw_mario()
           expected_color = clr_dot;
         else if (ch == '\'')
           expected_color = clr_quote;
-        uint32_t actual_color = get_pixel(prev_mario_x + x, y);
+        uint32_t actual_color = get_pixel(prev_mario_x * mario_speed + x, y);
         if (expected_color != 0xffffffff && actual_color == expected_color)
-          set_pixel(prev_mario_x + x, y, old_val[y*16+x]);
+          set_pixel(prev_mario_x * mario_speed + x, y, old_val[y*16+x]);
         }
       }
     }
@@ -84,20 +98,22 @@ void draw_mario()
     {
     for (int x = 0; x < 16; ++x)
       {
-      old_val[y*16+x] = get_pixel(mario_x + x, y);
+      old_val[y*16+x] = get_pixel(mario_x * mario_speed + x, y);
       char ch = Mario[y*32+x + (mario_x%2)*16];
       if (ch == '#')
-        set_pixel(mario_x + x, y, clr_hashtag);
+        set_pixel(mario_x * mario_speed + x, y, clr_hashtag);
       else if (ch == '.')
-        set_pixel(mario_x + x, y, clr_dot);
+        set_pixel(mario_x * mario_speed + x, y, clr_dot);
       else if (ch == '\'')
-        set_pixel(mario_x + x, y, clr_quote);
+        set_pixel(mario_x * mario_speed + x, y, clr_quote);
       }
     }
 
   ++mario_x;
-  if (mario_x > pdc_screen->w - 16)
+  if (mario_x * mario_speed > pdc_screen->w - 16)
     mario_x = 0;
 
   init = true;
+
+  return true;
   }
