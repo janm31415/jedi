@@ -2,6 +2,7 @@ set(HDRS
 async_messages.h
 buffer.h
 clipboard.h
+code_completion.h
 colors.h
 draw.h
 edit.h
@@ -25,6 +26,7 @@ window.h
 set(SRCS
 buffer.cpp
 clipboard.cpp
+code_completion.cpp
 colors.cpp
 draw.cpp
 grid.cpp

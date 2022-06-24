@@ -7,7 +7,7 @@
 
 struct trie_node
   {
-  jtk::flat_map<char, uint32_t> children;  
+  jtk::flat_map<wchar_t, uint32_t> children;
   uint32_t occurrence;
   };
 
@@ -22,17 +22,17 @@ class trie
 
     bool empty() const;
 
-    void insert(const std::string& word, uint32_t occurrence = 1); // you can insert the same word multiple times, its occurence will increase
+    void insert(const std::wstring& word, uint32_t occurrence = 1); // you can insert the same word multiple times, its occurence will increase
 
-    bool find(const std::string& word) const;
+    bool find(const std::wstring& word) const;
 
-    std::vector<std::string> predict(const std::string& prefix, uint32_t number_of_completions);
+    std::vector<std::wstring> predict(const std::wstring& prefix, uint32_t number_of_completions);
 
   private:
 
-    bool _has_child(uint32_t node_index, char ch) const;
+    bool _has_child(uint32_t node_index, wchar_t ch) const;
 
-    void _make_child(uint32_t node_index, char ch);
+    void _make_child(uint32_t node_index, wchar_t ch);
 
     bool _is_leaf(uint32_t node_index) const;
 

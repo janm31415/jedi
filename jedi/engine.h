@@ -4,6 +4,7 @@
 #include "settings.h"
 #include "grid.h"
 #include "window.h"
+#include "code_completion.h"
 #include <array>
 #include <string>
 #include <vector>
@@ -43,6 +44,7 @@ struct buffer_data {
 #endif
   e_buffer_type bt;
   std::wstring piped_prompt;
+  code_completion_data code_completion;
 };
 
 struct app_state

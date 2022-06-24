@@ -3668,13 +3668,16 @@ std::optional<app_state> command_complete(app_state state, uint32_t buffer_id, s
   std::wstring command = to_wstring(get_selection(state.buffers[buffer_id].buffer, convert(s)));
   remove_whitespace(command);
   if (command.empty()) {
-    auto command_end_pos = get_previous_position(state.buffers[buffer_id].buffer, state.buffers[buffer_id].buffer.pos);
+    auto cursor = get_actual_position(state.buffers[buffer_id].buffer);
+    auto command_end_pos = get_previous_position(state.buffers[buffer_id].buffer, cursor);
     command = find_command(state.buffers[buffer_id].buffer, command_end_pos, s);
     if (command.empty())
       return state;
     auto command_begin_pos = command_end_pos;
     command_begin_pos.col -= (int64_t)(command.length() - 1);
     std::string suggestion = complete_file_path(jtk::convert_wstring_to_string(command), state.buffers[buffer_id].buffer.name);
+    if (suggestion.empty())
+      suggestion = jtk::convert_wstring_to_string(code_completion(command, state.buffers[buffer_id]));
     if (!suggestion.empty()) {
       state.buffers[buffer_id].buffer.start_selection = command_begin_pos;
       state.buffers[buffer_id].buffer.pos = command_end_pos;
@@ -3683,6 +3686,8 @@ std::optional<app_state> command_complete(app_state state, uint32_t buffer_id, s
     return state;
     }
   std::string suggestion = complete_file_path(jtk::convert_wstring_to_string(command), state.buffers[buffer_id].buffer.name);
+  if (suggestion.empty())
+    suggestion = jtk::convert_wstring_to_string(code_completion(command, state.buffers[buffer_id]));
   if (!suggestion.empty()) {
     state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, suggestion, convert(s));
     }

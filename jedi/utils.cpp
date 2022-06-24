@@ -429,5 +429,5 @@ std::string complete_file_path(const std::string& incomplete_path, const std::st
     if (c.substr(0, incomplete_path.length()) == incomplete_path)
       return c;
     }  
-  return incomplete_path;
+  return std::string();
   }

@@ -23,7 +23,7 @@ bool trie::empty() const
   return _nodes.size() == 1;
   }
 
-void trie::insert(const std::string& word, uint32_t occurrence)
+void trie::insert(const std::wstring& word, uint32_t occurrence)
   {
   assert(occurrence>0);
 
@@ -42,12 +42,12 @@ void trie::insert(const std::string& word, uint32_t occurrence)
   _nodes[current_index].occurrence += occurrence;
   }
 
-bool trie::_has_child(uint32_t node_index, char ch) const
+bool trie::_has_child(uint32_t node_index, wchar_t ch) const
   {
   return _nodes[node_index].children.has(ch);
   }
 
-void trie::_make_child(uint32_t node_index, char ch)
+void trie::_make_child(uint32_t node_index, wchar_t ch)
   {
   uint32_t new_index = (uint32_t)_nodes.size();
   _nodes.emplace_back();
@@ -60,7 +60,7 @@ bool trie::_is_leaf(uint32_t node_index) const
   return _nodes[node_index].occurrence > 0;
   }
 
-bool trie::find(const std::string& word) const
+bool trie::find(const std::wstring& word) const
   {
   uint32_t current_index = _root_id;
   for (const auto ch : word)
@@ -74,9 +74,9 @@ bool trie::find(const std::string& word) const
   return _is_leaf(current_index);
   }
 
-std::vector<std::string> trie::predict(const std::string& prefix, uint32_t number_of_completions)
+std::vector<std::wstring> trie::predict(const std::wstring& prefix, uint32_t number_of_completions)
   {
-  std::vector<std::string> predictions;
+  std::vector<std::wstring> predictions;
   if (prefix.empty() || number_of_completions==0)
     return predictions;
   uint32_t current_index = _root_id;  
@@ -89,14 +89,14 @@ std::vector<std::string> trie::predict(const std::string& prefix, uint32_t numbe
     current_index = _nodes[current_index].children.get(ch);
     }
 
-  std::vector<std::pair<std::string, uint32_t>> candidates;
+  std::vector<std::pair<std::wstring, uint32_t>> candidates;
 
-  std::queue<std::pair<uint32_t, std::string>> qu;
-  qu.push(std::pair<uint32_t, std::string>(current_index, prefix));
+  std::queue<std::pair<uint32_t, std::wstring>> qu;
+  qu.push(std::pair<uint32_t, std::wstring>(current_index, prefix));
 
   while (!qu.empty())
     {
-    std::pair<uint32_t, std::string> current_word = qu.front();
+    std::pair<uint32_t, std::wstring> current_word = qu.front();
     qu.pop();
     if (_is_leaf(current_word.first))
       candidates.emplace_back(current_word.second, _nodes[current_word.first].occurrence);
@@ -105,9 +105,9 @@ std::vector<std::string> trie::predict(const std::string& prefix, uint32_t numbe
     auto it_end = _nodes[current_word.first].children.end();
     for (; it != it_end; ++it)
       {
-      std::string new_word = current_word.second;
+      std::wstring new_word = current_word.second;
       new_word.push_back(it.key());
-      qu.push(std::pair<uint32_t, std::string>(*it, new_word));
+      qu.push(std::pair<uint32_t, std::wstring>(*it, new_word));
       }
     }
 
