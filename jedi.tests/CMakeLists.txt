@@ -2,18 +2,22 @@
 set(HDRS
 ../jedi/buffer.h
 ../jedi/edit.h
+../jedi/trie.h
 ../jedi/utils.h
 edit_tests.h
 test_assert.h
+trie_tests.h
     )
 	
 set(SRCS
 ../jedi/buffer.cpp
 ../jedi/edit.cpp
+../jedi/trie.cpp
 ../jedi/utils.cpp
 edit_tests.cpp
 test_assert.cpp
 test.cpp
+trie_tests.cpp
 )
 
 if (WIN32)

@@ -1,5 +1,6 @@
 #include "test_assert.h"
 #include "edit_tests.h"
+#include "trie_tests.h"
 
 #define JTK_FILE_UTILS_IMPLEMENTATION
 #include "jtk/file_utils.h"
@@ -12,6 +13,7 @@ int main(int /*argc*/, const char* /*argv*/[])
 
   auto tic = std::clock();
   run_all_edit_tests();
+  run_all_trie_tests();
   auto toc = std::clock();
 
   if (!testing_fails) 

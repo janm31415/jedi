@@ -17,6 +17,7 @@ pref_file.h
 serialize.h
 settings.h
 syntax_highlight.h
+trie.h
 utils.h
 window.h
 )
@@ -40,6 +41,7 @@ pref_file.cpp
 serialize.cpp
 settings.cpp
 syntax_highlight.cpp
+trie.cpp
 utils.cpp
 window.cpp
 )

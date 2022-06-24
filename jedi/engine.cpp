@@ -3179,6 +3179,41 @@ std::optional<app_state> command_black_white_theme(app_state state, uint32_t, se
   return state;
   }
 
+std::optional<app_state> command_white_black_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xff000000;
+  s.color_editor_background = 0xffffffff;
+  s.color_editor_tag = 0xff000000;
+
+  s.color_command_text = 0xff000000;
+  s.color_command_background = 0xffffffff;
+  s.color_command_tag = 0xff000000;
+
+  s.color_column_command_text = 0xff000000;
+  s.color_column_command_background = 0xffffffff;
+  s.color_column_command_tag = 0xff000000;
+
+  s.color_topline_command_text = 0xff000000;
+  s.color_topline_command_background = 0xffffffff;
+  s.color_topline_command_tag = 0xff000000;
+
+  s.color_line_numbers = 0xff000000;
+  s.color_scrollbar = 0xff000000;
+  s.color_scrollbar_background = 0xffffffff;
+  s.color_icon = 0xff000000;
+  s.color_icon_modified = 0xff000000;
+  s.color_plus = 0xff000000;
+
+  s.color_comment = 0xff000000;
+  s.color_string = 0xff000000;
+  s.color_keyword = 0xff000000;
+  s.color_keyword_2 = 0xff000000;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
 std::optional<app_state> command_midnight_theme(app_state state, uint32_t, settings& s)
   {
   s.color_editor_text = 0xffc0c0c0;
@@ -3186,7 +3221,7 @@ std::optional<app_state> command_midnight_theme(app_state state, uint32_t, setti
   s.color_editor_tag = 0xff98da50;
 
   s.color_command_text = 0xffc0c0c0;
-  s.color_command_background = 0xff000000;
+  s.color_command_background = 0xff111111;
   s.color_command_tag = 0xff98da50;
 
   s.color_column_command_text = 0xffc0c0c0;
@@ -3729,6 +3764,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"TomorrowTheme", command_tomorrow},
     {L"Undo", command_undo_mouseclick},
     {L"Victor", command_victor},
+    {L"WhiteBlackTheme", command_white_black_theme},
     {L"Wrap", command_wrap}
   };
 
