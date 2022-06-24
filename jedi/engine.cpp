@@ -3681,13 +3681,15 @@ std::optional<app_state> command_complete(app_state state, uint32_t buffer_id, s
     if (!suggestion.empty()) {
       state.buffers[buffer_id].buffer.start_selection = command_begin_pos;
       state.buffers[buffer_id].buffer.pos = command_end_pos;
+      if (command_begin_pos == command_end_pos)
+        state.buffers[buffer_id].buffer = erase_right(state.buffers[buffer_id].buffer, convert(s), false);
       state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, suggestion, convert(s));
       }
     return state;
     }
   std::string suggestion = complete_file_path(jtk::convert_wstring_to_string(command), state.buffers[buffer_id].buffer.name);
   if (suggestion.empty())
-    suggestion = jtk::convert_wstring_to_string(code_completion(command, state.buffers[buffer_id]));
+    suggestion = jtk::convert_wstring_to_string(code_completion(command, state.buffers[buffer_id])); // this part not tested yet
   if (!suggestion.empty()) {
     state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, suggestion, convert(s));
     }
