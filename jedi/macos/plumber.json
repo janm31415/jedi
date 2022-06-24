@@ -1,14 +1,22 @@
 {
-	"/Applications/qView.app/Contents/MacOS/qView":
+	"/Applications/Paint Expert.app/Contents/MacOS/Paint Expert":
 	  {"extensions": "jpg png jpeg gif",
 	   "regex": ""
 	  },
 	"/Applications/VLC.app/Contents/MacOS/VLC":
-	  {"extensions": "avi mp3 mp4",
+	  {"extensions": "avi mp4",
 	   "regex": ""
 	  },
 	"/Applications/Safari.app/Contents/MacOS/Safari":
     {"extensions": "html",
 	   "regex": "^(https?:\\/\\/).*"
+	  },
+	"/Applications/j3d.app/Contents/MacOS/j3d":
+    {"extensions": "stl off obj vox ply gltf glb",
+	   "regex": ""
+	  },
+	"/Applications/Audacity.app/Contents/MacOS/Audacity":
+	  {"extensions": "mp3 wav",
+	   "regex": ""
 	  }
 }
