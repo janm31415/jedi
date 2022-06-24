@@ -3144,6 +3144,76 @@ std::optional<app_state> command_light_theme(app_state state, uint32_t, settings
   return state;
   }
 
+std::optional<app_state> command_black_white_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xffc0c0c0;
+  s.color_editor_background = 0xff000000;
+  s.color_editor_tag = 0xffc0c0c0;
+
+  s.color_command_text = 0xffc0c0c0;
+  s.color_command_background = 0xff000000;
+  s.color_command_tag = 0xffc0c0c0;
+
+  s.color_column_command_text = 0xffc0c0c0;
+  s.color_column_command_background = 0xff000000;
+  s.color_column_command_tag = 0xffc0c0c0;
+
+  s.color_topline_command_text = 0xffc0c0c0;
+  s.color_topline_command_background = 0xff000000;
+  s.color_topline_command_tag = 0xffc0c0c0;
+
+  s.color_line_numbers = 0xffc0c0c0;
+  s.color_scrollbar = 0xffc0c0c0;
+  s.color_scrollbar_background = 0xff000000;
+  s.color_icon = 0xffc0c0c0;
+  s.color_icon_modified = 0xffc0c0c0;
+  s.color_plus = 0xffc0c0c0;
+
+  s.color_comment = 0xffc0c0c0;
+  s.color_string = 0xffc0c0c0;
+  s.color_keyword = 0xffc0c0c0;
+  s.color_keyword_2 = 0xffc0c0c0;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
+std::optional<app_state> command_midnight_theme(app_state state, uint32_t, settings& s)
+  {
+  s.color_editor_text = 0xffc0c0c0;
+  s.color_editor_background = 0xff000000;
+  s.color_editor_tag = 0xff98da50;
+
+  s.color_command_text = 0xffc0c0c0;
+  s.color_command_background = 0xff000000;
+  s.color_command_tag = 0xff98da50;
+
+  s.color_column_command_text = 0xffc0c0c0;
+  s.color_column_command_background = 0xff000000;
+  s.color_column_command_tag = 0xff98da50;
+
+  s.color_topline_command_text = 0xffc8a797;
+  s.color_topline_command_background = 0xff000000;
+  s.color_topline_command_tag = 0xff98da50;
+
+  s.color_line_numbers = 0xff70635c;
+  s.color_scrollbar = 0xff98da50;
+  s.color_scrollbar_background = 0xff000000;
+  s.color_icon = 0xff98da50;
+  s.color_icon_modified = 0xff7b46fb;
+  s.color_plus = 0xff98da50;
+
+  s.color_comment = 0xff70635c;
+  s.color_string = 0xff7b46fb;
+  s.color_keyword = 0xffc521ce;
+  s.color_keyword_2 = 0xff00ccff;
+
+  init_colors(s);
+  stdscr->_clear = TRUE;
+  return state;
+  }
+
 std::optional<app_state> command_consolas(app_state state, uint32_t, settings& s) {
   s.font = jtk::get_folder(jtk::get_executable_path()) + "fonts/consola.ttf";
   state = resize_font(state, s.font_size, s);
@@ -3602,6 +3672,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"All", command_all},
     {L"AllChars", command_show_all_characters},
     {L"Back", command_cancel},
+    {L"BlackWhiteTheme", command_black_white_theme},    
     {L"Cancel", command_cancel},
     {L"Case", command_case_sensitive},
     {L"Comic", command_comic},
@@ -3637,6 +3708,7 @@ const auto executable_commands = std::map<std::wstring, std::function<std::optio
     {L"Mario", command_mario},
     {L"MatrixTheme", command_matrix_theme},
     {L"Menlo", command_menlo},
+    {L"MidnightTheme", command_midnight_theme},
     {L"Monaco", command_monaco},
     {L"New", command_new_window},
     {L"Newcol", command_new_column},
