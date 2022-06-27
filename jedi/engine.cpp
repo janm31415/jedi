@@ -2900,24 +2900,24 @@ std::optional<app_state> command_dracula_theme(app_state state, uint32_t, settin
 std::optional<app_state> command_gruvbox_theme(app_state state, uint32_t, settings& s)
   {
   s.color_editor_text = 0xffb2dbeb;
-  s.color_editor_background = 0xff282828;
+  s.color_editor_background = 0xff21201d;
   s.color_editor_tag = 0xff2fbdfa;
 
   s.color_command_text = 0xffb2dbeb;
-  s.color_command_background = 0xff36383c;
+  s.color_command_background = 0xff282828;
   s.color_command_tag = 0xff2fbdfa;
 
   s.color_column_command_text = 0xffb2dbeb;
-  s.color_column_command_background = 0xff454950;
+  s.color_column_command_background = 0xff36383c;
   s.color_column_command_tag = 0xff2fbdfa;
 
   s.color_topline_command_text = 0xffb2dbeb;
-  s.color_topline_command_background = 0xff545c66;
+  s.color_topline_command_background = 0xff454950;
   s.color_topline_command_tag = 0xff2fbdfa;
 
   s.color_line_numbers = 0xff748392;
   s.color_scrollbar = 0xff748392;
-  s.color_scrollbar_background = 0xff36383c;
+  s.color_scrollbar_background = 0xff282828;
   s.color_icon = 0xff2fbdfa;
   s.color_icon_modified = 0xff3449fb;
   s.color_plus = 0xff2fbdfa;
