@@ -37,9 +37,9 @@ namespace
 file_buffer read_from_file(std::string filename)
   {
   using namespace jtk;
-  local_remove_quotes(filename); 
+  local_remove_quotes(filename);
   file_buffer fb = make_empty_buffer();
-  fb.name = filename;  
+  fb.name = filename;
   if (file_exists(filename))
     {
 #ifdef _WIN32
@@ -543,7 +543,7 @@ file_buffer insert(file_buffer fb, std::wstring wtxt, const env_settings& s, boo
   int nr_of_lines_inserted = 0;
   int64_t first_insertion_row = pos.row;
   while (!wtxt.empty())
-    {    
+    {
     auto endline_position = wtxt.find_first_of(L'\n');
     if (endline_position != std::wstring::npos)
       ++endline_position;
@@ -634,7 +634,7 @@ file_buffer erase(file_buffer fb, const env_settings& s, bool save_undo)
       fb.content = fb.content.erase(pos.row).set(pos.row - 1, l);
       fb.lex = fb.lex.erase(pos.row);
       --fb.pos.row;
-      fb = update_lexer_status(fb, pos.row-1, pos.row, s);
+      fb = update_lexer_status(fb, pos.row - 1, pos.row, s);
       }
     fb.xpos = get_x_position(fb, s);
     }
@@ -769,7 +769,7 @@ file_buffer erase_right(file_buffer fb, const env_settings& s, bool save_undo)
       auto l = fb.content[pos.row].pop_back() + fb.content[pos.row + 1];
       fb.content = fb.content.erase(pos.row + 1).set(pos.row, l);
       fb.lex = fb.lex.erase(pos.row + 1);
-      fb = update_lexer_status(fb, pos.row, pos.row+1, s);
+      fb = update_lexer_status(fb, pos.row, pos.row + 1, s);
       }
     else if (pos.col == (int64_t)fb.content[pos.row].size() - 1)// last line, last item
       {
@@ -1004,7 +1004,7 @@ file_buffer move_page_down(file_buffer fb, int64_t rows, const env_settings& s)
 
 file_buffer move_home(file_buffer fb, const env_settings& s)
   {
-  auto indented_pos = get_indentation_at_row(fb, fb.pos.row); 
+  auto indented_pos = get_indentation_at_row(fb, fb.pos.row);
   fb.pos.col = (fb.pos.col <= indented_pos.col) ? 0 : indented_pos.col;
   fb.xpos = fb.pos.col == 0 ? 0 : get_x_position(fb, s);
   return fb;
@@ -1043,7 +1043,7 @@ std::string to_string(text txt)
     }
   return out;
   }
-  
+
 std::string to_string(line ln)
   {
   std::string str;
@@ -1053,10 +1053,10 @@ std::string to_string(line ln)
   utf8::utf16to8(it, it_end, std::back_inserter(str));
   return str;
   }
-  
+
 std::string to_string(text txt, position from, position to) {
   return jtk::convert_wstring_to_string(to_wstring(txt, from, to));
-}
+  }
 
 std::wstring to_wstring(text txt)
   {
@@ -1080,9 +1080,9 @@ std::wstring to_wstring(text txt, position from, position to) {
     wchar_t current_char = txt[from.row][from.col];
     out.push_back(current_char);
     from = get_next_position(txt, from);
-  }
+    }
   return out;
-}
+  }
 
 std::string buffer_to_string(file_buffer fb)
   {
@@ -1109,7 +1109,7 @@ position get_last_position(file_buffer fb)
 file_buffer update_position(file_buffer fb, position pos, const env_settings& s)
   {
   if (pos.row >= fb.content.size())
-    pos.row = fb.content.empty() ? 0 : fb.content.size()-1;
+    pos.row = fb.content.empty() ? 0 : fb.content.size() - 1;
   fb.pos = pos;
   fb.xpos = get_x_position(fb, s);
   return fb;
@@ -1182,7 +1182,7 @@ position get_previous_position(file_buffer fb, position pos)
   {
   return get_previous_position(fb.content, pos);
   }
-  
+
 position find_next_occurence_reverse(text txt, position starting_pos, const std::wstring& wtxt_to_find) {
   position lastpos = get_last_position(txt);
   position firstpos = position(0, 0);
@@ -1195,19 +1195,19 @@ position find_next_occurence_reverse(text txt, position starting_pos, const std:
       if (tmp == lastpos) {
         found = false;
         break;
-      }
+        }
       const wchar_t current_char = txt[tmp.row][tmp.col];
       if (current_char != wtxt_to_find[j]) {
         found = false;
         break;
-      }
+        }
       tmp = get_next_position(txt, tmp);
-    }
+      }
     if (found)
       return pos;
-  }
+    }
   return position(-1, -1);
-}
+  }
 
 position find_next_occurence(text txt, position starting_pos, const std::wstring& wtxt_to_find) {
   position lastpos = get_last_position(txt);
@@ -1217,23 +1217,23 @@ position find_next_occurence(text txt, position starting_pos, const std::wstring
     position tmp = pos;
     for (int j = 0; j < wtxt_to_find.size(); ++j) {
       if (tmp == lastpos) {
-          found = false;
-          break;
+        found = false;
+        break;
         }
       const wchar_t current_char = txt[tmp.row][tmp.col];
       if (current_char != wtxt_to_find[j]) {
         found = false;
         break;
-      }
+        }
       tmp = get_next_position(txt, tmp);
-    }
+      }
     if (found)
       return pos;
     pos = get_next_position(txt, pos);
     }
   return position(-1, -1);
-}
-  
+  }
+
 position find_next_occurence(text txt, position starting_pos, wchar_t ch) {
   position lastpos = get_last_position(txt);
   position pos = starting_pos;
@@ -1245,11 +1245,11 @@ position find_next_occurence(text txt, position starting_pos, wchar_t ch) {
     pos = get_next_position(txt, pos);
     }
   return position(-1, -1);
-}
+  }
 
 position find_next_occurence(file_buffer fb, position starting_pos, wchar_t ch) {
   return find_next_occurence(fb.content, starting_pos, ch);
-}
+  }
 
 file_buffer find_text(file_buffer fb, text txt)
   {
@@ -1324,29 +1324,36 @@ file_buffer find_text_case_insensitive(file_buffer fb, text txt)
     pos = *fb.start_selection;
   if (pos == lastpos)
     pos.col = pos.row = 0;
-  pos = get_actual_position(fb, pos);
-  wchar_t current_text_char = tolower(txt[text_pos.row][text_pos.col]);
+  pos = get_actual_position(fb, pos);  
   wchar_t first_text_char = tolower(txt[text_pos.row][text_pos.col]);
   while (pos != lastpos)
     {
     wchar_t current_char = tolower(fb.content[pos.row][pos.col]);
-    if (current_char == current_text_char)
+    if (current_char == first_text_char)
       {
-      if (text_pos.col == 0 && text_pos.row == 0)
-        first_encounter = pos;
-      text_pos = get_next_position(txt, text_pos);
-      if (text_pos == lasttext)
+      wchar_t current_text_char = first_text_char;
+      position pos2 = pos;
+      while (pos2 != lastpos)
         {
-        fb.start_selection = first_encounter;
-        fb.pos = pos;
-        return fb;
+        current_char = tolower(fb.content[pos2.row][pos2.col]);
+        if (current_char == current_text_char)
+          {
+          text_pos = get_next_position(txt, text_pos);
+          if (text_pos == lasttext)
+            {
+            fb.start_selection = pos;
+            fb.pos = pos2;
+            return fb;
+            }
+          current_text_char = tolower(txt[text_pos.row][text_pos.col]);
+          pos2 = get_next_position(fb, pos2);
+          }
+        else
+          {
+          text_pos = position(0, 0);
+          break;
+          }
         }
-      current_text_char = tolower(txt[text_pos.row][text_pos.col]);
-      }
-    else
-      {
-      current_text_char = first_text_char;
-      text_pos = position(0, 0);
       }
     pos = get_next_position(fb, pos);
     }
@@ -1368,7 +1375,7 @@ file_buffer find_text_case_insensitive(file_buffer fb, const std::string& txt)
 std::wstring read_next_word(line::const_iterator it, line::const_iterator it_end)
   {
   std::wstring out;
-  while (it != it_end && *it != L' ' && *it != L',' && *it != L'(' && *it != L'{' && *it != L')' && *it != L'}' && *it != L'[' && *it != L']'&& *it != L'\n' && *it != L'\t' && *it != L'\r' && *it != L'<' && *it != L'>' && *it != L'&' && *it != L'*')
+  while (it != it_end && *it != L' ' && *it != L',' && *it != L'(' && *it != L'{' && *it != L')' && *it != L'}' && *it != L'[' && *it != L']' && *it != L'\n' && *it != L'\t' && *it != L'\r' && *it != L'<' && *it != L'>' && *it != L'&' && *it != L'*')
     {
     out.push_back(*it);
     ++it;
@@ -1418,12 +1425,12 @@ namespace
         if (!inside_single_line_string && !inside_quotes && _is_next_word(it, it_end, fb.syntax.multiline_begin))
           {
           current_status = lexer_inside_multiline_comment;
-          it += fb.syntax.multiline_begin.length()-1;
+          it += fb.syntax.multiline_begin.length() - 1;
           }
         else if (!inside_single_line_string && !inside_quotes && _is_next_word(it, it_end, fb.syntax.multistring_begin))
           {
           current_status = lexer_inside_multiline_string;
-          it += fb.syntax.multistring_begin.length()-1;
+          it += fb.syntax.multistring_begin.length() - 1;
           }
         else if (!inside_single_line_string && !inside_quotes && _is_next_word(it, it_end, fb.syntax.single_line))
           {
@@ -1443,7 +1450,7 @@ namespace
         if (_is_next_word(it, it_end, fb.syntax.multiline_end))
           {
           current_status = lexer_normal;
-          it += fb.syntax.multiline_end.length()-1;
+          it += fb.syntax.multiline_end.length() - 1;
           }
         }
       else if (current_status == lexer_inside_multiline_string)
@@ -1451,12 +1458,12 @@ namespace
         if (_is_next_word(it, it_end, fb.syntax.multistring_end))
           {
           current_status = lexer_normal;
-          it += fb.syntax.multistring_end.length()-1;
+          it += fb.syntax.multistring_end.length() - 1;
           }
         }
       prevprev_it = prev_it;
       prev_it = it;
-      }  
+      }
     return current_status;
     }
 
@@ -1496,7 +1503,7 @@ file_buffer update_lexer_status(file_buffer fb, int64_t row, const env_settings&
 
   auto trans = fb.lex.transient();
   /*
-  
+
   while (trans.size() < fb.content.size())
     trans.push_back(lexer_normal);
   while (trans.size() > fb.content.size())
@@ -1504,7 +1511,7 @@ file_buffer update_lexer_status(file_buffer fb, int64_t row, const env_settings&
     */
   assert(trans.size() == fb.content.size());
 
-  for (int64_t r = row; r < fb.content.size()-1; ++r)
+  for (int64_t r = row; r < fb.content.size() - 1; ++r)
     {
     uint8_t eol = _get_end_of_line_lexer_status(fb, r, trans[r]);
     if (eol == trans[r + 1])
@@ -1587,15 +1594,15 @@ std::vector<std::pair<int64_t, text_type>> get_text_type(file_buffer fb, int64_t
         {
         out.emplace_back((int64_t)col, tt_comment);
         current_status = lexer_inside_multiline_comment;
-        it += fb.syntax.multiline_begin.length()-1;
-        col += fb.syntax.multiline_begin.length()-1;
+        it += fb.syntax.multiline_begin.length() - 1;
+        col += fb.syntax.multiline_begin.length() - 1;
         }
       else if (!inside_single_line_string && !inside_quotes && _is_next_word(it, it_end, fb.syntax.multistring_begin))
         {
         out.emplace_back((int64_t)col, tt_string);
         current_status = lexer_inside_multiline_string;
-        it += fb.syntax.multistring_begin.length()-1;
-        col += fb.syntax.multistring_begin.length()-1;
+        it += fb.syntax.multistring_begin.length() - 1;
+        col += fb.syntax.multistring_begin.length() - 1;
         }
       else if (!inside_single_line_string && !inside_quotes && _is_next_word(it, it_end, fb.syntax.single_line))
         {
@@ -1603,12 +1610,12 @@ std::vector<std::pair<int64_t, text_type>> get_text_type(file_buffer fb, int64_t
         out.emplace_back((int64_t)col, tt_comment);
         }
       else if (!inside_quotes && *it == L'"' && (*prev_it != L'\\' || *prevprev_it == L'\\'))
-        {                
+        {
         inside_single_line_string = !inside_single_line_string;
         if (inside_single_line_string)
           out.emplace_back((int64_t)col, tt_string);
         else
-          out.emplace_back((int64_t)col+1, tt_normal);
+          out.emplace_back((int64_t)col + 1, tt_normal);
         }
       else if (fb.syntax.uses_quotes_for_chars && !inside_single_line_string && *it == L'\'' && (*prev_it != L'\\' || *prevprev_it == L'\\'))
         {
@@ -1624,9 +1631,9 @@ std::vector<std::pair<int64_t, text_type>> get_text_type(file_buffer fb, int64_t
       if (_is_next_word(it, it_end, fb.syntax.multiline_end))
         {
         current_status = lexer_normal;
-        it += fb.syntax.multiline_end.length()-1;
-        col += fb.syntax.multiline_end.length()-1;
-        out.emplace_back((int64_t)col+1, tt_normal);
+        it += fb.syntax.multiline_end.length() - 1;
+        col += fb.syntax.multiline_end.length() - 1;
+        out.emplace_back((int64_t)col + 1, tt_normal);
         }
       }
     else if (current_status == lexer_inside_multiline_string)
@@ -1634,21 +1641,21 @@ std::vector<std::pair<int64_t, text_type>> get_text_type(file_buffer fb, int64_t
       if (_is_next_word(it, it_end, fb.syntax.multistring_end))
         {
         current_status = lexer_normal;
-        it += fb.syntax.multistring_end.length()-1;
-        col += fb.syntax.multistring_end.length()-1;
-        out.emplace_back((int64_t)col+1, tt_normal);
+        it += fb.syntax.multistring_end.length() - 1;
+        col += fb.syntax.multistring_end.length() - 1;
+        out.emplace_back((int64_t)col + 1, tt_normal);
         }
       }
     prevprev_it = prev_it;
     prev_it = it;
-    }  
+    }
 
   std::reverse(out.begin(), out.end());
   out.erase(std::unique(out.begin(), out.end(), [](const std::pair<int64_t, text_type>& left, const std::pair<int64_t, text_type>& right)
     {
     return left.first == right.first;
     })
-  , out.end());
+    , out.end());
 
   return out;
   }
@@ -1670,7 +1677,7 @@ bool valid_position(file_buffer fb, position pos)
   }
 
 position find_corresponding_token(file_buffer fb, position tokenpos, int64_t minrow, int64_t maxrow)
-  {  
+  {
   if (!valid_position(fb, tokenpos))
     return position(-1, -1);
   wchar_t token = fb.content[tokenpos.row][tokenpos.col];
@@ -1690,7 +1697,7 @@ position find_corresponding_token(file_buffer fb, position tokenpos, int64_t min
   int count = 0;
   if (forward)
     {
-    auto last_pos = get_last_position(fb);      
+    auto last_pos = get_last_position(fb);
     if (tokenpos == last_pos)
       return position(-1, -1);
     position current = get_next_position(fb, tokenpos);
@@ -1759,6 +1766,6 @@ std::string get_row_indentation_pattern(file_buffer fb, position pos)
     {
     out.push_back((char)ln[col]);
     ++col;
-    }    
+    }
   return out;
   }
