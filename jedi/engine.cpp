@@ -3539,7 +3539,10 @@ std::optional<app_state> command_piped_win(app_state state, uint32_t buffer_id, 
   auto active_buffer = state.active_buffer;
   jtk::active_folder af(jtk::get_folder(get_active_buffer(state).name).c_str());
 
-  state = *command_new_window(state, buffer_id, s);
+  // old situation: new window after buffer_id:
+  // state = *command_new_window(state, buffer_id, s);
+  // new situation: new window at the most right column
+  state = *command_new_window(state, 0xffffffff, s);
   buffer_id = (uint32_t)(state.buffers.size() - 1);
   parameters = clean_command(parameters);
   if (parameters.empty()) {
