@@ -19,6 +19,8 @@ add_subdirectory(jedi.tests)
 add_subdirectory(pdcurses)
 add_subdirectory(tree)
 add_subdirectory(jsonfmt)
+add_subdirectory(upper)
+add_subdirectory(lower)
 
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)

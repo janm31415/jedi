@@ -4100,10 +4100,14 @@ app_state execute_external_output(app_state state, const std::string& file_path,
 
 app_state execute_external_input_output(app_state state, const std::string& file_path, const std::vector<std::string>& parameters, settings& s)
   {
+  bool newline_added = false;
   auto woutput = to_wstring(get_selection(get_last_active_editor_buffer(state), convert(s)));
   woutput.erase(std::remove(woutput.begin(), woutput.end(), '\r'), woutput.end());
   if (!woutput.empty() && woutput.back() != '\n')
+    {
+    newline_added = true;
     woutput.push_back('\n');
+    }
   auto output = jtk::convert_wstring_to_string(woutput);
 
   jtk::active_folder af(jtk::get_folder(get_last_active_editor_buffer(state).name).c_str());
@@ -4125,6 +4129,16 @@ app_state execute_external_input_output(app_state state, const std::string& file
     return add_error_text(state, error_message, s);
     }
   std::string text = jtk::read_from_pipe(process, 100);
+  if (newline_added)
+    {
+    if (!text.empty())
+      {
+      if (text.back() == '\n')
+        text.pop_back();
+      if (text.back() == '\r')
+        text.pop_back();
+      }
+    }
 #else
   int pipefd[3];
   int err = jtk::create_pipe(file_path.c_str(), argv, nullptr, pipefd);
