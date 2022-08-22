@@ -4150,6 +4150,16 @@ app_state execute_external_input_output(app_state state, const std::string& file
     }
   jtk::send_to_pipe(pipefd, output.c_str());
   std::string text = jtk::read_from_pipe(pipefd, 100);
+  if (newline_added)
+    {
+    if (!text.empty())
+      {
+      if (text.back() == '\n')
+        text.pop_back();
+      if (text.back() == '\r')
+        text.pop_back();
+      }
+    }
 #endif
 
   get_last_active_editor_buffer(state) = insert(get_last_active_editor_buffer(state), text, convert(s));
