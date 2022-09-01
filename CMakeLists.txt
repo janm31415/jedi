@@ -21,6 +21,8 @@ add_subdirectory(tree)
 add_subdirectory(jsonfmt)
 add_subdirectory(upper)
 add_subdirectory(lower)
+add_subdirectory(lexicalsort)
+
 
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
