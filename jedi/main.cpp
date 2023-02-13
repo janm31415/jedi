@@ -109,7 +109,7 @@ int main(int argc, char** argv)
     }
   SDL_GL_SetSwapInterval(1);
   atexit(SDL_Quit);
-
+  TTF_Init();
 
   /* Initialize PDCurses */
 
@@ -143,7 +143,8 @@ int main(int argc, char** argv)
   update_settings_if_different(s_latest, e.s, s);
   write_settings(s_latest, get_file_in_executable_path("jedi_settings.json").c_str());
 
-  endwin();
+  endwin();  
+  SDL_Quit();
 
   return 0;
   }
