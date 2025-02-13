@@ -3982,6 +3982,8 @@ app_state execute_external(app_state state, const std::string& file_path, const 
   state.buffers[buffer_id].bt = bt_piped;
 
   char** argv = alloc_arguments(file_path, parameters);
+  std::string text;
+  try {
 #ifdef _WIN32
   state.buffers[buffer_id].process = nullptr;
   int err = jtk::create_pipe(file_path.c_str(), argv, nullptr, &state.buffers[buffer_id].process);
@@ -3992,7 +3994,7 @@ app_state execute_external(app_state state, const std::string& file_path, const 
     state.buffers[buffer_id].bt = bt_normal;
     return add_error_text(state, error_message, s);
     }
-  std::string text = jtk::read_from_pipe(state.buffers[buffer_id].process, 100);
+  text = jtk::read_from_pipe(state.buffers[buffer_id].process, 100);
 #else
   int err = jtk::create_pipe(file_path.c_str(), argv, nullptr, state.buffers[buffer_id].process.data());
   free_arguments(argv);
@@ -4002,8 +4004,14 @@ app_state execute_external(app_state state, const std::string& file_path, const 
     state.buffers[buffer_id].bt = bt_normal;
     return add_error_text(state, error_message, s);
     }
-  std::string text = jtk::read_from_pipe(state.buffers[buffer_id].process.data(), 100);
+  text = jtk::read_from_pipe(state.buffers[buffer_id].process.data(), 100);
 #endif
+  }
+  catch (...) {
+    std::string error_message = "Could not create child process\n";
+    state.buffers[buffer_id].bt = bt_normal;
+    return add_error_text(state, error_message, s);
+  }
   if (get_active_buffer(state).pos.col > 0)
     text.insert(text.begin(), '\n');
   state.buffers[buffer_id].buffer = insert(state.buffers[buffer_id].buffer, text, convert(s));
