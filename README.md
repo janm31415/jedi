@@ -9,8 +9,12 @@ First of all, jedi uses submodules, so don't forget to also call
      git submodule update --init
 
 Next, run CMake to generate a solution file on Windows, a make file on Linux, or an XCode project on MacOs.
-You can build jed without building other external projects (as all necessary dependencies are delivered with the code). 
+You can build jedi without building other external projects (as all necessary dependencies are delivered with the code). 
 
+To enable clipboard functionality in Linux, call
+
+    sudo apt update
+    sudo apt install xclip
 
 Jedi basics
 -----------
