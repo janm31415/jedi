@@ -23,6 +23,7 @@ add_subdirectory(jsonfmt)
 add_subdirectory(upper)
 add_subdirectory(lower)
 add_subdirectory(lexicalsort)
+add_subdirectory(stdcerrtest)
 
 
 
