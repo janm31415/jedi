@@ -132,22 +132,23 @@ Win <command>  : Make a piped Jedi instance running the command, e.g. Win cmd
 Wrap           : Toggle wrapping of lines in the editor window
 Undo, ^z       : undo
 
-Available themes:
-AcmeTheme       : change the color code to the color scheme of Acme
-BlackWhiteTheme : change the color code to black and white
-DarkTheme       : change the color code to dark
-DosTheme        : change the color code to dos colors
-DraculaTheme    : change the color code to dracula (https://draculatheme.com)
-GruvboxLight    : change the color code to gruvbox light (https://github.com/morhetz/gruvbox)
-GruvboxTheme    : change the color code to gruvbox (https://github.com/morhetz/gruvbox)
-LightTheme      : change the color code to light
-MatrixTheme     : change the color code to shades of green
-MidnightTheme   : change the color code to midnight
-SolarizedTheme  : change the color code to solarized (https://ethanschoonover.com/solarized/)
-SolDarkTheme    : change the color code to solarized dark (https://ethanschoonover.com/solarized/)
-TomorrowDark    : change the color code to tomorrow dark (https://github.com/chriskempson/tomorrow-theme)
-TomorrowTheme   : change the color code to tomorrow (https://github.com/chriskempson/tomorrow-theme)
-WhiteBlackTheme : change the color code to white and black
+Available themes :
+AcmeTheme        : change the color code to the color scheme of Acme
+BlackWhiteTheme  : change the color code to black and white
+DarkTheme        : change the color code to dark
+DosTheme         : change the color code to dos colors
+DraculaTheme     : change the color code to dracula (https://draculatheme.com)
+DarkDraculaTheme : change the color code to dark dracula
+GruvboxLight     : change the color code to gruvbox light (https://github.com/morhetz/gruvbox)
+GruvboxTheme     : change the color code to gruvbox (https://github.com/morhetz/gruvbox)
+LightTheme       : change the color code to light
+MatrixTheme      : change the color code to shades of green
+MidnightTheme    : change the color code to midnight
+SolarizedTheme   : change the color code to solarized (https://ethanschoonover.com/solarized/)
+SolDarkTheme     : change the color code to solarized dark (https://ethanschoonover.com/solarized/)
+TomorrowDark     : change the color code to tomorrow dark (https://github.com/chriskempson/tomorrow-theme)
+TomorrowTheme    : change the color code to tomorrow (https://github.com/chriskempson/tomorrow-theme)
+WhiteBlackTheme  : change the color code to white and black
 
 Available fonts:
 Comic          : change the font to Comic-mono (https://dtinth.github.io/comic-mono-font/)
